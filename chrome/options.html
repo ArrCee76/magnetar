@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnetar — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="settings">
+
+    <!-- Header -->
+    <header class="settings-header">
+      <div class="settings-brand">
+        <span class="settings-logo">✦</span>
+        <h1 class="settings-title">Magnetar</h1>
+      </div>
+      <p class="settings-subtitle">Grab torrents, send them anywhere.</p>
+      <a href="#" id="header-coffee" target="_blank" class="settings-support">☕ Support Magnetar</a>
+    </header>
+
+    <!-- Section 1: Download Mode -->
+    <section class="settings-section">
+      <h2 class="section-heading">Download Mode</h2>
+      <p class="section-desc">Choose where Magnetar sends detected torrents.</p>
+
+      <div class="mode-cards" id="mode-cards">
+        <button class="mode-card" data-mode="local">
+          <div class="mode-icon">🧲</div>
+          <div class="mode-name">Local Client</div>
+          <div class="mode-desc">qBittorrent, Deluge, etc.</div>
+        </button>
+        <button class="mode-card" data-mode="realdebrid">
+          <div class="mode-icon">⚡</div>
+          <div class="mode-name">Real-Debrid</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+        <button class="mode-card" data-mode="rdtclient">
+          <div class="mode-icon">🖥️</div>
+          <div class="mode-name">RDT Client</div>
+          <div class="mode-desc">Self-hosted</div>
+        </button>
+        <button class="mode-card" data-mode="torbox">
+          <div class="mode-icon">📦</div>
+          <div class="mode-name">TorBox</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+      </div>
+
+      <!-- Credential panels (one per mode, shown based on selection) -->
+      <div class="creds-panel" id="creds-local" style="display:none">
+        <div class="creds-note">No configuration needed. Magnetar will fire magnet links to your system's default torrent client.</div>
+      </div>
+
+      <div class="creds-panel" id="creds-realdebrid" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="rd-apikey" placeholder="Paste your Real-Debrid API key">
+        <div class="field-hint">Get yours at <a href="https://real-debrid.com/apitoken" target="_blank">real-debrid.com/apitoken</a></div>
+        <button class="btn-test" id="rd-test">Save & Test</button>
+        <div class="test-result" id="rd-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-rdtclient" style="display:none">
+        <label class="field-label">Server URL</label>
+        <input type="url" class="field-input" id="rdt-url" placeholder="https://rdt.example.com or http://192.168.1.111:6500">
+        <label class="field-label">Username</label>
+        <input type="text" class="field-input" id="rdt-username" placeholder="Username">
+        <label class="field-label">Password</label>
+        <input type="password" class="field-input" id="rdt-password" placeholder="Password">
+        <label class="field-label">Real-Debrid API Key <span class="field-optional">(optional, for cache checking)</span></label>
+        <input type="password" class="field-input" id="rdt-rdkey" placeholder="RD API key for cache checks">
+        <button class="btn-test" id="rdt-test">Save & Test</button>
+        <div class="test-result" id="rdt-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-torbox" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="tb-apikey" placeholder="Paste your TorBox API key">
+        <div class="field-hint">Get yours at <a href="https://torbox.app/settings" target="_blank">torbox.app/settings</a> → API Key section</div>
+        <button class="btn-test" id="tb-test">Save & Test</button>
+        <div class="test-result" id="tb-result"></div>
+      </div>
+    </section>
+
+    <!-- Section 2: Magnetar Shield -->
+    <section class="settings-section">
+      <div class="section-heading-row">
+        <h2 class="section-heading">Magnetar Shield</h2>
+        <label class="toggle">
+          <input type="checkbox" id="shield-enabled">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+      <p class="section-desc">Block unwanted popup and redirect sites at the network level.</p>
+
+      <div class="shield-add">
+        <input type="text" class="field-input" id="shield-domain-input" placeholder="example.com">
+        <button class="btn-small" id="shield-add-btn">Block</button>
+      </div>
+
+      <div class="shield-list" id="shield-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="shield-actions">
+        <button class="btn-text" id="shield-import">Import</button>
+        <button class="btn-text" id="shield-export">Export</button>
+      </div>
+    </section>
+
+    <!-- Section 3: Custom Sites -->
+    <section class="settings-section">
+      <h2 class="section-heading">Custom Sites</h2>
+      <p class="section-desc">Define hash detection rules for sites that aren't auto-detected.</p>
+
+      <div class="custom-sites-list" id="custom-sites-list">
+        <!-- Populated by JS -->
+      </div>
+
+      <button class="btn-small" id="add-custom-site">+ Add Custom Site</button>
+
+      <!-- Custom site form (hidden by default) -->
+      <div class="custom-site-form" id="custom-site-form" style="display:none">
+        <label class="field-label">Domain pattern</label>
+        <input type="text" class="field-input" id="cs-domain" placeholder="*.example.com">
+        <label class="field-label">Detection method</label>
+        <select class="field-select" id="cs-method">
+          <option value="selector">CSS Selector</option>
+          <option value="regex">Regex</option>
+        </select>
+        <label class="field-label" id="cs-value-label">CSS Selector</label>
+        <input type="text" class="field-input" id="cs-value" placeholder="#info-hash code">
+        <div class="custom-site-form-actions">
+          <button class="btn-small" id="cs-save">Save</button>
+          <button class="btn-text" id="cs-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="shield-actions">
+        <button class="btn-text" id="cs-import">Import</button>
+        <button class="btn-text" id="cs-export">Export</button>
+      </div>
+    </section>
+
+    <!-- Section 4: Advanced -->
+    <section class="settings-section">
+      <h2 class="section-heading">Advanced</h2>
+
+      <label class="field-label">Banner position</label>
+      <select class="field-select" id="banner-position">
+        <option value="top">Top of page</option>
+        <option value="bottom">Bottom of page</option>
+      </select>
+
+      <div class="advanced-actions">
+        <button class="btn-text" id="export-all">Export all settings</button>
+        <button class="btn-text" id="import-all">Import settings</button>
+        <button class="btn-text btn-danger" id="reset-all">Reset to defaults</button>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="settings-footer">
+      <span id="settings-version">v1.0.0</span>
+      <span class="footer-sep">·</span>
+      <a href="https://github.com/ArrCee76/magnetar" target="_blank">GitHub</a>
+      <span class="footer-sep">·</span>
+      <a href="https://opensource.org/licenses/MIT" target="_blank">MIT Licence</a>
+      <span class="footer-sep">·</span>
+      <a href="#" id="settings-coffee" target="_blank">☕ Support Magnetar</a>
+    </footer>
+
+  </div>
+
+  <!-- Hidden file inputs for import -->
+  <input type="file" id="shield-import-file" accept=".json" style="display:none">
+  <input type="file" id="cs-import-file" accept=".json" style="display:none">
+  <input type="file" id="all-import-file" accept=".json" style="display:none">
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,578 @@
+/* ── Magnetar Settings ────────────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #0e1015;
+  color: #e8eaf0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a {
+  color: #5b8af5;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #7ba3ff;
+}
+
+
+/* ── Container ────────────────────────────────────────────────────────── */
+
+.settings {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 24px 60px;
+}
+
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+
+.settings-header {
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(58, 63, 74, 0.3);
+}
+
+.settings-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.settings-logo {
+  font-size: 28px;
+  color: #7ba3ff;
+  text-shadow: 0 0 16px rgba(91, 138, 245, 0.4);
+}
+
+.settings-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #e8eaf0;
+}
+
+.settings-subtitle {
+  color: #5a6070;
+  font-size: 14px;
+  margin-left: 40px;
+}
+
+.settings-support {
+  display: inline-block;
+  margin-left: 40px;
+  margin-top: 8px;
+  color: #5a6070;
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+  border: 1px solid rgba(58, 63, 74, 0.3);
+  border-radius: 5px;
+  padding: 5px 12px;
+}
+
+.settings-support:hover {
+  color: #7ba3ff;
+  border-color: rgba(91, 138, 245, 0.3);
+}
+
+
+/* ── Sections ─────────────────────────────────────────────────────────── */
+
+.settings-section {
+  background: #16181e;
+  border: 1px solid rgba(58, 63, 74, 0.25);
+  border-radius: 10px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.section-heading {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #e8eaf0;
+  margin-bottom: 4px;
+}
+
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.section-desc {
+  color: #5a6070;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+
+/* ── Mode Cards ───────────────────────────────────────────────────────── */
+
+.mode-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-card {
+  background: #1c1f26;
+  border: 1.5px solid rgba(58, 63, 74, 0.35);
+  border-radius: 8px;
+  padding: 16px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  color: inherit;
+}
+
+.mode-card:hover {
+  border-color: rgba(91, 138, 245, 0.35);
+  background: #20232b;
+}
+
+.mode-card.active {
+  border-color: #5b8af5;
+  background: rgba(91, 138, 245, 0.08);
+  box-shadow: 0 0 0 1px rgba(91, 138, 245, 0.2);
+}
+
+.mode-icon {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+
+.mode-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8eaf0;
+}
+
+.mode-desc {
+  font-size: 11px;
+  color: #5a6070;
+}
+
+
+/* ── Credential Panels ────────────────────────────────────────────────── */
+
+.creds-panel {
+  background: #1c1f26;
+  border: 1px solid rgba(58, 63, 74, 0.25);
+  border-radius: 8px;
+  padding: 20px;
+  animation: fadeSlideIn 0.2s ease;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.creds-note {
+  color: #8b92a0;
+  font-size: 13px;
+}
+
+
+/* ── Form Fields ──────────────────────────────────────────────────────── */
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b92a0;
+  margin-bottom: 6px;
+  margin-top: 14px;
+}
+
+.field-label:first-child {
+  margin-top: 0;
+}
+
+.field-optional {
+  font-weight: 400;
+  color: #4a5060;
+}
+
+.field-input {
+  display: block;
+  width: 100%;
+  background: #0e1015;
+  border: 1px solid rgba(58, 63, 74, 0.5);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #e8eaf0;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field-input::placeholder {
+  color: #3a3f4a;
+}
+
+.field-input:focus {
+  border-color: #5b8af5;
+  box-shadow: 0 0 0 2px rgba(91, 138, 245, 0.15);
+}
+
+.field-select {
+  display: block;
+  width: 100%;
+  background: #0e1015;
+  border: 1px solid rgba(58, 63, 74, 0.5);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: #e8eaf0;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.field-select:focus {
+  border-color: #5b8af5;
+}
+
+.field-select option {
+  background: #1c1f26;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: #4a5060;
+  margin-top: 4px;
+}
+
+.field-hint a {
+  color: #5b8af5;
+}
+
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.btn-test {
+  display: inline-flex;
+  align-items: center;
+  background: #5b8af5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 16px;
+  transition: all 0.15s ease;
+}
+
+.btn-test:hover {
+  background: #7ba3ff;
+}
+
+.btn-test:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-small {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(91, 138, 245, 0.1);
+  color: #5b8af5;
+  border: 1px solid rgba(91, 138, 245, 0.25);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-small:hover {
+  background: rgba(91, 138, 245, 0.18);
+  border-color: rgba(91, 138, 245, 0.4);
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #5a6070;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.15s ease;
+}
+
+.btn-text:hover {
+  color: #7ba3ff;
+}
+
+.btn-danger {
+  color: #f87171;
+}
+
+.btn-danger:hover {
+  color: #fca5a5;
+}
+
+.test-result {
+  margin-top: 10px;
+  font-size: 12px;
+  min-height: 18px;
+}
+
+.test-result.success {
+  color: #4ade80;
+}
+
+.test-result.error {
+  color: #f87171;
+}
+
+
+/* ── Toggle ───────────────────────────────────────────────────────────── */
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.toggle input {
+  display: none;
+}
+
+.toggle-track {
+  display: block;
+  width: 38px;
+  height: 22px;
+  background: #3a3f4a;
+  border-radius: 11px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: #8b92a0;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.toggle input:checked + .toggle-track {
+  background: rgba(91, 138, 245, 0.5);
+}
+
+.toggle input:checked + .toggle-track::after {
+  left: 19px;
+  background: #5b8af5;
+}
+
+
+/* ── Shield List ──────────────────────────────────────────────────────── */
+
+.shield-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.shield-add .field-input {
+  flex: 1;
+}
+
+.shield-list {
+  max-height: 240px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.shield-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  color: #8b92a0;
+  transition: background 0.1s ease;
+}
+
+.shield-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shield-item-remove {
+  background: none;
+  border: none;
+  color: #4a5060;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.1s ease;
+}
+
+.shield-item-remove:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.shield-actions {
+  display: flex;
+  gap: 12px;
+}
+
+
+/* ── Custom Sites ─────────────────────────────────────────────────────── */
+
+.custom-sites-list {
+  margin-bottom: 12px;
+}
+
+.custom-site-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #1c1f26;
+  border: 1px solid rgba(58, 63, 74, 0.2);
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.custom-site-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.custom-site-domain {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e8eaf0;
+}
+
+.custom-site-method {
+  font-size: 11px;
+  color: #5a6070;
+  font-family: 'SF Mono', 'Cascadia Code', monospace;
+}
+
+.custom-site-form {
+  background: #1c1f26;
+  border: 1px solid rgba(58, 63, 74, 0.25);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+  animation: fadeSlideIn 0.2s ease;
+}
+
+.custom-site-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+
+/* ── Advanced ─────────────────────────────────────────────────────────── */
+
+.advanced-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(58, 63, 74, 0.2);
+}
+
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  font-size: 12px;
+  color: #3a3f4a;
+}
+
+.settings-footer a {
+  color: #4a5060;
+  transition: color 0.15s ease;
+}
+
+.settings-footer a:hover {
+  color: #7ba3ff;
+}
+
+.footer-sep {
+  color: #2a2d35;
+}
+
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .settings {
+    padding: 24px 16px 40px;
+  }
+
+  .mode-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .shield-add {
+    flex-direction: column;
+  }
+}
+
+
+/* ── Scrollbar ────────────────────────────────────────────────────────── */
+
+.shield-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.shield-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.shield-list::-webkit-scrollbar-thumb {
+  background: #3a3f4a;
+  border-radius: 2px;
+}

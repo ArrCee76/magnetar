@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup">
+
+    <!-- Header -->
+    <div class="popup-header">
+      <div class="popup-brand">
+        <span class="popup-logo">✦</span>
+        <span class="popup-title">Magnetar</span>
+      </div>
+      <button class="popup-gear" id="open-settings" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6.5 1.5L6.8 3.1C6.2 3.3 5.6 3.7 5.1 4.1L3.6 3.5L2.1 6L3.4 7.1C3.3 7.4 3.3 7.7 3.3 8C3.3 8.3 3.3 8.6 3.4 8.9L2.1 10L3.6 12.5L5.1 11.9C5.6 12.3 6.2 12.7 6.8 12.9L7 14.5H10L10.2 12.9C10.8 12.7 11.4 12.3 11.9 11.9L13.4 12.5L14.9 10L13.6 8.9C13.7 8.6 13.7 8.3 13.7 8C13.7 7.7 13.7 7.4 13.6 7.1L14.9 6L13.4 3.5L11.9 4.1C11.4 3.7 10.8 3.3 10.2 3.1L10 1.5H6.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="8.5" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mode -->
+    <div class="popup-section">
+      <div class="popup-row">
+        <span class="popup-label">Mode</span>
+        <select class="popup-select" id="mode-select">
+          <option value="local">Local Client</option>
+          <option value="realdebrid">Real-Debrid</option>
+          <option value="rdtclient">RDT Client</option>
+          <option value="torbox">TorBox</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Shield -->
+    <div class="popup-section">
+      <div class="popup-section-title">
+        <span>Shield</span>
+        <label class="popup-toggle">
+          <input type="checkbox" id="shield-toggle">
+          <span class="popup-toggle-track"></span>
+        </label>
+      </div>
+      <div class="popup-row popup-row-subtle" id="shield-info">
+        <span class="shield-icon">🛡️</span>
+        <span id="shield-count">0 sites blocked</span>
+      </div>
+      <button class="popup-link" id="manage-shield">Manage blocked sites →</button>
+    </div>
+
+    <!-- This Page -->
+    <div class="popup-section">
+      <div class="popup-section-title">This Page</div>
+      <div class="popup-page-status" id="page-status">
+        <span class="popup-status-icon" id="status-icon">—</span>
+        <span class="popup-status-text" id="status-text">Checking…</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="popup-footer">
+      <span class="popup-version" id="popup-version">v1.0.0</span>
+      <span class="popup-sep">·</span>
+      <a href="https://github.com/ArrCee76/magnetar" target="_blank" class="popup-link-footer">GitHub</a>
+      <span class="popup-sep">·</span>
+      <a href="#" id="coffee-link" target="_blank" class="popup-link-footer popup-coffee" title="Support Magnetar">☕</a>
+    </div>
+
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
