@@ -2,3 +2,4 @@
 Thumbs.db
 *.zip
 node_modules/
+{lib/

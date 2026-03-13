@@ -410,7 +410,7 @@ const MagnetarDetector = (() => {
 
     let result = null;
 
-    // Layer 1: Custom rules (highest priority)
+    // Layer 1: Custom rules (highest priority, always runs)
     if (customSites.length > 0) {
       result = detectCustomRules(customSites);
       if (result) {
@@ -418,6 +418,11 @@ const MagnetarDetector = (() => {
         return finalise(result);
       }
     }
+
+    // Skip all remaining layers on known non-torrent sites
+    // (GitHub, Google, banking sites etc. contain 40-char hex strings
+    // that look like hashes but aren't — commit SHAs, tokens, etc.)
+    if (isExcludedSite()) return null;
 
     // Layer 2: Magnet links
     result = detectMagnetLinks();
@@ -439,9 +444,6 @@ const MagnetarDetector = (() => {
       result.confidence = 7;
       return finalise(result);
     }
-
-    // Skip broad sweep on known non-torrent sites (prevents false positives)
-    if (isExcludedSite()) return null;
 
     // Layer 5 + 6: Broad sweep requires confidence check
     result = detectBroadSweep();
