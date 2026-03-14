@@ -157,6 +157,8 @@ const MagnetarDetector = (() => {
       'docs.google.com', 'drive.google.com', 'sheets.google.com',
       'notion.so', 'slack.com', 'discord.com', 'teams.microsoft.com',
       'bank', 'banking', 'paypal.com', 'stripe.com',
+      'buymeacoffee.com', 'addons.mozilla.org', 'chromewebstore.google.com',
+      't.me', 'web.telegram.org',
       'localhost'
     ];
     return excluded.some(ex => host === ex || host.endsWith('.' + ex) || host.includes(ex));
@@ -234,6 +236,57 @@ const MagnetarDetector = (() => {
     }
 
     return best;
+  }
+
+  /**
+   * Collect ALL magnet links on the page (for batch mode).
+   * Returns array of { hash, name, magnetUri, source } or empty array.
+   */
+  function detectAllMagnets() {
+    const anchors = document.querySelectorAll('a[href^="magnet:"]');
+    if (anchors.length === 0) return [];
+
+    const seen = new Set();
+    const results = [];
+
+    for (const a of anchors) {
+      const hash = hashFromMagnet(a.href);
+      if (!hash || seen.has(hash)) continue;
+      seen.add(hash);
+
+      let name = nameFromMagnet(a.href);
+
+      // Try to get name from nearest text if magnet has no dn=
+      if (!name) {
+        // Walk up to find text in parent row/list item
+        const row = a.closest('tr, li, .torrent-row, .search-item, article, [class*="result"], [class*="item"]');
+        if (row) {
+          const link = row.querySelector('a:not([href^="magnet:"])');
+          if (link && link.textContent.trim().length > 3) {
+            name = link.textContent.trim();
+          }
+        }
+      }
+
+      if (!name) {
+        // Fall back to link text or title attribute
+        const text = a.textContent.trim();
+        if (text.length > 3 && text.length < 200 && !/magnet:/i.test(text)) {
+          name = text;
+        } else if (a.title) {
+          name = a.title;
+        }
+      }
+
+      results.push({
+        hash,
+        name: name || `Unknown (${hash.substring(0, 8)}…)`,
+        magnetUri: a.href,
+        source: 'magnet-link'
+      });
+    }
+
+    return results;
   }
 
   /**
@@ -497,6 +550,7 @@ const MagnetarDetector = (() => {
 
   return {
     detect,
+    detectAll: detectAllMagnets,
     normaliseHash,
     hashFromMagnet,
     nameFromMagnet,

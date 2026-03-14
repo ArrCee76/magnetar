@@ -61,9 +61,6 @@ const ProviderRealDebrid = {
   async checkCache(hash, creds) {
     if (!creds?.apiKey) return 'unknown';
     try {
-      // The /instantAvailability endpoint was deprecated by RD in late 2025.
-      // Alternative: add the magnet, check if it's instantly available, then delete it.
-      // We use a lightweight approach: add magnet, check status, remove if just probing.
       const magnet = `magnet:?xt=urn:btih:${hash}`;
       const addRes = await fetch(`${this.baseUrl}/torrents/addMagnet`, {
         method: 'POST',
@@ -76,8 +73,10 @@ const ProviderRealDebrid = {
       const torrentId = addData.id;
       if (!torrentId) return 'unknown';
 
-      // Check torrent info — if status is 'waiting_files_selection' it means
-      // RD has the files cached and is ready to serve them
+      // Wait a moment for RD to resolve the magnet
+      await new Promise(r => setTimeout(r, 1500));
+
+      // Check torrent info
       const infoRes = await fetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
         headers: this._headers(creds.apiKey)
       });
@@ -85,17 +84,28 @@ const ProviderRealDebrid = {
       let status = 'unknown';
       if (infoRes.ok) {
         const info = await infoRes.json();
-        // 'waiting_files_selection' = cached and ready
-        // 'magnet_conversion' = not yet cached, still resolving
-        // 'queued' = in queue
         if (info.status === 'waiting_files_selection') {
           status = 'cached';
-        } else if (info.status === 'magnet_conversion' || info.status === 'queued') {
+        } else if (info.status === 'magnet_conversion') {
+          // Could still be resolving — wait a bit more and retry once
+          await new Promise(r => setTimeout(r, 2000));
+          const retryRes = await fetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
+            headers: this._headers(creds.apiKey)
+          });
+          if (retryRes.ok) {
+            const retryInfo = await retryRes.json();
+            if (retryInfo.status === 'waiting_files_selection') {
+              status = 'cached';
+            } else {
+              status = 'not_cached';
+            }
+          }
+        } else if (info.status === 'queued' || info.status === 'downloading') {
           status = 'not_cached';
         }
       }
 
-      // Clean up — delete the probe torrent so we don't pollute the user's list
+      // Clean up probe torrent
       await fetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
         method: 'DELETE',
         headers: this._headers(creds.apiKey)

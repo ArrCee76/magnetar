@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Magnetar",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Detect magnet links and send them to your preferred download client. Built-in popup blocker included.",
   "permissions": [
     "storage",
@@ -21,6 +21,8 @@
       "lib/providers/realdebrid.js",
       "lib/providers/rdtclient.js",
       "lib/providers/torbox.js",
+      "lib/providers/premiumize.js",
+      "lib/providers/alldebrid.js",
       "background.js"
     ]
   },
@@ -52,7 +54,10 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "magnetar@arrcee76",
-      "strict_min_version": "109.0"
+      "strict_min_version": "109.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
   }
 }

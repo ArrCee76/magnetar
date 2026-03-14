@@ -24,11 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (panel) panel.style.display = 'block';
   }
 
-  // Init
   selectMode(currentMode);
   loadCredentials(settings?.credentials || {});
 
-  // Mode card clicks
   modeCards.forEach(card => {
     card.addEventListener('click', async () => {
       const mode = card.dataset.mode;
@@ -40,20 +38,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function loadCredentials(creds) {
-    // Real-Debrid
     if (creds.realdebrid?.apiKey) {
       document.getElementById('rd-apikey').value = creds.realdebrid.apiKey;
     }
-    // RDT Client
     if (creds.rdtclient) {
       document.getElementById('rdt-url').value = creds.rdtclient.url || '';
       document.getElementById('rdt-username').value = creds.rdtclient.username || '';
       document.getElementById('rdt-password').value = creds.rdtclient.password || '';
       document.getElementById('rdt-rdkey').value = creds.rdtclient.rdApiKey || '';
     }
-    // TorBox
     if (creds.torbox?.apiKey) {
       document.getElementById('tb-apikey').value = creds.torbox.apiKey;
+    }
+    if (creds.premiumize?.apiKey) {
+      document.getElementById('pm-apikey').value = creds.premiumize.apiKey;
+    }
+    if (creds.alldebrid?.apiKey) {
+      document.getElementById('ad-apikey').value = creds.alldebrid.apiKey;
     }
   }
 
@@ -69,13 +70,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.disabled = true;
     btn.textContent = 'Testing…';
 
-    // Save first
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
     s.credentials.realdebrid = { apiKey };
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
-    // Validate
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'realdebrid', credentials: { apiKey } });
     showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
 
@@ -133,6 +132,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.textContent = 'Save & Test';
   });
 
+  // Premiumize
+  document.getElementById('pm-test').addEventListener('click', async () => {
+    const btn = document.getElementById('pm-test');
+    const result = document.getElementById('pm-result');
+    const apiKey = document.getElementById('pm-apikey').value.trim();
+
+    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Testing…';
+
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.credentials = s.credentials || {};
+    s.credentials.premiumize = { apiKey };
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+
+    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'premiumize', credentials: { apiKey } });
+    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+
+    btn.disabled = false;
+    btn.textContent = 'Save & Test';
+  });
+
+  // AllDebrid
+  document.getElementById('ad-test').addEventListener('click', async () => {
+    const btn = document.getElementById('ad-test');
+    const result = document.getElementById('ad-result');
+    const apiKey = document.getElementById('ad-apikey').value.trim();
+
+    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Testing…';
+
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.credentials = s.credentials || {};
+    s.credentials.alldebrid = { apiKey };
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+
+    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'alldebrid', credentials: { apiKey } });
+    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+
+    btn.disabled = false;
+    btn.textContent = 'Save & Test';
+  });
+
   function showResult(el, message, success) {
     el.textContent = success ? `✓ ${message}` : `✗ ${message}`;
     el.className = 'test-result ' + (success ? 'success' : 'error');
@@ -140,7 +185,85 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ═══════════════════════════════════════════════════════════════════════
-  // Section 2: Magnetar Shield
+  // Section 2: Detection & Banner
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const bannerEnabled = document.getElementById('banner-enabled');
+  const bannerStyleEl = document.getElementById('banner-style');
+  const bannerStyleRow = document.getElementById('banner-style-row');
+  const batchMode = document.getElementById('batch-mode');
+  const batchNote = document.getElementById('batch-note');
+  const batchMaxRow = document.getElementById('batch-max-row');
+  const batchMaxEl = document.getElementById('batch-max');
+  const bannerPos = document.getElementById('banner-position');
+
+  bannerEnabled.checked = settings?.preferences?.bannerEnabled !== false;
+  bannerStyleEl.value = settings?.preferences?.bannerStyle || 'full';
+  batchMode.checked = settings?.preferences?.batchMode === true;
+  batchMaxEl.value = String(settings?.preferences?.batchMax || 25);
+  bannerPos.value = settings?.preferences?.bannerPosition || 'top';
+
+  function updateBannerInterlock() {
+    if (batchMode.checked) {
+      bannerEnabled.checked = true;
+      bannerEnabled.disabled = true;
+      bannerEnabled.closest('.toggle-row').classList.add('toggle-row-disabled');
+      batchNote.style.display = 'flex';
+      batchMaxRow.style.display = 'block';
+    } else {
+      bannerEnabled.disabled = false;
+      bannerEnabled.closest('.toggle-row').classList.remove('toggle-row-disabled');
+      batchNote.style.display = 'none';
+      batchMaxRow.style.display = 'none';
+    }
+    // Show/hide banner style row based on banner enabled
+    bannerStyleRow.style.display = bannerEnabled.checked ? 'flex' : 'none';
+  }
+  updateBannerInterlock();
+
+  bannerEnabled.addEventListener('change', async () => {
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.preferences = s.preferences || {};
+    s.preferences.bannerEnabled = bannerEnabled.checked;
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    updateBannerInterlock();
+  });
+
+  bannerStyleEl.addEventListener('change', async () => {
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.preferences = s.preferences || {};
+    s.preferences.bannerStyle = bannerStyleEl.value;
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+  });
+
+  batchMode.addEventListener('change', async () => {
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.preferences = s.preferences || {};
+    s.preferences.batchMode = batchMode.checked;
+    if (batchMode.checked) {
+      s.preferences.bannerEnabled = true;
+    }
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    updateBannerInterlock();
+  });
+
+  batchMaxEl.addEventListener('change', async () => {
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.preferences = s.preferences || {};
+    s.preferences.batchMax = parseInt(batchMaxEl.value);
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+  });
+
+  bannerPos.addEventListener('change', async () => {
+    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    s.preferences = s.preferences || {};
+    s.preferences.bannerPosition = bannerPos.value;
+    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+  });
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Section 3: Magnetar Shield
   // ═══════════════════════════════════════════════════════════════════════
 
   const shieldEnabled = document.getElementById('shield-enabled');
@@ -152,7 +275,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderShieldList(shield?.blockedDomains || []);
 
-  // Add domain
   document.getElementById('shield-add-btn').addEventListener('click', async () => {
     const input = document.getElementById('shield-domain-input');
     const domain = input.value.trim().toLowerCase();
@@ -163,7 +285,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     input.value = '';
   });
 
-  // Enter key to add
   document.getElementById('shield-domain-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('shield-add-btn').click();
   });
@@ -177,7 +298,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `).join('');
 
-    // Remove buttons
     list.querySelectorAll('.shield-item-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
         const updated = await chrome.runtime.sendMessage({ type: 'shield-unblock', domain: btn.dataset.domain });
@@ -186,13 +306,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Export shield
   document.getElementById('shield-export').addEventListener('click', async () => {
     const s = await chrome.runtime.sendMessage({ type: 'shield-get' });
     downloadJSON('magnetar-shield.json', { blockedDomains: s.blockedDomains });
   });
 
-  // Import shield
   document.getElementById('shield-import').addEventListener('click', () => {
     document.getElementById('shield-import-file').click();
   });
@@ -219,7 +337,116 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ═══════════════════════════════════════════════════════════════════════
-  // Section 3: Custom Sites
+  // Section 4: Download History
+  // ═══════════════════════════════════════════════════════════════════════
+
+  let allHistory = [];
+  const historyList = document.getElementById('history-list');
+  const historyEmpty = document.getElementById('history-empty');
+  const historyCount = document.getElementById('history-count');
+  const historySearch = document.getElementById('history-search');
+
+  async function loadHistory() {
+    allHistory = await chrome.runtime.sendMessage({ type: 'get-history' });
+    renderHistory(allHistory);
+  }
+
+  function renderHistory(items) {
+    historyCount.textContent = `${allHistory.length} item${allHistory.length !== 1 ? 's' : ''}`;
+
+    if (items.length === 0) {
+      historyEmpty.style.display = 'block';
+      historyEmpty.textContent = allHistory.length === 0 ? 'No downloads yet.' : 'No matches found.';
+      // Clear any rendered items
+      const existingItems = historyList.querySelectorAll('.history-item');
+      existingItems.forEach(el => el.remove());
+      return;
+    }
+
+    historyEmpty.style.display = 'none';
+
+    // Build HTML
+    const html = items.map(item => {
+      const date = new Date(item.timestamp);
+      const timeStr = formatDate(date);
+      const name = escapeHtml(item.name || 'Unknown');
+      const truncName = name.length > 55 ? name.substring(0, 52) + '…' : name;
+      const hashShort = item.hash ? item.hash.substring(0, 10) + '…' : '';
+
+      const providerLabels = {
+        local: 'Local',
+        realdebrid: 'Real-Debrid',
+        rdtclient: 'RDT Client',
+        torbox: 'TorBox'
+      };
+
+      const providerLabel = providerLabels[item.provider] || item.provider || '';
+      const categoryLabel = item.category || '';
+
+      return `
+        <div class="history-item" data-hash="${item.hash}">
+          <div class="history-item-main">
+            <span class="history-item-name" title="${name}">${truncName}</span>
+            <div class="history-item-meta">
+              <span class="history-item-time">${timeStr}</span>
+              ${providerLabel ? `<span class="history-item-pill">${providerLabel}</span>` : ''}
+              ${categoryLabel ? `<span class="history-item-pill history-item-pill-cat">${categoryLabel}</span>` : ''}
+              <span class="history-item-hash" title="${item.hash}">${hashShort}</span>
+            </div>
+          </div>
+          <button class="history-item-delete" data-hash="${item.hash}" title="Remove from history">✕</button>
+        </div>
+      `;
+    }).join('');
+
+    // Replace content (keep historyEmpty element)
+    const existingItems = historyList.querySelectorAll('.history-item');
+    existingItems.forEach(el => el.remove());
+    historyList.insertAdjacentHTML('beforeend', html);
+
+    // Delete handlers
+    historyList.querySelectorAll('.history-item-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await chrome.runtime.sendMessage({ type: 'delete-history-item', hash: btn.dataset.hash });
+        await loadHistory();
+      });
+    });
+  }
+
+  // Search/filter
+  historySearch.addEventListener('input', () => {
+    const query = historySearch.value.toLowerCase().trim();
+    if (!query) {
+      renderHistory(allHistory);
+      return;
+    }
+    const filtered = allHistory.filter(item =>
+      (item.name || '').toLowerCase().includes(query) ||
+      (item.hash || '').toLowerCase().includes(query) ||
+      (item.provider || '').toLowerCase().includes(query) ||
+      (item.category || '').toLowerCase().includes(query)
+    );
+    renderHistory(filtered);
+  });
+
+  // Export history
+  document.getElementById('history-export').addEventListener('click', () => {
+    downloadJSON('magnetar-history.json', { history: allHistory });
+  });
+
+  // Clear history
+  document.getElementById('history-clear').addEventListener('click', async () => {
+    if (!confirm('Clear all download history? This cannot be undone.')) return;
+    await chrome.runtime.sendMessage({ type: 'clear-history' });
+    await loadHistory();
+  });
+
+  // Initial load
+  await loadHistory();
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Section 5: Custom Sites
   // ═══════════════════════════════════════════════════════════════════════
 
   renderCustomSites(settings?.customSites || []);
@@ -234,7 +461,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearCustomSiteForm();
   });
 
-  // Update label when method changes
   document.getElementById('cs-method').addEventListener('change', () => {
     const method = document.getElementById('cs-method').value;
     document.getElementById('cs-value-label').textContent = method === 'selector' ? 'CSS Selector' : 'Regex pattern (use capture group for hash)';
@@ -298,7 +524,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Export/Import custom sites
   document.getElementById('cs-export').addEventListener('click', async () => {
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     downloadJSON('magnetar-custom-sites.json', { customSites: s.customSites || [] });
@@ -329,25 +554,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ═══════════════════════════════════════════════════════════════════════
-  // Section 4: Advanced
+  // Section 6: Advanced
   // ═══════════════════════════════════════════════════════════════════════
-
-  // Banner position
-  const bannerPos = document.getElementById('banner-position');
-  bannerPos.value = settings?.preferences?.bannerPosition || 'top';
-
-  bannerPos.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.preferences = s.preferences || {};
-    s.preferences.bannerPosition = bannerPos.value;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-  });
 
   // Export all
   document.getElementById('export-all').addEventListener('click', async () => {
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     const sh = await chrome.runtime.sendMessage({ type: 'shield-get' });
-    downloadJSON('magnetar-backup.json', { settings: s, shield: sh });
+    const hist = await chrome.runtime.sendMessage({ type: 'get-history' });
+    downloadJSON('magnetar-backup.json', { settings: s, shield: sh, history: hist });
   });
 
   // Import all
@@ -369,12 +584,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (data.shield) {
         await chrome.storage.local.set({ shield: data.shield });
         if (data.shield.enabled) {
-          // Re-init shield rules
           await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
         }
       }
+      if (data.history && Array.isArray(data.history)) {
+        await chrome.storage.local.set({ 'magnetar-history': data.history });
+      }
 
-      // Reload page to reflect changes
       window.location.reload();
     } catch (err) {
       alert('Invalid JSON file');
@@ -388,8 +604,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await chrome.storage.sync.remove(['magnetar']);
     await chrome.storage.local.remove(['shield']);
+    await chrome.storage.local.set({ 'magnetar-history': [] });
 
-    // Re-initialise
     await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
     window.location.reload();
   });
@@ -401,8 +617,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const manifest = chrome.runtime.getManifest();
   document.getElementById('settings-version').textContent = `v${manifest.version}`;
-  document.getElementById('settings-coffee').href = 'https://buymeacoffee.com/arrcee76';
-  document.getElementById('header-coffee').href = 'https://buymeacoffee.com/arrcee76';
 
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -417,6 +631,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function formatDate(date) {
+    const now = new Date();
+    const diff = now - date;
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
   }
 
 });

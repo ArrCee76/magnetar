@@ -11,12 +11,18 @@
 
     <!-- Header -->
     <header class="settings-header">
-      <div class="settings-brand">
-        <span class="settings-logo">✦</span>
-        <h1 class="settings-title">Magnetar</h1>
+      <div class="settings-header-row">
+        <div>
+          <div class="settings-brand">
+            <span class="settings-logo">✦</span>
+            <h1 class="settings-title">Magnetar</h1>
+          </div>
+          <p class="settings-subtitle">Grab torrents, send them anywhere.</p>
+        </div>
+        <a href="https://buymeacoffee.com/arrcee76" target="_blank" class="settings-bmc" title="Support Magnetar">
+          <img src="icons/bmc.svg" alt="Buy Me A Coffee" class="settings-bmc-img">
+        </a>
       </div>
-      <p class="settings-subtitle">Grab torrents, send them anywhere.</p>
-      <a href="#" id="header-coffee" target="_blank" class="settings-support">☕ Support Magnetar</a>
     </header>
 
     <!-- Section 1: Download Mode -->
@@ -45,9 +51,19 @@
           <div class="mode-name">TorBox</div>
           <div class="mode-desc">Cloud downloading</div>
         </button>
+        <button class="mode-card" data-mode="premiumize">
+          <div class="mode-icon">💎</div>
+          <div class="mode-name">Premiumize</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+        <button class="mode-card" data-mode="alldebrid">
+          <div class="mode-icon">🔓</div>
+          <div class="mode-name">AllDebrid</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
       </div>
 
-      <!-- Credential panels (one per mode, shown based on selection) -->
+      <!-- Credential panels -->
       <div class="creds-panel" id="creds-local" style="display:none">
         <div class="creds-note">No configuration needed. Magnetar will fire magnet links to your system's default torrent client.</div>
       </div>
@@ -80,9 +96,85 @@
         <button class="btn-test" id="tb-test">Save & Test</button>
         <div class="test-result" id="tb-result"></div>
       </div>
+
+      <div class="creds-panel" id="creds-premiumize" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="pm-apikey" placeholder="Paste your Premiumize API key">
+        <div class="field-hint">Get yours at <a href="https://www.premiumize.me/account" target="_blank">premiumize.me/account</a> → API Key</div>
+        <button class="btn-test" id="pm-test">Save & Test</button>
+        <div class="test-result" id="pm-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-alldebrid" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="ad-apikey" placeholder="Paste your AllDebrid API key">
+        <div class="field-hint">Get yours at <a href="https://alldebrid.com/apikeys" target="_blank">alldebrid.com/apikeys</a></div>
+        <button class="btn-test" id="ad-test">Save & Test</button>
+        <div class="test-result" id="ad-result"></div>
+      </div>
     </section>
 
-    <!-- Section 2: Magnetar Shield -->
+    <!-- Section 2: Detection & Banner -->
+    <section class="settings-section">
+      <h2 class="section-heading">Detection & Banner</h2>
+      <p class="section-desc">Control how Magnetar displays detected torrents on pages.</p>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label">Show banner on detection</span>
+          <span class="toggle-desc">Display a notification when a torrent hash is found on a page</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="banner-enabled" checked>
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <div id="banner-style-row" class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label">Banner style</span>
+          <span class="toggle-desc">Full shows name, cache status, share &amp; copy buttons. Compact shows just the send button.</span>
+        </div>
+        <select class="field-select field-select-inline" id="banner-style">
+          <option value="full">Full</option>
+          <option value="compact">Compact</option>
+        </select>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label">Batch mode</span>
+          <span class="toggle-desc">Show a checklist panel on pages with multiple torrents for bulk sending</span>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="batch-mode">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row-note" id="batch-note" style="display:none">
+        <span class="toggle-note-icon">ℹ</span>
+        <span class="toggle-note-text">Batch mode requires the banner to be enabled on listing pages.</span>
+      </div>
+
+      <div id="batch-max-row" style="display:none">
+        <label class="field-label">Max torrents in batch panel</label>
+        <select class="field-select" id="batch-max">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+
+      <label class="field-label" style="margin-top:18px">Banner position</label>
+      <select class="field-select" id="banner-position">
+        <option value="top">Top of page</option>
+        <option value="bottom">Bottom of page</option>
+      </select>
+    </section>
+
+    <!-- Section 3: Magnetar Shield -->
     <section class="settings-section">
       <div class="section-heading-row">
         <h2 class="section-heading">Magnetar Shield</h2>
@@ -108,7 +200,29 @@
       </div>
     </section>
 
-    <!-- Section 3: Custom Sites -->
+    <!-- Section 4: Download History -->
+    <section class="settings-section">
+      <div class="section-heading-row">
+        <h2 class="section-heading">Download History</h2>
+        <span class="history-count" id="history-count">0 items</span>
+      </div>
+      <p class="section-desc">Torrents sent through Magnetar. Used to prevent duplicate downloads in batch mode.</p>
+
+      <div class="history-search-row">
+        <input type="text" class="field-input history-search" id="history-search" placeholder="Search history…">
+      </div>
+
+      <div class="history-list" id="history-list">
+        <div class="history-empty" id="history-empty">No downloads yet.</div>
+      </div>
+
+      <div class="history-actions">
+        <button class="btn-text" id="history-export">Export history</button>
+        <button class="btn-text btn-danger" id="history-clear">Clear all history</button>
+      </div>
+    </section>
+
+    <!-- Section 5: Custom Sites -->
     <section class="settings-section">
       <h2 class="section-heading">Custom Sites</h2>
       <p class="section-desc">Define hash detection rules for sites that aren't auto-detected.</p>
@@ -119,7 +233,6 @@
 
       <button class="btn-small" id="add-custom-site">+ Add Custom Site</button>
 
-      <!-- Custom site form (hidden by default) -->
       <div class="custom-site-form" id="custom-site-form" style="display:none">
         <label class="field-label">Domain pattern</label>
         <input type="text" class="field-input" id="cs-domain" placeholder="*.example.com">
@@ -142,15 +255,9 @@
       </div>
     </section>
 
-    <!-- Section 4: Advanced -->
+    <!-- Section 6: Advanced -->
     <section class="settings-section">
       <h2 class="section-heading">Advanced</h2>
-
-      <label class="field-label">Banner position</label>
-      <select class="field-select" id="banner-position">
-        <option value="top">Top of page</option>
-        <option value="bottom">Bottom of page</option>
-      </select>
 
       <div class="advanced-actions">
         <button class="btn-text" id="export-all">Export all settings</button>
@@ -161,13 +268,11 @@
 
     <!-- Footer -->
     <footer class="settings-footer">
-      <span id="settings-version">v1.0.0</span>
+      <span id="settings-version">v1.1.0</span>
       <span class="footer-sep">·</span>
       <a href="https://github.com/ArrCee76/magnetar" target="_blank">GitHub</a>
       <span class="footer-sep">·</span>
       <a href="https://opensource.org/licenses/MIT" target="_blank">MIT Licence</a>
-      <span class="footer-sep">·</span>
-      <a href="#" id="settings-coffee" target="_blank">☕ Support Magnetar</a>
     </footer>
 
   </div>

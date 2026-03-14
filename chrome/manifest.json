@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Magnetar",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Detect magnet links and send them to your preferred download client. Built-in popup blocker included.",
   "permissions": [
     "storage",

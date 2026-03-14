@@ -1,10 +1,8 @@
 /**
- * Magnetar — Firefox Background Script
+ * Magnetar — Firefox Background Script (MV2)
  * 
- * Same logic as Chrome but adapted for MV2:
- * - Uses browser.* instead of chrome.* (Firefox polyfills chrome.* but prefer browser.*)
- * - Shield uses webRequest.onBeforeRequest instead of declarativeNetRequest
- * - Scripts loaded via manifest background.scripts, not importScripts
+ * Uses browser.* APIs, webRequest blocking for Shield,
+ * scripts loaded via manifest background.scripts.
  */
 
 // ── Provider Registry ────────────────────────────────────────────────────
@@ -13,10 +11,12 @@ const providers = {
   local: ProviderLocal,
   realdebrid: ProviderRealDebrid,
   rdtclient: ProviderRdtClient,
-  torbox: ProviderTorBox
+  torbox: ProviderTorBox,
+  premiumize: ProviderPremiumize,
+  alldebrid: ProviderAllDebrid
 };
 
-// ── Shield: Firefox uses webRequest blocking ─────────────────────────────
+// ── Firefox Shield: webRequest blocking ─────────────────────────────────
 
 const FirefoxShield = {
   blockedDomains: new Set(),
@@ -40,7 +40,6 @@ const FirefoxShield = {
   },
 
   updateListener() {
-    // Remove existing listener if any
     if (browser.webRequest.onBeforeRequest.hasListener(this.blockHandler)) {
       browser.webRequest.onBeforeRequest.removeListener(this.blockHandler);
     }
@@ -61,7 +60,6 @@ const FirefoxShield = {
 
       for (const blocked of FirefoxShield.blockedDomains) {
         if (domain === blocked || domain.endsWith('.' + blocked)) {
-          // Close the tab if it's a main frame navigation
           if (details.type === 'main_frame' && details.tabId > 0) {
             browser.tabs.remove(details.tabId).catch(() => {});
           }
@@ -91,6 +89,7 @@ MagnetarShield.clearRules = async function() {
   FirefoxShield.blockedDomains = new Set();
   FirefoxShield.updateListener();
 };
+
 
 // ── Init ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +121,10 @@ browser.runtime.onInstalled.addListener(async (details) => {
         customSites: [],
         preferences: {
           bannerPosition: 'top',
+          bannerEnabled: true,
+          bannerStyle: 'full',
+          batchMode: false,
+          batchMax: 25,
           defaultTrackers: [],
           categoryMap: {
             audiobooks: 'audiobooks', music: 'music', video: 'video',
@@ -130,6 +133,18 @@ browser.runtime.onInstalled.addListener(async (details) => {
         }
       }
     });
+  } else if (data.magnetar.preferences) {
+    let dirty = false;
+    if (data.magnetar.preferences.bannerEnabled === undefined) { data.magnetar.preferences.bannerEnabled = true; dirty = true; }
+    if (data.magnetar.preferences.bannerStyle === undefined) { data.magnetar.preferences.bannerStyle = 'full'; dirty = true; }
+    if (data.magnetar.preferences.batchMode === undefined) { data.magnetar.preferences.batchMode = false; dirty = true; }
+    if (data.magnetar.preferences.batchMax === undefined) { data.magnetar.preferences.batchMax = 25; dirty = true; }
+    if (dirty) await browser.storage.sync.set({ magnetar: data.magnetar });
+  }
+
+  const hist = await browser.storage.local.get(['magnetar-history']);
+  if (!hist['magnetar-history']) {
+    await browser.storage.local.set({ 'magnetar-history': [] });
   }
 });
 
@@ -147,7 +162,7 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'magnetar-block') {
       await MagnetarShield.blockDomain(domain);
       await FirefoxShield.reload();
-      browser.tabs.remove(tab.id).catch(() => {});
+      try { await browser.tabs.remove(tab.id); } catch (e) {}
     }
     if (info.menuItemId === 'magnetar-unblock') {
       await MagnetarShield.unblockDomain(domain);
@@ -167,7 +182,6 @@ const iconStates = {
   active: { '16': 'icons/icon16-active.png', '48': 'icons/icon48-active.png', '128': 'icons/icon128-active.png' }
 };
 
-// Tab detection result storage (Firefox doesn't have chrome.storage.session)
 const tabDetections = new Map();
 
 function setIconState(tabId, state) {
@@ -187,6 +201,21 @@ browser.tabs.onRemoved.addListener((tabId) => {
 });
 
 
+// ── Download History ────────────────────────────────────────────────────
+
+async function recordHistory(hash, name, provider, category, pageUrl) {
+  const data = await browser.storage.local.get(['magnetar-history']);
+  const history = data['magnetar-history'] || [];
+  if (history.some(h => h.hash === hash)) return;
+  history.unshift({
+    hash, name: name || 'Unknown', provider,
+    category: category || '', url: pageUrl || '', timestamp: Date.now()
+  });
+  if (history.length > 500) history.length = 500;
+  await browser.storage.local.set({ 'magnetar-history': history });
+}
+
+
 // ── Message Handling ─────────────────────────────────────────────────────
 
 browser.runtime.onMessage.addListener((msg, sender) => {
@@ -197,6 +226,7 @@ async function handleMessage(msg, sender) {
   const tabId = sender.tab?.id;
 
   switch (msg.type) {
+
     case 'detection-result': {
       if (!tabId) return;
       if (msg.data?.hash && !msg.data?.lowConfidence) {
@@ -229,7 +259,40 @@ async function handleMessage(msg, sender) {
       if (mode === 'local') {
         return { success: true, action: 'open-magnet', magnetUri: msg.magnetUri };
       }
-      return await provider.sendMagnet(msg.magnetUri, creds, { category: msg.category || '' });
+      const result = await provider.sendMagnet(msg.magnetUri, creds, { category: msg.category || '' });
+      if (result?.success) {
+        await recordHistory(msg.hash || '', msg.name || '', mode, msg.category || '', msg.pageUrl || '');
+      }
+      return result;
+    }
+
+    case 'batch-send': {
+      const settings = (await browser.storage.sync.get(['magnetar'])).magnetar || {};
+      const mode = settings.mode || 'local';
+      const provider = providers[mode];
+      if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
+      const creds = settings.credentials?.[mode] || {};
+      const items = msg.items || [];
+      const results = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (mode === 'local') {
+          results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri });
+          continue;
+        }
+        try {
+          const res = await provider.sendMagnet(item.magnetUri, creds, { category: item.category || '' });
+          results.push({ hash: item.hash, ...res });
+          if (res?.success) {
+            await recordHistory(item.hash, item.name, mode, item.category || '', msg.pageUrl || '');
+          }
+          if (i < items.length - 1) await new Promise(r => setTimeout(r, 300));
+        } catch (e) {
+          results.push({ hash: item.hash, success: false, error: e.message });
+        }
+      }
+      return { success: true, results };
     }
 
     case 'check-cache': {
@@ -274,6 +337,35 @@ async function handleMessage(msg, sender) {
     case 'get-detection': {
       if (msg.tabId) return tabDetections.get(msg.tabId) || null;
       return null;
+    }
+
+    case 'get-history': {
+      const data = await browser.storage.local.get(['magnetar-history']);
+      return data['magnetar-history'] || [];
+    }
+
+    case 'clear-history': {
+      await browser.storage.local.set({ 'magnetar-history': [] });
+      return { ok: true };
+    }
+
+    case 'delete-history-item': {
+      const data = await browser.storage.local.get(['magnetar-history']);
+      const history = data['magnetar-history'] || [];
+      const filtered = history.filter(h => h.hash !== msg.hash);
+      await browser.storage.local.set({ 'magnetar-history': filtered });
+      return { ok: true };
+    }
+
+    case 'check-history': {
+      const data = await browser.storage.local.get(['magnetar-history']);
+      const history = data['magnetar-history'] || [];
+      const historyHashes = new Set(history.map(h => h.hash));
+      const results = {};
+      for (const h of (msg.hashes || [])) {
+        results[h] = historyHashes.has(h);
+      }
+      return results;
     }
 
     default:

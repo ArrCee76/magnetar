@@ -43,6 +43,13 @@ a:hover {
   border-bottom: 1px solid rgba(58, 63, 74, 0.3);
 }
 
+.settings-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .settings-brand {
   display: flex;
   align-items: center;
@@ -69,22 +76,22 @@ a:hover {
   margin-left: 40px;
 }
 
-.settings-support {
+.settings-bmc {
   display: inline-block;
-  margin-left: 40px;
-  margin-top: 8px;
-  color: #5a6070;
-  font-size: 12px;
-  text-decoration: none;
-  transition: color 0.15s ease;
-  border: 1px solid rgba(58, 63, 74, 0.3);
-  border-radius: 5px;
-  padding: 5px 12px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+  margin-top: 20px;
+  margin-right: 40px;
 }
 
-.settings-support:hover {
-  color: #7ba3ff;
-  border-color: rgba(91, 138, 245, 0.3);
+.settings-bmc:hover {
+  opacity: 0.9;
+}
+
+.settings-bmc-img {
+  height: 20px;
+  display: block;
 }
 
 
@@ -124,7 +131,7 @@ a:hover {
 
 .mode-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -256,6 +263,12 @@ a:hover {
   border-color: #5b8af5;
 }
 
+.field-select-inline {
+  width: auto;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
 .field-select option {
   background: #1c1f26;
 }
@@ -362,6 +375,7 @@ a:hover {
   position: relative;
   display: inline-block;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .toggle input {
@@ -397,6 +411,75 @@ a:hover {
 .toggle input:checked + .toggle-track::after {
   left: 19px;
   background: #5b8af5;
+}
+
+
+/* ── Toggle Rows (Detection & Banner section) ────────────────────────── */
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: #1c1f26;
+  border: 1px solid rgba(58, 63, 74, 0.2);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.toggle-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #e8eaf0;
+}
+
+.toggle-desc {
+  font-size: 12px;
+  color: #5a6070;
+  line-height: 1.4;
+}
+
+.toggle-row-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(91, 138, 245, 0.06);
+  border: 1px solid rgba(91, 138, 245, 0.12);
+  border-radius: 7px;
+  margin-bottom: 10px;
+  animation: fadeSlideIn 0.2s ease;
+}
+
+.toggle-row-note-subtle {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(58, 63, 74, 0.25);
+}
+
+.toggle-row-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.toggle-note-icon {
+  color: #5b8af5;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toggle-note-text {
+  font-size: 12px;
+  color: #8b92a0;
+  line-height: 1.4;
 }
 
 
@@ -453,6 +536,136 @@ a:hover {
 .shield-actions {
   display: flex;
   gap: 12px;
+}
+
+
+/* ── Download History ────────────────────────────────────────────────── */
+
+.history-count {
+  font-size: 12px;
+  color: #5a6070;
+  font-weight: 400;
+}
+
+.history-search-row {
+  margin-bottom: 12px;
+}
+
+.history-search {
+  background: #0e1015 !important;
+}
+
+.history-list {
+  max-height: 360px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+  border: 1px solid rgba(58, 63, 74, 0.15);
+  border-radius: 8px;
+  background: #12141a;
+}
+
+.history-empty {
+  padding: 24px;
+  text-align: center;
+  color: #3a3f4a;
+  font-size: 13px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(58, 63, 74, 0.12);
+  transition: background 0.1s ease;
+  gap: 12px;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.history-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.history-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d0d4e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-item-time {
+  font-size: 11px;
+  color: #4a5060;
+}
+
+.history-item-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 3px;
+  color: #7ba3ff;
+  background: rgba(91, 138, 245, 0.1);
+  border: 1px solid rgba(91, 138, 245, 0.15);
+  letter-spacing: 0.02em;
+}
+
+.history-item-pill-cat {
+  color: #8b92a0;
+  background: rgba(139, 146, 160, 0.08);
+  border-color: rgba(139, 146, 160, 0.12);
+}
+
+.history-item-hash {
+  font-size: 10.5px;
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  color: #3a3f4a;
+}
+
+.history-item-delete {
+  background: none;
+  border: none;
+  color: #3a3f4a;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.history-item:hover .history-item-delete {
+  opacity: 1;
+}
+
+.history-item-delete:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.history-actions {
+  display: flex;
+  gap: 16px;
 }
 
 
@@ -513,9 +726,6 @@ a:hover {
 .advanced-actions {
   display: flex;
   gap: 16px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(58, 63, 74, 0.2);
 }
 
 
@@ -545,6 +755,30 @@ a:hover {
 }
 
 
+/* ── Scrollbars ──────────────────────────────────────────────────────── */
+
+.shield-list::-webkit-scrollbar,
+.history-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.shield-list::-webkit-scrollbar-track,
+.history-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.shield-list::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb {
+  background: #3a3f4a;
+  border-radius: 2px;
+}
+
+.shield-list::-webkit-scrollbar-thumb:hover,
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: #5a6070;
+}
+
+
 /* ── Responsive ───────────────────────────────────────────────────────── */
 
 @media (max-width: 640px) {
@@ -559,20 +793,4 @@ a:hover {
   .shield-add {
     flex-direction: column;
   }
-}
-
-
-/* ── Scrollbar ────────────────────────────────────────────────────────── */
-
-.shield-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.shield-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.shield-list::-webkit-scrollbar-thumb {
-  background: #3a3f4a;
-  border-radius: 2px;
 }

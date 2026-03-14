@@ -83,7 +83,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   const manifest = chrome.runtime.getManifest();
   document.getElementById('popup-version').textContent = `v${manifest.version}`;
 
-  // ── Coffee link (update this with your BMC URL) ──
-  document.getElementById('coffee-link').href = 'https://buymeacoffee.com/arrcee76';
-
 });

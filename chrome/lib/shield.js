@@ -40,12 +40,7 @@ const MagnetarShield = {
    * Apply declarativeNetRequest rules for all blocked domains
    */
   async applyRules(domains) {
-    // Remove all existing Shield rules first
-    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-    const shieldRuleIds = existingRules
-      .filter(r => r.id >= this.RULE_ID_OFFSET)
-      .map(r => r.id);
-
+    // Build the new rules
     const rules = domains.map((domain, i) => ({
       id: this.RULE_ID_OFFSET + i,
       priority: 1,
@@ -59,8 +54,16 @@ const MagnetarShield = {
       }
     }));
 
+    // Collect all IDs to remove: both existing shield rules AND the IDs we're about to add
+    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const existingShieldIds = existingRules
+      .filter(r => r.id >= this.RULE_ID_OFFSET)
+      .map(r => r.id);
+    const newIds = rules.map(r => r.id);
+    const removeIds = [...new Set([...existingShieldIds, ...newIds])];
+
     await chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: shieldRuleIds,
+      removeRuleIds: removeIds,
       addRules: rules
     });
   },
