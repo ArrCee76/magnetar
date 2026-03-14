@@ -12,13 +12,22 @@ Works on Chrome, Edge, Opera, Brave, and Firefox.
 
 **Universal hash detection** that works on any site displaying a torrent hash or magnet link. No hardcoded site list. If there's a hash on the page, Magnetar finds it.
 
-**Four download modes:**
-- Local torrent client (qBittorrent, Deluge, Transmission, etc.)
-- Real-Debrid (cloud downloading with cache checking)
-- RDT Client (self-hosted Real-Debrid proxy with category routing)
-- TorBox (cloud downloading with cache checking)
+**Six download modes:**
 
-**Cache checking** for Real-Debrid and TorBox shows whether a torrent is already cached before you send it, so you know instantly if it'll download fast.
+- **Real-Debrid** (cloud downloading with cache checking)
+- **AllDebrid** (high-speed cloud downloading)
+- **Premiumize** (cloud storage and downloader)
+- **TorBox** (cloud downloading with cache checking)
+- **RDT Client** (self-hosted Real-Debrid proxy with category routing)
+- **Local torrent client** (qBittorrent, Deluge, Transmission, etc.)
+
+**Batch Processing:** Detect multiple hashes on a single page and view them in a structured table. Select exactly what you want and send them to your provider in one go—perfect for grabbing entire seasons or collections.
+
+**Download History:** Keep track of everything you've sent to your providers. This helps manage batch downloads and ensures you don't lose track of recent grabs.
+
+**Minimal UI Options:** Choose between a full-featured banner, a minimal toolbar, or hide the UI entirely for a distraction-free experience while keeping background features active.
+
+**Cache checking** for supported providers shows whether a torrent is already cached before you send it, so you know instantly if it'll download fast.
 
 **Magnetar Shield** blocks unwanted popup and redirect sites at the network level before they even load. Right-click any page to add it to the blocklist.
 
@@ -49,11 +58,12 @@ Firefox temporary add-ons are removed on restart. A permanent install will be av
 
 On first install, the settings page opens automatically.
 
-1. Pick your mode by clicking one of the four cards
+1. Pick your mode by clicking one of the provider cards
 2. Enter your API key or server details (not needed for Local Client)
-3. Hit **Save & Test** to check your connection
+3. Choose your preferred UI (Banner, Minimal, or Hidden)
+4. Hit **Save & Test** to check your connection
 
-That's it. Browse any torrent page and the banner appears when a hash is detected.
+That's it. Browse any torrent page and the banner/toolbar appears when a hash is detected.
 
 ## How it works
 
@@ -94,7 +104,7 @@ Tested on AudioBookBay, The Pirate Bay, 1337x, RARBG mirrors, and many more.
 
 ## Adding new providers
 
-The provider system is modular. Each provider in `lib/providers/` exports three functions: `validateCredentials`, `sendMagnet`, and `checkCache`. Adding support for a new service (AllDebrid, Premiumize, etc.) means creating a new file and registering it in the mode selector. No other code changes needed.
+The provider system is modular. Each provider in `lib/providers/` exports three functions: `validateCredentials`, `sendMagnet`, and `checkCache`. Adding support for a new service means creating a new file and registering it in the mode selector. No other code changes needed.
 
 ## Privacy
 
@@ -105,6 +115,11 @@ In short: Magnetar runs entirely in your browser. No data is collected, no analy
 ## Contributing
 
 Issues and pull requests are welcome. If you've written a custom site rule that works well for a specific torrent site, consider sharing it as a JSON snippet in the Issues section.
+
+## Built With
+
+- **AI Collaboration:** Developed with assistance from Opus 4.6 to optimize code structure and logic.
+- **Vanilla JS:** Lightweight and dependency-free.
 
 ## Support
 
