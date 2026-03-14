@@ -21,7 +21,7 @@ Works on Chrome, Edge, Opera, Brave, and Firefox.
 - **RDT Client** (self-hosted Real-Debrid proxy with category routing)
 - **Local torrent client** (qBittorrent, Deluge, Transmission, etc.)
 
-**Batch Processing:** Detect multiple hashes on a single page and view them in a structured table. Select exactly what you want and send them to your provider in one go—perfect for grabbing entire seasons or collections.
+**Batch Processing:** Detect multiple hashes on a single page and view them in a structured table. Select exactly what you want and send them to your provider in one go, perfect for grabbing entire seasons or collections.
 
 **Download History:** Keep track of everything you've sent to your providers. This helps manage batch downloads and ensures you don't lose track of recent grabs.
 
