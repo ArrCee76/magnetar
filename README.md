@@ -52,7 +52,7 @@ Works on Chrome, Edge, Opera, Brave, and Firefox.
 3. Click **Load Temporary Add-on**
 4. Select any file inside the `firefox/` folder
 
-Firefox temporary add-ons are removed on restart. A permanent install is available on [addons.mozilla.org/magnetar](https://addons.mozilla.org/en-GB/firefox/addon/magnetar/) now published.
+Firefox temporary add-ons are removed on restart. A permanent install is available on [addons.mozilla.org/magnetar](https://addons.mozilla.org/en-GB/firefox/addon/magnetar/) which has now been published.
 
 ## Setup
 
