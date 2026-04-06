@@ -30,21 +30,40 @@ const providers = {
 // ── Init ─────────────────────────────────────────────────────────────────
 
 chrome.runtime.onInstalled.addListener(async (details) => {
-  // First install — open settings
+  // First install — open onboarding
   if (details.reason === 'install') {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
+  }
+
+  // Update — show What's New
+  if (details.reason === 'update') {
+    const prev = details.previousVersion;
+    const curr = chrome.runtime.getManifest().version;
+    if (prev !== curr) {
+      await chrome.storage.local.set({ 'magnetar-whatsnew': { from: prev, to: curr, seen: false } });
+      chrome.tabs.create({ url: chrome.runtime.getURL('whatsnew.html') });
+    }
   }
 
   // Set up context menus
+  chrome.contextMenus.removeAll();
+
+  chrome.contextMenus.create({
+    id: 'magnetar-send-magnet',
+    title: chrome.i18n.getMessage('contextMenuSendMagnet') || 'Send magnet to Magnetar',
+    contexts: ['link'],
+    targetUrlPatterns: ['magnet:*']
+  });
+
   chrome.contextMenus.create({
     id: 'magnetar-block',
-    title: 'Block this site with Magnetar',
+    title: chrome.i18n.getMessage('contextMenuBlock'),
     contexts: ['page']
   });
 
   chrome.contextMenus.create({
     id: 'magnetar-unblock',
-    title: 'Unblock this site',
+    title: chrome.i18n.getMessage('contextMenuUnblock'),
     contexts: ['page']
   });
 
@@ -110,6 +129,30 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.url) return;
 
   try {
+    if (info.menuItemId === 'magnetar-send-magnet' && info.linkUrl?.startsWith('magnet:')) {
+      const settings = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const mode = settings.mode || 'local';
+      const provider = providers[mode];
+
+      if (mode === 'local') {
+        // Open magnet in default client
+        chrome.tabs.update(tab.id, { url: info.linkUrl });
+      } else if (provider) {
+        const creds = settings.credentials?.[mode] || {};
+        const result = await provider.sendMagnet(info.linkUrl, creds, { category: '' });
+        if (result?.success) {
+          // Extract hash for history
+          const hashMatch = info.linkUrl.match(/btih:([a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})/i);
+          const hash = hashMatch ? hashMatch[1].toLowerCase() : '';
+          const nameMatch = info.linkUrl.match(/[?&]dn=([^&]+)/);
+          const name = nameMatch ? decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')) : '';
+          await recordHistory(hash, name, mode, '', tab.url);
+          await incrementSendCount();
+        }
+      }
+      return;
+    }
+
     const url = new URL(tab.url);
     const domain = url.hostname.replace(/^www\./, '');
 
@@ -203,6 +246,13 @@ async function recordHistory(hash, name, provider, category, pageUrl) {
   await chrome.storage.local.set({ 'magnetar-history': history });
 }
 
+async function incrementSendCount() {
+  const data = await chrome.storage.local.get(['magnetar-send-count']);
+  const count = (data['magnetar-send-count'] || 0) + 1;
+  await chrome.storage.local.set({ 'magnetar-send-count': count });
+  return count;
+}
+
 
 // ── Message Handling ─────────────────────────────────────────────────────
 
@@ -268,6 +318,7 @@ async function handleMessage(msg, sender) {
           msg.category || '',
           msg.pageUrl || ''
         );
+        await incrementSendCount();
       }
 
       return result;
@@ -288,6 +339,7 @@ async function handleMessage(msg, sender) {
 
         if (mode === 'local') {
           results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri });
+          await incrementSendCount();
           continue;
         }
 
@@ -299,6 +351,7 @@ async function handleMessage(msg, sender) {
 
           if (res?.success) {
             await recordHistory(item.hash, item.name, mode, item.category || '', msg.pageUrl || '');
+            await incrementSendCount();
           }
 
           // Small delay between sends to avoid rate limiting
@@ -382,6 +435,72 @@ async function handleMessage(msg, sender) {
         results[h] = historyHashes.has(h);
       }
       return results;
+    }
+
+    case 'check-single-history': {
+      const data = await chrome.storage.local.get(['magnetar-history']);
+      const history = data['magnetar-history'] || [];
+      return { inHistory: history.some(h => h.hash === msg.hash) };
+    }
+
+    case 'get-whatsnew': {
+      const data = await chrome.storage.local.get(['magnetar-whatsnew']);
+      return data['magnetar-whatsnew'] || null;
+    }
+
+    case 'dismiss-whatsnew': {
+      const data = await chrome.storage.local.get(['magnetar-whatsnew']);
+      if (data['magnetar-whatsnew']) {
+        data['magnetar-whatsnew'].seen = true;
+        await chrome.storage.local.set({ 'magnetar-whatsnew': data['magnetar-whatsnew'] });
+      }
+      return { ok: true };
+    }
+
+    case 'get-send-count': {
+      const data = await chrome.storage.local.get(['magnetar-send-count']);
+      return { count: data['magnetar-send-count'] || 0 };
+    }
+
+    case 'dismiss-review-prompt': {
+      await chrome.storage.local.set({ 'magnetar-review-dismissed': true });
+      return { ok: true };
+    }
+
+    case 'get-review-status': {
+      const [countData, dismissData] = await Promise.all([
+        chrome.storage.local.get(['magnetar-send-count']),
+        chrome.storage.local.get(['magnetar-review-dismissed'])
+      ]);
+      return {
+        count: countData['magnetar-send-count'] || 0,
+        dismissed: dismissData['magnetar-review-dismissed'] === true
+      };
+    }
+
+    case 'export-history-csv': {
+      const data = await chrome.storage.local.get(['magnetar-history']);
+      const history = data['magnetar-history'] || [];
+      const header = 'Name,Hash,Provider,Category,URL,Date';
+      const rows = history.map(h => {
+        const date = new Date(h.timestamp).toISOString();
+        const esc = (s) => `"${(s || '').replace(/"/g, '""')}"`;
+        return `${esc(h.name)},${esc(h.hash)},${esc(h.provider)},${esc(h.category)},${esc(h.url)},${esc(date)}`;
+      });
+      return { csv: header + '\n' + rows.join('\n') };
+    }
+
+    case 'get-theme': {
+      const data = await chrome.storage.sync.get(['magnetar']);
+      return { theme: data.magnetar?.preferences?.theme || 'dark' };
+    }
+
+    case 'set-theme': {
+      const s = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      s.preferences = s.preferences || {};
+      s.preferences.theme = msg.theme;
+      await chrome.storage.sync.set({ magnetar: s });
+      return { ok: true };
     }
 
     default:

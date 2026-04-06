@@ -4,6 +4,23 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // ── i18n helper ──
+  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+
+  // Hydrate data-i18n and data-i18n-placeholder attributes
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('option[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+
   // ── Load all settings ──
   const settings = await chrome.runtime.sendMessage({ type: 'get-settings' });
   const shield = await chrome.runtime.sendMessage({ type: 'shield-get' });
@@ -65,10 +82,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = document.getElementById('rd-result');
     const apiKey = document.getElementById('rd-apikey').value.trim();
 
-    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
 
     btn.disabled = true;
-    btn.textContent = 'Testing…';
+    btn.textContent = t('btnTesting');
 
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
@@ -76,10 +93,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'realdebrid', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
 
     btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    btn.textContent = t('btnSaveTest');
   });
 
   document.getElementById('rdt-test').addEventListener('click', async () => {
@@ -93,10 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       rdApiKey: document.getElementById('rdt-rdkey').value.trim()
     };
 
-    if (!creds.url || !creds.username) { showResult(result, 'URL and username are required', false); return; }
+    if (!creds.url || !creds.username) { showResult(result, t('validationEnterFields'), false); return; }
 
     btn.disabled = true;
-    btn.textContent = 'Testing…';
+    btn.textContent = t('btnTesting');
 
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
@@ -104,10 +121,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'rdtclient', credentials: creds });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
 
     btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    btn.textContent = t('btnSaveTest');
   });
 
   document.getElementById('tb-test').addEventListener('click', async () => {
@@ -115,10 +132,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = document.getElementById('tb-result');
     const apiKey = document.getElementById('tb-apikey').value.trim();
 
-    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
 
     btn.disabled = true;
-    btn.textContent = 'Testing…';
+    btn.textContent = t('btnTesting');
 
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
@@ -126,10 +143,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'torbox', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
 
     btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    btn.textContent = t('btnSaveTest');
   });
 
   // Premiumize
@@ -138,10 +155,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = document.getElementById('pm-result');
     const apiKey = document.getElementById('pm-apikey').value.trim();
 
-    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
 
     btn.disabled = true;
-    btn.textContent = 'Testing…';
+    btn.textContent = t('btnTesting');
 
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
@@ -149,10 +166,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'premiumize', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
 
     btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    btn.textContent = t('btnSaveTest');
   });
 
   // AllDebrid
@@ -161,10 +178,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const result = document.getElementById('ad-result');
     const apiKey = document.getElementById('ad-apikey').value.trim();
 
-    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
 
     btn.disabled = true;
-    btn.textContent = 'Testing…';
+    btn.textContent = t('btnTesting');
 
     const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
     s.credentials = s.credentials || {};
@@ -172,10 +189,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
 
     const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'alldebrid', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
 
     btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    btn.textContent = t('btnSaveTest');
   });
 
   function showResult(el, message, success) {
@@ -330,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderShieldList(updated.blockedDomains);
       }
     } catch (err) {
-      alert('Invalid JSON file');
+      alert(t('invalidJsonFile'));
     }
     e.target.value = '';
   });
@@ -352,11 +369,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderHistory(items) {
-    historyCount.textContent = `${allHistory.length} item${allHistory.length !== 1 ? 's' : ''}`;
+    historyCount.textContent = allHistory.length === 1 ? t('historyCountSingular') : t('historyCount', String(allHistory.length));
 
     if (items.length === 0) {
       historyEmpty.style.display = 'block';
-      historyEmpty.textContent = allHistory.length === 0 ? 'No downloads yet.' : 'No matches found.';
+      historyEmpty.textContent = allHistory.length === 0 ? t('historyEmpty') : t('historyNoMatches');
       // Clear any rendered items
       const existingItems = historyList.querySelectorAll('.history-item');
       existingItems.forEach(el => el.remove());
@@ -369,15 +386,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const html = items.map(item => {
       const date = new Date(item.timestamp);
       const timeStr = formatDate(date);
-      const name = escapeHtml(item.name || 'Unknown');
+      const name = escapeHtml(item.name || t('cacheUnknown'));
       const truncName = name.length > 55 ? name.substring(0, 52) + '…' : name;
       const hashShort = item.hash ? item.hash.substring(0, 10) + '…' : '';
 
       const providerLabels = {
-        local: 'Local',
-        realdebrid: 'Real-Debrid',
-        rdtclient: 'RDT Client',
-        torbox: 'TorBox'
+        local: t('modeLocalName'),
+        realdebrid: t('modeRealDebridName'),
+        rdtclient: t('modeRdtClientName'),
+        torbox: t('modeTorBoxName')
       };
 
       const providerLabel = providerLabels[item.provider] || item.provider || '';
@@ -436,7 +453,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Clear history
   document.getElementById('history-clear').addEventListener('click', async () => {
-    if (!confirm('Clear all download history? This cannot be undone.')) return;
+    if (!confirm(t('historyClearConfirm'))) return;
     await chrome.runtime.sendMessage({ type: 'clear-history' });
     await loadHistory();
   });
@@ -463,7 +480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('cs-method').addEventListener('change', () => {
     const method = document.getElementById('cs-method').value;
-    document.getElementById('cs-value-label').textContent = method === 'selector' ? 'CSS Selector' : 'Regex pattern (use capture group for hash)';
+    document.getElementById('cs-value-label').textContent = method === 'selector' ? t('customSiteValueLabelSelector') : t('customSiteValueLabelRegex');
     document.getElementById('cs-value').placeholder = method === 'selector' ? '#info-hash code' : '([a-fA-F0-9]{40})';
   });
 
@@ -547,7 +564,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCustomSites(s.customSites);
       }
     } catch (err) {
-      alert('Invalid JSON file');
+      alert(t('invalidJsonFile'));
     }
     e.target.value = '';
   });
@@ -593,14 +610,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       window.location.reload();
     } catch (err) {
-      alert('Invalid JSON file');
+      alert(t('invalidJsonFile'));
     }
     e.target.value = '';
   });
 
   // Reset
   document.getElementById('reset-all').addEventListener('click', async () => {
-    if (!confirm('Reset all Magnetar settings to defaults? This cannot be undone.')) return;
+    if (!confirm(t('advancedResetConfirm'))) return;
 
     await chrome.storage.sync.remove(['magnetar']);
     await chrome.storage.local.remove(['shield']);
@@ -608,6 +625,45 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
     window.location.reload();
+  });
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Section 6: Appearance / Theme
+  // ═══════════════════════════════════════════════════════════════════════
+
+  const themeSelect = document.getElementById('theme-select');
+  const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+  const currentTheme = themeRes?.theme || 'dark';
+  themeSelect.value = currentTheme;
+  applyTheme(currentTheme);
+
+  themeSelect.addEventListener('change', async () => {
+    const theme = themeSelect.value;
+    await chrome.runtime.sendMessage({ type: 'set-theme', theme });
+    applyTheme(theme);
+  });
+
+  function applyTheme(theme) {
+    document.body.classList.toggle('magnetar-light', theme === 'light');
+  }
+
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // CSV Export
+  // ═══════════════════════════════════════════════════════════════════════
+
+  document.getElementById('history-export-csv')?.addEventListener('click', async () => {
+    const res = await chrome.runtime.sendMessage({ type: 'export-history-csv' });
+    if (res?.csv) {
+      const blob = new Blob([res.csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'magnetar-history.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   });
 
 
@@ -646,12 +702,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
+    if (mins < 1) return t('timeJustNow');
+    if (mins < 60) return t('timeMinutesAgo', String(mins));
+    if (hours < 24) return t('timeHoursAgo', String(hours));
+    if (days < 7) return t('timeDaysAgo', String(days));
 
-    return date.toLocaleDateString('en-GB', {
+    return date.toLocaleDateString(undefined, {
       day: 'numeric',
       month: 'short',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined

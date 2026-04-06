@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Aptinka magnet nuorodas ir siunčia jas į jūsų atsisiuntimo klientą. Integruotas iššokančių langų blokavimas.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Raskite torentus, siųskite bet kur.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Atidaryti kliente",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Siųsti į Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Siųsti į RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Siųsti į TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Siųsti į Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Siųsti į AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Atidaryti kliente",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Nežinomas torentas",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Nežinoma ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Tikrinama…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "Talpykloje",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Ne talpykloje",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Nežinoma",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Dalintis",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Kopijuoti magnet",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Kopijuoti hash",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Magnet nukopijuotas",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Hash nukopijuotas",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Magnet nuoroda nukopijuota",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Sėkmingai išsiųsta",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Siuntimas nepavyko",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Bandyti dar kartą",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "Aptikta torentų: $COUNT$",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Rodoma $SHOWN$ iš $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Pasirinkti viską",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "Pasirinkta: $COUNT$",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Siųsti į $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Uždaryti",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Išsiųsta",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ Atidaryta magnet: $COUNT$",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Išsiųsta $SUCCESS$/$TOTAL$ torentų",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Paketinis siuntimas nepavyko: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "El. paštas",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Kopijuoti nuorodą",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Pažiūrėk šį torentą",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Nustatymai",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "Užblokuota svetainių: $COUNT$",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 svetainė užblokuota",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Valdyti",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Režimas:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Hash rastas · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Hash nerastas — kai kurios svetainės reikalauja prisijungimo",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Galimas hash — žemas patikimumas",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Torento hash neaptiktas",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Nustatymai",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Palaikyti Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Atsisiuntimo režimas",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Pasirinkite, kur Magnetar siunčia aptiktus torentus.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Vietinis klientas",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge ir kt.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Debesų atsisiuntimas",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Savai talpinamas",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Debesų atsisiuntimas",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Debesų atsisiuntimas",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Debesų atsisiuntimas",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Konfigūracija nereikalinga. Magnetar siųs magnet nuorodas į numatytąjį torento klientą.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "API raktas",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "Serverio URL",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Naudotojo vardas",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Slaptažodis",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "Real-Debrid API raktas",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(neprivaloma, talpyklos tikrinimui)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Įklijuokite Real-Debrid API raktą",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com arba http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Naudotojo vardas",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Slaptažodis",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "RD API raktas talpyklos tikrinimui",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Įklijuokite TorBox API raktą",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Įklijuokite Premiumize API raktą",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Įklijuokite AllDebrid API raktą",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Gaukite savo $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Išsaugoti ir testuoti",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Testuojama…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Aptikimas ir juosta",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Valdykite, kaip Magnetar rodo aptiktus torentus.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Rodyti juostą aptikus",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Rodyti pranešimą, kai randamas torento hash",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Juostos stilius",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Pilnas rodo pavadinimą, talpyklą, dalinimosi ir kopijavimo mygtukus. Kompaktiškas rodo tik siuntimo mygtuką.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Pilnas",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Kompaktiškas",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Paketinis režimas",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Rodyti sąrašą puslapiuose su keliais torentais",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "Paketinis režimas reikalauja aktyvios juostos.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Maks. torentų paketo skydelyje",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Juostos pozicija",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "Puslapio viršuje",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "Puslapio apačioje",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Blokuoti iššokančius langus ir peradresavimus tinklo lygmeniu.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Blokuoti",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Importuoti",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Eksportuoti",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "Atsisiuntimų istorija",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Torentai, siųsti per Magnetar. Neleidžia dublikatų paketiniu režimu.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "Elementų: $COUNT$",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 elementas",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Ieškoti istorijoje…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Atsisiuntimų dar nėra.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Rezultatų nėra.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Eksportuoti istoriją",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Išvalyti istoriją",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Išvalyti visą istoriją? Šis veiksmas negrįžtamas.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Pasirinktinės svetainės",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Apibrėžkite aptikimo taisykles automatiškai neaptinkamoms svetainėms.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Pridėti svetainę",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Domeno šablonas",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Aptikimo metodas",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "CSS selektorius",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "CSS selektorius",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Regex šablonas (fiksavimo grupė hash)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Išsaugoti",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Atšaukti",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Importuoti",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Eksportuoti",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Išplėstiniai",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Eksportuoti nustatymus",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Importuoti nustatymus",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Atkurti numatytuosius",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Atkurti visus nustatymus? Šis veiksmas negrįžtamas.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "Netinkamas JSON failas",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Blokuoti svetainę su Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Atblokuoti svetainę",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "MIT licencija",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Įveskite API raktą",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Patvirtinimas nepavyko",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Užpildykite visus privalomus laukus",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Režimas",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Valdyti blokuotas svetaines →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Šis puslapis",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Tikrinama…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Ką tik",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "Prieš $COUNT$min",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "Prieš $COUNT$val",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "Prieš $COUNT$d",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Siųsti",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Klientas",
+    "description": "Fallback service name when mode is unknown"
+  }
+}

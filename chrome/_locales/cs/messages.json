@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Detekuje magnet odkazy a odesílá je do vašeho stahovaného klienta. Vestavěný blokátor vyskakovacích oken.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Najděte torrenty, pošlete je kamkoli.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Otevřít v klientu",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Odeslat do Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Odeslat do RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Odeslat do TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Odeslat do Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Odeslat do AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Otevřít v klientu",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Neznámý torrent",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Neznámý ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Kontroluji…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "V cache",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Není v cache",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Neznámý",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Sdílet",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Kopírovat magnet",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Kopírovat hash",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Magnet zkopírován",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Hash zkopírován",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Magnet odkaz zkopírován",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Úspěšně odesláno",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Odeslání selhalo",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Zkusit znovu",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "Detekováno torrentů: $COUNT$",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Zobrazeno $SHOWN$ z $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Vybrat vše",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "Vybráno: $COUNT$",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Odeslat do $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Zavřít",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Odesláno",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ Otevřeno magnetů: $COUNT$",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Odesláno $SUCCESS$/$TOTAL$ torrentů",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Hromadné odeslání selhalo: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "E-mail",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Kopírovat odkaz",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Podívej se na tento torrent",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Nastavení",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "Blokováno stránek: $COUNT$",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 stránka blokována",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Spravovat",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Režim:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Hash nalezen · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Hash nenalezen — některé stránky vyžadují přihlášení",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Možný hash — nízká spolehlivost",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Žádný torrent hash nedetekován",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Nastavení",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Podpořit Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Režim stahování",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Zvolte, kam Magnetar odesílá detekované torrenty.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Lokální klient",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge apod.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Cloudové stahování",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Vlastní hosting",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Cloudové stahování",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Cloudové stahování",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Cloudové stahování",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Žádná konfigurace není potřeba. Magnetar odešle magnet odkazy do výchozího torrent klienta.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "API klíč",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "URL serveru",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Uživatelské jméno",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Heslo",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "API klíč Real-Debrid",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(volitelné, pro kontrolu cache)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Vložte váš API klíč Real-Debrid",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com nebo http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Uživatelské jméno",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Heslo",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "RD API klíč pro kontrolu cache",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Vložte váš API klíč TorBox",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Vložte váš API klíč Premiumize",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Vložte váš API klíč AllDebrid",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Získejte svůj na $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Uložit a otestovat",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Testuji…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Detekce a banner",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Ovládejte, jak Magnetar zobrazuje detekované torrenty.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Zobrazit banner při detekci",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Zobrazit oznámení při nalezení torrent hashe",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Styl banneru",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Plný zobrazí název, cache, sdílení a kopírování. Kompaktní zobrazí jen tlačítko odeslání.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Plný",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Kompaktní",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Hromadný režim",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Zobrazit seznam na stránkách s více torrenty",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "Hromadný režim vyžaduje aktivní banner.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Max torrentů v panelu",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Pozice banneru",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "Nahoře na stránce",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "Dole na stránce",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Blokování vyskakovacích oken a přesměrování na úrovni sítě.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Blokovat",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Import",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Export",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "Historie stahování",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Torrenty odeslané přes Magnetar. Zabraňuje duplicitám.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "Položek: $COUNT$",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 položka",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Hledat v historii…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Zatím žádná stahování.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Žádné výsledky.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Exportovat historii",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Vymazat historii",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Vymazat celou historii? Tuto akci nelze vrátit zpět.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Vlastní stránky",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Definujte pravidla detekce pro automaticky nerozpoznané stránky.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Přidat stránku",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Vzor domény",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Metoda detekce",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "CSS selektor",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "CSS selektor",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Regex vzor (zachycovací skupina pro hash)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Uložit",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Zrušit",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Import",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Export",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Pokročilé",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Exportovat nastavení",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Importovat nastavení",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Obnovit výchozí",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Obnovit všechna nastavení? Tuto akci nelze vrátit zpět.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "Neplatný JSON soubor",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Blokovat stránku pomocí Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Odblokovat stránku",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "Licence MIT",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Zadejte API klíč",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Ověření selhalo",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Vyplňte všechna povinná pole",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Režim",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Spravovat blokované stránky →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Tato stránka",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Kontroluji…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Právě teď",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "Před $COUNT$m",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "Před $COUNT$h",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "Před $COUNT$d",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Odeslat",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Klient",
+    "description": "Fallback service name when mode is unknown"
+  }
+}

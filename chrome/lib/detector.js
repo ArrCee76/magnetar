@@ -255,16 +255,45 @@ const MagnetarDetector = (() => {
       seen.add(hash);
 
       let name = nameFromMagnet(a.href);
+      let size = null;
+      let seeders = null;
 
-      // Try to get name from nearest text if magnet has no dn=
-      if (!name) {
-        // Walk up to find text in parent row/list item
-        const row = a.closest('tr, li, .torrent-row, .search-item, article, [class*="result"], [class*="item"]');
-        if (row) {
+      // Walk up to find the parent row/item for metadata
+      const row = a.closest('tr, li, .torrent-row, .search-item, article, [class*="result"], [class*="item"]');
+
+      if (row) {
+        // Try to get name from nearest non-magnet link
+        if (!name) {
           const link = row.querySelector('a:not([href^="magnet:"])');
           if (link && link.textContent.trim().length > 3) {
             name = link.textContent.trim();
           }
+        }
+
+        const rowText = row.textContent;
+
+        // Scrape size — look for patterns like "1.5 GB", "700 MB", "4.2 GiB"
+        const sizeMatch = rowText.match(/\b(\d+(?:\.\d+)?)\s*(GB|MB|TB|GiB|MiB|TiB|KB|KiB)\b/i);
+        if (sizeMatch) {
+          const val = parseFloat(sizeMatch[1]);
+          const unit = sizeMatch[2].toUpperCase().replace('I', '');
+          // Normalise to bytes for sorting
+          const multipliers = { 'KB': 1024, 'MB': 1048576, 'GB': 1073741824, 'TB': 1099511627776 };
+          size = val * (multipliers[unit] || 1);
+        }
+
+        // Scrape seeders — look for patterns near "seed" text or in table cells
+        // Try structured: data attributes, specific classes
+        const seedEl = row.querySelector('[class*="seed"], [class*="Seed"], td:nth-child(3), td:nth-child(4), td:nth-child(5)');
+        if (seedEl) {
+          const seedNum = seedEl.textContent.match(/(\d[\d,]*)/);
+          if (seedNum) seeders = parseInt(seedNum[1].replace(/,/g, ''));
+        }
+
+        // Fallback: regex in row text for "Seeds: 123" or "S: 123" patterns
+        if (seeders === null) {
+          const seedMatch = rowText.match(/(?:seed(?:s|ers?)?)\s*[:\s]\s*(\d[\d,]*)/i);
+          if (seedMatch) seeders = parseInt(seedMatch[1].replace(/,/g, ''));
         }
       }
 
@@ -282,7 +311,9 @@ const MagnetarDetector = (() => {
         hash,
         name: name || `Unknown (${hash.substring(0, 8)}…)`,
         magnetUri: a.href,
-        source: 'magnet-link'
+        source: 'magnet-link',
+        size: size,
+        seeders: seeders
       });
     }
 

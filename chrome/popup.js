@@ -4,6 +4,19 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+
+  // Hydrate data-i18n attributes
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  document.querySelectorAll('option[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+
   // ── Load settings ──
   const settings = await chrome.runtime.sendMessage({ type: 'get-settings' });
   const shield = await chrome.runtime.sendMessage({ type: 'shield-get' });
@@ -34,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const shieldCount = document.getElementById('shield-count');
   const count = shield?.blockedDomains?.length || 0;
-  shieldCount.textContent = `${count} site${count !== 1 ? 's' : ''} blocked`;
+  shieldCount.textContent = count === 1 ? t('popupShieldCountSingular') : t('popupShieldCount', String(count));
 
   shieldToggle.addEventListener('change', async () => {
     await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldToggle.checked });
@@ -60,22 +73,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (detection?.hash && !detection?.lowConfidence) {
       statusIcon.textContent = '●';
       statusIcon.style.color = '#4ade80';
-      statusText.textContent = `Hash found · ${detection.hash.substring(0, 8)}…`;
+      statusText.textContent = t('popupStatusHashFound', detection.hash.substring(0, 8));
       statusText.classList.add('status-active');
     } else if (detection?.noHash) {
       statusIcon.textContent = '◐';
       statusIcon.style.color = '#fbbf24';
-      statusText.textContent = 'No hash found — some sites require login';
+      statusText.textContent = t('popupStatusNoHash');
       statusText.classList.add('status-dimmed');
     } else if (detection?.lowConfidence) {
       statusIcon.textContent = '◐';
       statusIcon.style.color = '#fbbf24';
-      statusText.textContent = 'Possible hash — low confidence';
+      statusText.textContent = t('popupStatusLowConfidence');
       statusText.classList.add('status-dimmed');
     } else {
       statusIcon.textContent = '○';
       statusIcon.style.color = '#3a3f4a';
-      statusText.textContent = 'No torrent hash detected';
+      statusText.textContent = t('popupStatusNone');
     }
   }
 

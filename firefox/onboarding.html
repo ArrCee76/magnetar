@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Magnetar</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div class="onboarding">
+
+    <!-- Header -->
+    <div class="onboarding-header">
+      <div class="onboarding-logo">✦</div>
+      <h1 class="onboarding-title">Welcome to Magnetar</h1>
+      <p class="onboarding-subtitle">Let's get you set up in 3 quick steps.</p>
+    </div>
+
+    <!-- Progress dots -->
+    <div class="onboarding-progress">
+      <span class="onboarding-dot active" data-step="1"></span>
+      <span class="onboarding-dot" data-step="2"></span>
+      <span class="onboarding-dot" data-step="3"></span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         STEP 1: Choose your client
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <div class="onboarding-step active" id="step-1">
+      <h2 class="step-heading">Choose your download client</h2>
+      <p class="step-desc">Where should Magnetar send detected torrents?</p>
+
+      <div class="mode-cards" id="mode-cards">
+        <button class="mode-card active" data-mode="local">
+          <div class="mode-icon">🧲</div>
+          <div class="mode-name">Local Client</div>
+          <div class="mode-desc">qBittorrent, Deluge, etc.</div>
+        </button>
+        <button class="mode-card" data-mode="realdebrid">
+          <div class="mode-icon">⚡</div>
+          <div class="mode-name">Real-Debrid</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+        <button class="mode-card" data-mode="rdtclient">
+          <div class="mode-icon">🖥️</div>
+          <div class="mode-name">RDT Client</div>
+          <div class="mode-desc">Self-hosted</div>
+        </button>
+        <button class="mode-card" data-mode="torbox">
+          <div class="mode-icon">📦</div>
+          <div class="mode-name">TorBox</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+        <button class="mode-card" data-mode="premiumize">
+          <div class="mode-icon">💎</div>
+          <div class="mode-name">Premiumize</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+        <button class="mode-card" data-mode="alldebrid">
+          <div class="mode-icon">🔓</div>
+          <div class="mode-name">AllDebrid</div>
+          <div class="mode-desc">Cloud downloading</div>
+        </button>
+      </div>
+
+      <!-- Credential panels (shown when a debrid service is selected) -->
+      <div class="creds-panel" id="creds-local" style="display:none">
+        <div class="creds-note">No configuration needed — Magnetar will fire magnet links to your system's default torrent client.</div>
+      </div>
+
+      <div class="creds-panel" id="creds-realdebrid" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="rd-apikey" placeholder="Paste your Real-Debrid API key">
+        <div class="field-hint">Get yours at <a href="https://real-debrid.com/apitoken" target="_blank">real-debrid.com/apitoken</a></div>
+        <button class="btn-test" id="rd-test">Save &amp; Test</button>
+        <div class="test-result" id="rd-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-rdtclient" style="display:none">
+        <label class="field-label">Server URL</label>
+        <input type="url" class="field-input" id="rdt-url" placeholder="https://rdt.example.com or http://192.168.1.111:6500">
+        <label class="field-label">Username</label>
+        <input type="text" class="field-input" id="rdt-username" placeholder="Username">
+        <label class="field-label">Password</label>
+        <input type="password" class="field-input" id="rdt-password" placeholder="Password">
+        <label class="field-label">Real-Debrid API Key <span class="field-optional">(optional, for cache checking)</span></label>
+        <input type="password" class="field-input" id="rdt-rdkey" placeholder="RD API key for cache checks">
+        <button class="btn-test" id="rdt-test">Save &amp; Test</button>
+        <div class="test-result" id="rdt-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-torbox" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="tb-apikey" placeholder="Paste your TorBox API key">
+        <div class="field-hint">Get yours at <a href="https://torbox.app/settings" target="_blank">torbox.app/settings</a> → API Key section</div>
+        <button class="btn-test" id="tb-test">Save &amp; Test</button>
+        <div class="test-result" id="tb-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-premiumize" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="pm-apikey" placeholder="Paste your Premiumize API key">
+        <div class="field-hint">Get yours at <a href="https://www.premiumize.me/account" target="_blank">premiumize.me/account</a> → API Key</div>
+        <button class="btn-test" id="pm-test">Save &amp; Test</button>
+        <div class="test-result" id="pm-result"></div>
+      </div>
+
+      <div class="creds-panel" id="creds-alldebrid" style="display:none">
+        <label class="field-label">API Key</label>
+        <input type="password" class="field-input" id="ad-apikey" placeholder="Paste your AllDebrid API key">
+        <div class="field-hint">Get yours at <a href="https://alldebrid.com/apikeys" target="_blank">alldebrid.com/apikeys</a></div>
+        <button class="btn-test" id="ad-test">Save &amp; Test</button>
+        <div class="test-result" id="ad-result"></div>
+      </div>
+
+      <div class="onboarding-nav">
+        <span class="nav-spacer"></span>
+        <button class="btn-next" id="next-1">Next →</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         STEP 2: Detection preferences
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <div class="onboarding-step" id="step-2">
+      <h2 class="step-heading">How should Magnetar work?</h2>
+      <p class="step-desc">Choose how torrents are detected and displayed.</p>
+
+      <div class="setting-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Batch mode</span>
+            <span class="toggle-desc">Show a checklist on pages with multiple torrents for bulk downloading</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="ob-batch-mode">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Banner style</span>
+            <span class="toggle-desc">Full shows name, cache status, and extra buttons. Compact shows just the send button.</span>
+          </div>
+          <select class="field-select" id="ob-banner-style">
+            <option value="full">Full</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Banner position</span>
+            <span class="toggle-desc">Where the detection banner appears on the page.</span>
+          </div>
+          <select class="field-select" id="ob-banner-position">
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Magnetar Shield</span>
+            <span class="toggle-desc">Block popup and redirect sites that torrent pages try to open.</span>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="ob-shield" checked>
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="onboarding-nav">
+        <button class="btn-back" id="back-2">← Back</button>
+        <button class="btn-next" id="next-2">Next →</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         STEP 3: You're all set
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <div class="onboarding-step" id="step-3">
+      <div class="success-card">
+        <div class="success-icon">✓</div>
+        <div class="success-text">You're all set!</div>
+        <div class="success-note">You can change any of these settings at any time from the extension options page.</div>
+      </div>
+
+      <h2 class="step-heading">Works best with</h2>
+      <p class="step-desc">Magnetar detects hashes and magnet links on these sites. Shield blocks their popups and redirects automatically.</p>
+
+      <div class="site-grid">
+        <div class="site-tile">
+          <span class="site-tile-icon">🏴‍☠️</span>
+          <span class="site-tile-name">The Pirate Bay</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">🔢</span>
+          <span class="site-tile-name">1337x</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">📚</span>
+          <span class="site-tile-name">AudioBook Bay</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">🔌</span>
+          <span class="site-tile-name">PluginTorrent</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">🎬</span>
+          <span class="site-tile-name">YTS</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">📺</span>
+          <span class="site-tile-name">EZTV</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">🧲</span>
+          <span class="site-tile-name">Magnetz</span>
+        </div>
+        <div class="site-tile">
+          <span class="site-tile-icon">⚡</span>
+          <span class="site-tile-name">+ more</span>
+        </div>
+      </div>
+
+      <div class="onboarding-nav">
+        <button class="btn-back" id="back-3">← Back</button>
+        <button class="btn-next" id="finish">Start using Magnetar →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="onboarding.js"></script>
+</body>
+</html>

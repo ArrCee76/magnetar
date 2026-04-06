@@ -12,6 +12,12 @@
   if (document.contentType && !document.contentType.includes('html')) return;
   if (window !== window.top) return;
 
+  // ── i18n helper ──
+  const t = (key, ...subs) => {
+    const msg = chrome.i18n.getMessage(key, subs);
+    return msg || key;
+  };
+
   // ── Get settings ──
   let settings;
   try {
@@ -27,6 +33,7 @@
   const batchMax = settings?.preferences?.batchMax || 25;
   const bannerPosition = settings?.preferences?.bannerPosition || 'top';
   const mode = settings?.mode || 'local';
+  const theme = settings?.preferences?.theme || 'dark';
 
   // ── Run detection ──
   const result = MagnetarDetector.detect(customSites);
@@ -50,6 +57,14 @@
   if (!result || !result.hash || result.lowConfidence) return;
   if (!bannerEnabled) return;
   if (window._magnetarDismissed && window._magnetarDismissed.includes(result.hash)) return;
+
+  // ── Duplicate detection ──
+  let alreadySent = false;
+  try {
+    const histCheck = await chrome.runtime.sendMessage({ type: 'check-single-history', hash: result.hash });
+    alreadySent = histCheck?.inHistory === true;
+  } catch (e) {}
+  if (result) result.alreadySent = alreadySent;
 
   // ── Cache check ──
   let cacheStatus = 'unknown';
@@ -78,6 +93,7 @@
     const banner = document.createElement('div');
     banner.id = 'magnetar-banner';
     if (bannerPosition === 'bottom') banner.classList.add('magnetar-bottom');
+    if (theme === 'light') banner.classList.add('magnetar-theme-light');
     banner.innerHTML = buildBannerHTML(detection, mode);
     document.body.appendChild(banner);
 
@@ -89,38 +105,42 @@
 
     banner.querySelector('#magnetar-send')?.addEventListener('click', () => handleSend(detection, category));
     banner.querySelector('#magnetar-share')?.addEventListener('click', () => handleShare(detection));
-    banner.querySelector('#magnetar-copy-magnet')?.addEventListener('click', () => handleCopy(detection.magnetUri, 'Magnet copied'));
-    banner.querySelector('#magnetar-copy-hash')?.addEventListener('click', () => handleCopy(detection.hash, 'Hash copied'));
+    banner.querySelector('#magnetar-copy-magnet')?.addEventListener('click', () => handleCopy(detection.magnetUri, t('magnetCopied')));
+    banner.querySelector('#magnetar-copy-hash')?.addEventListener('click', () => handleCopy(detection.hash, t('hashCopied')));
     banner.querySelector('#magnetar-dismiss')?.addEventListener('click', () => dismissBanner());
   }
 
   function buildBannerHTML(detection, mode) {
-    const name = escapeHtml(detection.name || 'Unknown torrent');
+    const name = escapeHtml(detection.name || t('unknownTorrent'));
     const truncatedName = name.length > 80 ? name.substring(0, 77) + '...' : name;
 
     const modeLabels = {
-      local: 'Open in Client',
-      realdebrid: 'Send to Real-Debrid',
-      rdtclient: 'Send to RDT Client',
-      torbox: 'Send to TorBox',
-      premiumize: 'Send to Premiumize',
-      alldebrid: 'Send to AllDebrid'
+      local: t('sendLabelLocal'),
+      realdebrid: t('sendLabelRealDebrid'),
+      rdtclient: t('sendLabelRdtClient'),
+      torbox: t('sendLabelTorBox'),
+      premiumize: t('sendLabelPremiumize'),
+      alldebrid: t('sendLabelAllDebrid')
     };
 
-    const sendLabel = modeLabels[mode] || 'Send';
+    const sendLabel = modeLabels[mode] || t('sendFallback');
     const showCache = mode !== 'local';
     const isFull = bannerStyle === 'full';
 
     if (isFull) {
+      const alreadySentBadge = detection.alreadySent
+        ? `<span class="magnetar-already-sent">${t('batchSentBadge')}</span>`
+        : '';
       return `
         <div class="magnetar-inner">
           <div class="magnetar-info-row">
             <span class="magnetar-logo">✦</span>
             <span class="magnetar-name" title="${name}">${truncatedName}</span>
+            ${alreadySentBadge}
             ${showCache ? `
               <span class="magnetar-cache" id="magnetar-cache">
                 <span class="magnetar-cache-dot magnetar-cache-loading"></span>
-                <span class="magnetar-cache-text">Checking…</span>
+                <span class="magnetar-cache-text">${t('cacheChecking')}</span>
               </span>
             ` : ''}
           </div>
@@ -129,9 +149,9 @@
               <span class="magnetar-btn-label">${sendLabel}</span>
               <span class="magnetar-btn-spinner" style="display:none"></span>
             </button>
-            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-share" title="Share">⤴ Share</button>
-            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-copy-magnet">Copy Magnet</button>
-            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-copy-hash">Copy Hash</button>
+            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-share" title="${t('shareButton')}">${t('shareButton')}</button>
+            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-copy-magnet">${t('copyMagnetButton')}</button>
+            <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-copy-hash">${t('copyHashButton')}</button>
             <button class="magnetar-btn magnetar-btn-cancel" id="magnetar-dismiss">✕</button>
           </div>
         </div>
@@ -168,62 +188,95 @@
     } catch (e) {}
 
     const modeLabels = {
-      local: 'Open in Client',
-      realdebrid: 'Real-Debrid',
-      rdtclient: 'RDT Client',
-      torbox: 'TorBox',
-      premiumize: 'Premiumize',
-      alldebrid: 'AllDebrid'
+      local: t('batchLabelLocal'),
+      realdebrid: t('batchLabelRealDebrid'),
+      rdtclient: t('batchLabelRdtClient'),
+      torbox: t('batchLabelTorBox'),
+      premiumize: t('batchLabelPremiumize'),
+      alldebrid: t('batchLabelAllDebrid')
     };
 
     const panel = document.createElement('div');
     panel.id = 'magnetar-batch';
     if (bannerPosition === 'bottom') panel.classList.add('magnetar-batch-bottom');
+    if (theme === 'light') panel.classList.add('magnetar-theme-light');
 
     const showCache = mode !== 'local';
     const truncatedNote = totalCount > magnets.length
-      ? `<span class="magnetar-batch-truncated">Showing ${magnets.length} of ${totalCount}</span>`
+      ? `<span class="magnetar-batch-truncated">${t('batchShowingOf', String(magnets.length), String(totalCount))}</span>`
       : '';
 
-    const rows = magnets.map((m, i) => {
-      const inHistory = historyMap[m.hash] === true;
-      const name = escapeHtml(m.name || 'Unknown');
-      const truncName = name.length > 60 ? name.substring(0, 57) + '…' : name;
-      return `
-        <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${i}">
-          <input type="checkbox" class="magnetar-batch-cb" data-index="${i}" ${inHistory ? 'disabled' : ''}>
-          ${showCache ? `<span class="magnetar-batch-cache-dot magnetar-cache-loading" id="magnetar-bcd-${i}"></span>` : ''}
-          <span class="magnetar-batch-name" title="${name}">${truncName}</span>
-          ${inHistory ? '<span class="magnetar-batch-badge magnetar-batch-badge-done">Sent</span>' : ''}
-          <span class="magnetar-batch-status" id="magnetar-bs-${i}"></span>
-        </label>
-      `;
-    }).join('');
+    // Store original magnets array for sorting/filtering
+    let displayMagnets = [...magnets];
+    const category = MagnetarCategories.detect();
+
+    function formatSize(bytes) {
+      if (!bytes) return '';
+      if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(1) + ' GB';
+      if (bytes >= 1048576) return (bytes / 1048576).toFixed(0) + ' MB';
+      return (bytes / 1024).toFixed(0) + ' KB';
+    }
+
+    function buildRows(list) {
+      return list.map((m, i) => {
+        const origIdx = magnets.indexOf(m);
+        const inHistory = historyMap[m.hash] === true;
+        const name = escapeHtml(m.name || t('cacheUnknown'));
+        const truncName = name.length > 60 ? name.substring(0, 57) + '…' : name;
+        const sizeStr = m.size ? formatSize(m.size) : '';
+        const seedStr = m.seeders != null ? `↑${m.seeders}` : '';
+        const metaStr = [seedStr, sizeStr].filter(Boolean).join(' · ');
+        return `
+          <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
+            <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${inHistory ? 'disabled' : ''}>
+            ${showCache ? `<span class="magnetar-batch-cache-dot magnetar-cache-loading" id="magnetar-bcd-${origIdx}"></span>` : ''}
+            <span class="magnetar-batch-name" title="${name}">${truncName}</span>
+            ${metaStr ? `<span class="magnetar-batch-meta">${metaStr}</span>` : ''}
+            ${inHistory ? `<span class="magnetar-batch-badge magnetar-batch-badge-done">${t('batchSentBadge')}</span>` : ''}
+            <span class="magnetar-batch-status" id="magnetar-bs-${origIdx}"></span>
+          </label>
+        `;
+      }).join('');
+    }
 
     panel.innerHTML = `
       <div class="magnetar-batch-inner">
         <div class="magnetar-batch-header">
           <div class="magnetar-batch-title-row">
             <span class="magnetar-logo">✦</span>
-            <span class="magnetar-batch-title">${magnets.length} torrents detected</span>
+            <span class="magnetar-batch-title">${t('batchTorrentsDetected', String(magnets.length))}</span>
             ${truncatedNote}
           </div>
           <button class="magnetar-batch-close" id="magnetar-batch-close">✕</button>
         </div>
+        <div class="magnetar-batch-toolbar">
+          <select class="magnetar-batch-sort" id="magnetar-batch-sort">
+            <option value="default">Order: Default</option>
+            <option value="name">Name A–Z</option>
+            <option value="name-desc">Name Z–A</option>
+            <option value="seeders">Seeders ↓</option>
+            <option value="size">Size ↓</option>
+            <option value="size-asc">Size ↑</option>
+          </select>
+        </div>
         <div class="magnetar-batch-controls">
           <label class="magnetar-batch-select-all">
             <input type="checkbox" id="magnetar-batch-all">
-            <span>Select all</span>
+            <span>${t('batchSelectAll')}</span>
           </label>
-          <span class="magnetar-batch-count" id="magnetar-batch-count">0 selected</span>
+          <span class="magnetar-batch-count" id="magnetar-batch-count">${t('batchSelected', '0')}</span>
         </div>
-        <div class="magnetar-batch-list">${rows}</div>
+        <div class="magnetar-batch-list" id="magnetar-batch-list-inner">${buildRows(displayMagnets)}</div>
+        <div class="magnetar-batch-progress" id="magnetar-batch-progress" style="display:none">
+          <div class="magnetar-batch-progress-bar" id="magnetar-batch-progress-bar"></div>
+          <span class="magnetar-batch-progress-text" id="magnetar-batch-progress-text">0/0</span>
+        </div>
         <div class="magnetar-batch-footer">
           <button class="magnetar-btn magnetar-btn-primary magnetar-batch-send" id="magnetar-batch-send" disabled>
-            <span class="magnetar-btn-label">Send to ${modeLabels[mode] || 'Client'}</span>
+            <span class="magnetar-btn-label">${t('batchSendTo', modeLabels[mode] || t('clientFallback'))}</span>
             <span class="magnetar-btn-spinner" style="display:none"></span>
           </button>
-          <button class="magnetar-btn magnetar-btn-cancel" id="magnetar-batch-dismiss">Dismiss</button>
+          <button class="magnetar-btn magnetar-btn-cancel" id="magnetar-batch-dismiss">${t('batchDismiss')}</button>
         </div>
       </div>
     `;
@@ -237,10 +290,11 @@
     });
 
     // ── Cache checks ──
-    const checkboxes = panel.querySelectorAll('.magnetar-batch-cb');
+    const checkboxes = () => panel.querySelectorAll('.magnetar-batch-cb');
     const selectAll = panel.querySelector('#magnetar-batch-all');
     const countEl = panel.querySelector('#magnetar-batch-count');
     const sendBtn = panel.querySelector('#magnetar-batch-send');
+    const listEl = panel.querySelector('#magnetar-batch-list-inner');
 
     if (showCache) {
       magnets.forEach((m, i) => {
@@ -251,36 +305,57 @@
             dot.classList.remove('magnetar-cache-loading');
             if (res?.status === 'cached') {
               dot.classList.add('magnetar-cache-cached');
-              dot.title = 'Cached';
+              dot.title = t('cacheCached');
             } else if (res?.status === 'not_cached') {
               dot.classList.add('magnetar-cache-not-cached');
-              dot.title = 'Not cached';
+              dot.title = t('cacheNotCached');
             } else {
               dot.classList.add('magnetar-cache-unknown');
-              dot.title = 'Unknown';
+              dot.title = t('cacheUnknown');
             }
           })
           .catch(() => {});
       });
     }
 
+    // ── Sort handler ──
+    panel.querySelector('#magnetar-batch-sort').addEventListener('change', (e) => {
+      const sortBy = e.target.value;
+      displayMagnets = [...magnets];
+      switch (sortBy) {
+        case 'name': displayMagnets.sort((a, b) => (a.name || '').localeCompare(b.name || '')); break;
+        case 'name-desc': displayMagnets.sort((a, b) => (b.name || '').localeCompare(a.name || '')); break;
+        case 'seeders': displayMagnets.sort((a, b) => (b.seeders || 0) - (a.seeders || 0)); break;
+        case 'size': displayMagnets.sort((a, b) => (b.size || 0) - (a.size || 0)); break;
+        case 'size-asc': displayMagnets.sort((a, b) => (a.size || 0) - (b.size || 0)); break;
+      }
+      listEl.innerHTML = buildRows(displayMagnets);
+      bindCheckboxes();
+      updateCount();
+    });
+
     // ── Event handlers ──
     function updateCount() {
       const checked = panel.querySelectorAll('.magnetar-batch-cb:checked:not(:disabled)');
-      countEl.textContent = `${checked.length} selected`;
+      countEl.textContent = t('batchSelected', String(checked.length));
       sendBtn.disabled = checked.length === 0;
     }
 
-    checkboxes.forEach(cb => cb.addEventListener('change', () => {
-      updateCount();
-      const enabledCbs = [...checkboxes].filter(c => !c.disabled);
-      const checkedCbs = enabledCbs.filter(c => c.checked);
-      selectAll.checked = enabledCbs.length > 0 && checkedCbs.length === enabledCbs.length;
-      selectAll.indeterminate = checkedCbs.length > 0 && checkedCbs.length < enabledCbs.length;
-    }));
+    function bindCheckboxes() {
+      checkboxes().forEach(cb => cb.addEventListener('change', () => {
+        updateCount();
+        const cbs = [...checkboxes()];
+        const enabledCbs = cbs.filter(c => !c.disabled);
+        const checkedCbs = enabledCbs.filter(c => c.checked);
+        selectAll.checked = enabledCbs.length > 0 && checkedCbs.length === enabledCbs.length;
+        selectAll.indeterminate = checkedCbs.length > 0 && checkedCbs.length < enabledCbs.length;
+      }));
+    }
+
+    bindCheckboxes();
 
     selectAll.addEventListener('change', () => {
-      checkboxes.forEach(cb => {
+      checkboxes().forEach(cb => {
         if (!cb.disabled) cb.checked = selectAll.checked;
       });
       updateCount();
@@ -299,9 +374,22 @@
       if (label) label.style.display = 'none';
       if (spinner) spinner.style.display = 'inline-block';
       sendBtn.disabled = true;
-      checkboxes.forEach(cb => cb.disabled = true);
+      checkboxes().forEach(cb => cb.disabled = true);
+
+      // Show progress bar
+      const progressWrap = panel.querySelector('#magnetar-batch-progress');
+      const progressBar = panel.querySelector('#magnetar-batch-progress-bar');
+      const progressText = panel.querySelector('#magnetar-batch-progress-text');
+      if (progressWrap) progressWrap.style.display = 'flex';
 
       const mappedCategory = settings?.preferences?.categoryMap?.[category] || category;
+      let totalProcessed = 0;
+
+      function updateProgress(done, total) {
+        const pct = Math.round((done / total) * 100);
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (progressText) progressText.textContent = `${done}/${total}`;
+      }
 
       if (mode === 'local') {
         for (let i = 0; i < selected.length; i++) {
@@ -309,9 +397,11 @@
           const statusEl = panel.querySelector(`#magnetar-bs-${magnets.indexOf(item)}`);
           window.open(item.magnetUri, '_blank');
           if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
+          totalProcessed++;
+          updateProgress(totalProcessed, selected.length);
           if (i < selected.length - 1) await new Promise(r => setTimeout(r, 500));
         }
-        showToast(`✓ Opened ${selected.length} magnet${selected.length > 1 ? 's' : ''}`);
+        showToast(t('batchOpenedMagnets', String(selected.length)));
       } else {
         try {
           const items = selected.map(m => ({
@@ -325,6 +415,8 @@
             for (const res of response.results) {
               const idx = magnets.findIndex(m => m.hash === res.hash);
               const statusEl = panel.querySelector(`#magnetar-bs-${idx}`);
+              totalProcessed++;
+              updateProgress(totalProcessed, selected.length);
               if (res.success) {
                 successCount++;
                 if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
@@ -334,18 +426,20 @@
                 if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-fail">✗</span>';
               }
             }
-            showToast(`✓ Sent ${successCount}/${selected.length} torrents`);
+            showToast(t('batchSentCount', String(successCount), String(selected.length)));
           }
         } catch (e) {
-          showToast(`✗ Batch send failed: ${e.message}`, true);
+          showToast(t('batchSendFailed', e.message), true);
         }
       }
+
+      if (progressWrap) setTimeout(() => { progressWrap.style.display = 'none'; }, 1500);
 
       if (label) label.style.display = 'inline';
       if (spinner) spinner.style.display = 'none';
       sendBtn.disabled = false;
 
-      checkboxes.forEach(cb => {
+      checkboxes().forEach(cb => {
         const idx = parseInt(cb.dataset.index);
         const row = panel.querySelector(`.magnetar-batch-row[data-index="${idx}"]`);
         if (row && row.classList.contains('magnetar-batch-done')) {
@@ -356,6 +450,14 @@
         }
       });
       updateCount();
+
+      // Review prompt check
+      try {
+        const review = await chrome.runtime.sendMessage({ type: 'get-review-status' });
+        if (review.count >= 10 && !review.dismissed) {
+          showReviewPrompt();
+        }
+      } catch (e) {}
     });
 
     panel.querySelector('#magnetar-batch-close')?.addEventListener('click', dismissBatch);
@@ -400,8 +502,15 @@
         showSuccess();
       } else if (response?.success) {
         showSuccess();
+        // Review prompt check
+        try {
+          const review = await chrome.runtime.sendMessage({ type: 'get-review-status' });
+          if (review.count >= 10 && !review.dismissed) {
+            setTimeout(() => showReviewPrompt(), 3000);
+          }
+        } catch (e) {}
       } else {
-        showError(response?.error || 'Send failed');
+        showError(response?.error || t('sendFailed'));
       }
     } catch (e) {
       showError(e.message);
@@ -416,7 +525,7 @@
     if (!btn) return;
 
     const magnetUri = detection.magnetUri || '';
-    const name = detection.name || 'Torrent';
+    const name = detection.name || t('unknownTorrent');
     const pageUrl = window.location.href;
 
     // Encode for share URLs
@@ -427,20 +536,20 @@
     const menu = document.createElement('div');
     menu.id = 'magnetar-share-menu';
     menu.innerHTML = `
-      <button class="magnetar-share-item" data-action="email" title="Email">
-        <span class="magnetar-share-icon">✉</span><span>Email</span>
+      <button class="magnetar-share-item" data-action="email" title="${t('shareEmail')}">
+        <span class="magnetar-share-icon">✉</span><span>${t('shareEmail')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="x" title="X / Twitter">
-        <span class="magnetar-share-icon">𝕏</span><span>X</span>
+      <button class="magnetar-share-item" data-action="x" title="${t('shareX')}">
+        <span class="magnetar-share-icon">𝕏</span><span>${t('shareX')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="reddit" title="Reddit">
-        <span class="magnetar-share-icon">↗</span><span>Reddit</span>
+      <button class="magnetar-share-item" data-action="reddit" title="${t('shareReddit')}">
+        <span class="magnetar-share-icon">↗</span><span>${t('shareReddit')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="telegram" title="Telegram">
-        <span class="magnetar-share-icon">➤</span><span>Telegram</span>
+      <button class="magnetar-share-item" data-action="telegram" title="${t('shareTelegram')}">
+        <span class="magnetar-share-icon">➤</span><span>${t('shareTelegram')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="copy" title="Copy link">
-        <span class="magnetar-share-icon">⎘</span><span>Copy link</span>
+      <button class="magnetar-share-item" data-action="copy" title="${t('shareCopyLink')}">
+        <span class="magnetar-share-icon">⎘</span><span>${t('shareCopyLink')}</span>
       </button>
     `;
 
@@ -462,7 +571,7 @@
 
       switch (action) {
         case 'email':
-          window.open(`mailto:?subject=${encodedName}&body=Check%20out%20this%20torrent%3A%0A%0A${encodedMagnet}%0A%0AFrom%3A%20${encodedPage}`);
+          window.open(`mailto:?subject=${encodedName}&body=${encodeURIComponent(t('shareEmailSubject'))}%3A%0A%0A${encodedMagnet}%0A%0A${encodedPage}`);
           break;
         case 'x':
           window.open(`https://x.com/intent/tweet?text=${encodedName}&url=${encodedPage}`, '_blank');
@@ -474,7 +583,7 @@
           window.open(`https://t.me/share/url?url=${encodedMagnet}&text=${encodedName}`, '_blank');
           break;
         case 'copy':
-          await handleCopy(magnetUri, 'Magnet link copied');
+          await handleCopy(magnetUri, t('magnetLinkCopied'));
           break;
       }
       closeShareMenu();
@@ -518,7 +627,7 @@
     const btnRow = banner.querySelector('.magnetar-button-row') || banner.querySelector('.magnetar-inner-compact');
     if (btnRow) {
       const inner = banner.querySelector('.magnetar-inner');
-      if (inner) inner.innerHTML = '<span class="magnetar-success-text">✓ Sent successfully</span>';
+      if (inner) inner.innerHTML = `<span class="magnetar-success-text">${t('sentSuccessfully')}</span>`;
     }
     setTimeout(() => dismissBanner(), 2500);
   }
@@ -533,7 +642,7 @@
     btn.disabled = false;
     btn.classList.add('magnetar-btn-error');
     setTimeout(() => {
-      if (label) label.textContent = 'Retry';
+      if (label) label.textContent = t('retryButton');
       btn.classList.remove('magnetar-btn-error');
     }, 3000);
   }
@@ -575,13 +684,13 @@
     dot.classList.remove('magnetar-cache-loading');
     if (status === 'cached') {
       dot.classList.add('magnetar-cache-cached');
-      text.textContent = 'Cached';
+      text.textContent = t('cacheCached');
     } else if (status === 'not_cached') {
       dot.classList.add('magnetar-cache-not-cached');
-      text.textContent = 'Not cached';
+      text.textContent = t('cacheNotCached');
     } else {
       dot.classList.add('magnetar-cache-unknown');
-      text.textContent = 'Unknown';
+      text.textContent = t('cacheUnknown');
     }
   }
 
@@ -589,6 +698,35 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // ── Review prompt ──
+  function showReviewPrompt() {
+    if (document.getElementById('magnetar-review-prompt')) return;
+    const prompt = document.createElement('div');
+    prompt.id = 'magnetar-review-prompt';
+    if (theme === 'light') prompt.classList.add('magnetar-theme-light');
+    prompt.innerHTML = `
+      <div class="magnetar-review-inner">
+        <span class="magnetar-review-text">Enjoying Magnetar? A quick review helps others find it.</span>
+        <div class="magnetar-review-btns">
+          <a class="magnetar-btn magnetar-btn-primary magnetar-review-btn" href="https://chromewebstore.google.com/detail/magnetar" target="_blank" id="magnetar-review-yes">⭐ Rate</a>
+          <button class="magnetar-btn magnetar-btn-cancel" id="magnetar-review-dismiss">Not now</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(prompt);
+    requestAnimationFrame(() => prompt.classList.add('magnetar-visible'));
+
+    prompt.querySelector('#magnetar-review-yes')?.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'dismiss-review-prompt' }).catch(() => {});
+      prompt.remove();
+    });
+    prompt.querySelector('#magnetar-review-dismiss')?.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'dismiss-review-prompt' }).catch(() => {});
+      prompt.classList.remove('magnetar-visible');
+      setTimeout(() => prompt.remove(), 300);
+    });
   }
 
 })();

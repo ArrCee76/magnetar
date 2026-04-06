@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Detectează linkuri magnet și le trimite la clientul tău de descărcare. Blocator de popup-uri integrat.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Găsește torrenți, trimite-i oriunde.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Deschide în client",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Trimite la Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Trimite la RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Trimite la TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Trimite la Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Trimite la AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Deschide în client",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Torrent necunoscut",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Necunoscut ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Se verifică…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "În cache",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Nu este în cache",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Necunoscut",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Partajează",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Copiază magnet",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Copiază hash",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Magnet copiat",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Hash copiat",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Link magnet copiat",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Trimis cu succes",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Trimitere eșuată",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Reîncearcă",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "$COUNT$ torrenți detectați",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Se afișează $SHOWN$ din $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Selectează tot",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "$COUNT$ selectat(e)",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Trimite la $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Închide",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Trimis",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ S-au deschis $COUNT$ magnet(e)",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Trimiși $SUCCESS$/$TOTAL$ torrenți",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Trimitere în lot eșuată: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "E-mail",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Copiază link",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Uită-te la acest torrent",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Setări",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "$COUNT$ site-uri blocate",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 site blocat",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Gestionează",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Mod:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Hash găsit · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Niciun hash găsit — unele site-uri necesită autentificare",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Hash posibil — încredere scăzută",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Niciun hash de torrent detectat",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Setări",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Sprijină Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Mod de descărcare",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Alege unde Magnetar trimite torrenții detectați.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Client local",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge, etc.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Descărcare cloud",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Auto-găzduit",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Descărcare cloud",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Descărcare cloud",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Descărcare cloud",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Nu este necesară configurarea. Magnetar va trimite linkurile magnet la clientul torrent implicit.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "Cheie API",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "URL server",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Nume utilizator",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Parolă",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "Cheie API Real-Debrid",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(opțional, pentru verificare cache)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Lipește cheia API Real-Debrid",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com sau http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Nume utilizator",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Parolă",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "Cheie API RD pentru cache",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Lipește cheia API TorBox",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Lipește cheia API Premiumize",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Lipește cheia API AllDebrid",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Obține-o de pe $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Salvează și testează",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Se testează…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Detectare și banner",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Controlează cum Magnetar afișează torrenții detectați.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Afișează banner la detectare",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Afișează o notificare când se găsește un hash de torrent",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Stil banner",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Complet arată nume, cache, partajare și copiere. Compact arată doar butonul de trimitere.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Complet",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Compact",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Mod lot",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Afișează o listă de selecție pe paginile cu mai mulți torrenți",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "Modul lot necesită bannerul activat.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Max torrenți în panoul lot",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Poziție banner",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "Sus pe pagină",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "Jos pe pagină",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Blochează popup-uri și redirecționări la nivel de rețea.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Blochează",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Importă",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Exportă",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "Istoric descărcări",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Torrenți trimiși prin Magnetar. Previne duplicatele în mod lot.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "$COUNT$ elemente",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 element",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Caută în istoric…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Nicio descărcare încă.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Niciun rezultat.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Exportă istoric",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Șterge tot istoricul",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Ștergi tot istoricul? Această acțiune este ireversibilă.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Site-uri personalizate",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Definește reguli de detectare pentru site-uri nedetectate automat.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Adaugă site",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Model domeniu",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Metodă de detectare",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "Selector CSS",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "Selector CSS",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Model regex (grup de captură pentru hash)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Salvează",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Anulează",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Importă",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Exportă",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Avansat",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Exportă setări",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Importă setări",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Resetează",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Resetezi toate setările? Această acțiune este ireversibilă.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "Fișier JSON invalid",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Blochează site-ul cu Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Deblochează site-ul",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "Licență MIT",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Introdu o cheie API",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Validare eșuată",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Completează toate câmpurile obligatorii",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Mod",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Gestionează site-uri blocate →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Această pagină",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Se verifică…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Chiar acum",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "Acum $COUNT$m",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "Acum $COUNT$h",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "Acum $COUNT$z",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Trimite",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Client",
+    "description": "Fallback service name when mode is unknown"
+  }
+}

@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Обнаруживает магнет-ссылки и отправляет их в выбранный клиент загрузки. Встроенный блокировщик всплывающих окон.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Находите торренты, отправляйте куда угодно.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Открыть в клиенте",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Отправить в Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Отправить в RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Отправить в TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Отправить в Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Отправить в AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Открыть в клиенте",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Неизвестный торрент",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Неизвестно ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Проверка…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "В кэше",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Нет в кэше",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Неизвестно",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Поделиться",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Копировать магнет",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Копировать хэш",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Магнет скопирован",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Хэш скопирован",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Магнет-ссылка скопирована",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Успешно отправлено",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Ошибка отправки",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Повторить",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "Обнаружено торрентов: $COUNT$",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Показано $SHOWN$ из $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Выбрать все",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "Выбрано: $COUNT$",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Отправить в $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Закрыть",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Отправлено",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ Открыто магнетов: $COUNT$",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Отправлено $SUCCESS$/$TOTAL$ торрентов",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Ошибка пакетной отправки: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "Эл. почта",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Копировать ссылку",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Посмотри этот торрент",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Настройки",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "Заблокировано сайтов: $COUNT$",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 сайт заблокирован",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Управление",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Режим:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Хэш найден · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Хэш не найден — некоторые сайты требуют авторизации",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Возможный хэш — низкая уверенность",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Хэш торрента не обнаружен",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Настройки",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Поддержать Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Режим загрузки",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Выберите, куда Magnetar отправляет обнаруженные торренты.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Локальный клиент",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge и др.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Облачная загрузка",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Самостоятельный хостинг",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Облачная загрузка",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Облачная загрузка",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Облачная загрузка",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Настройка не требуется. Magnetar отправит магнет-ссылки в торрент-клиент по умолчанию.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "API-ключ",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "URL сервера",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Имя пользователя",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Пароль",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "API-ключ Real-Debrid",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(необязательно, для проверки кэша)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Вставьте ваш API-ключ Real-Debrid",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com или http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Имя пользователя",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Пароль",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "API-ключ RD для проверки кэша",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Вставьте ваш API-ключ TorBox",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Вставьте ваш API-ключ Premiumize",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Вставьте ваш API-ключ AllDebrid",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Получите свой на $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Сохранить и проверить",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Проверка…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Обнаружение и баннер",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Управляйте отображением обнаруженных торрентов.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Показывать баннер при обнаружении",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Показывать уведомление при нахождении хэша торрента",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Стиль баннера",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Полный: имя, кэш, кнопки. Компактный: только кнопка отправки.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Полный",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Компактный",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Пакетный режим",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Показывать список на страницах с несколькими торрентами",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "Пакетный режим требует включённого баннера.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Макс. торрентов в панели",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Позиция баннера",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "Вверху страницы",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "Внизу страницы",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Блокировка всплывающих окон и перенаправлений на сетевом уровне.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Блокировать",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Импорт",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Экспорт",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "История загрузок",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Торренты, отправленные через Magnetar. Предотвращает дубликаты.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "Элементов: $COUNT$",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 элемент",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Поиск в истории…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Загрузок пока нет.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Совпадений нет.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Экспорт истории",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Очистить историю",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Очистить всю историю загрузок? Это действие необратимо.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Пользовательские сайты",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Настройте правила обнаружения хэшей для сайтов без автоопределения.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Добавить сайт",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Шаблон домена",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Метод обнаружения",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "CSS-селектор",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "CSS-селектор",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Regex-шаблон (группа захвата для хэша)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Сохранить",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Отмена",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Импорт",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Экспорт",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Дополнительно",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Экспорт настроек",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Импорт настроек",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Сброс настроек",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Сбросить все настройки Magnetar? Это действие необратимо.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "Недопустимый JSON-файл",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Заблокировать сайт с Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Разблокировать сайт",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "Лицензия MIT",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Введите API-ключ",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Ошибка проверки",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Заполните все обязательные поля",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Режим",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Управление блокировками →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Эта страница",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Проверка…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Только что",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "$COUNT$м назад",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "$COUNT$ч назад",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "$COUNT$д назад",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Отправить",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Клиент",
+    "description": "Fallback service name when mode is unknown"
+  }
+}

@@ -552,7 +552,7 @@ a:hover {
 }
 
 .history-search {
-  background: #0e1015 !important;
+  background: #0e1015;
 }
 
 .history-list {
@@ -794,3 +794,186 @@ a:hover {
     flex-direction: column;
   }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   LIGHT THEME
+   ════════════════════════════════════════════════════════════════════════ */
+
+body.magnetar-light {
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+body.magnetar-light a { color: #0066cc; }
+body.magnetar-light a:hover { color: #0040a0; }
+
+body.magnetar-light .settings-header { border-bottom-color: rgba(0,0,0,0.08); }
+body.magnetar-light .settings-subtitle { color: #86868b; }
+body.magnetar-light .settings-logo { color: #0066cc; }
+
+body.magnetar-light .settings-section {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+}
+
+body.magnetar-light .section-heading { color: #1d1d1f; }
+body.magnetar-light .section-desc { color: #86868b; }
+
+body.magnetar-light .mode-card {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.1);
+  color: #1d1d1f;
+}
+body.magnetar-light .mode-card:hover {
+  border-color: rgba(0, 102, 204, 0.3);
+  background: #eef0f3;
+}
+body.magnetar-light .mode-card.active {
+  border-color: #0066cc;
+  background: rgba(0, 102, 204, 0.05);
+  box-shadow: 0 0 0 1px rgba(0, 102, 204, 0.15);
+}
+body.magnetar-light .mode-name { color: #1d1d1f; }
+body.magnetar-light .mode-desc { color: #86868b; }
+
+body.magnetar-light .creds-panel {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.08);
+}
+body.magnetar-light .creds-note { color: #86868b; }
+
+body.magnetar-light .field-input {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.12);
+  color: #1d1d1f;
+}
+body.magnetar-light .field-input:focus { border-color: #0066cc; }
+body.magnetar-light .field-input::placeholder { color: #b0b0b5; }
+
+body.magnetar-light .field-label { color: #6e6e73; }
+body.magnetar-light .field-hint { color: #86868b; }
+
+body.magnetar-light .field-select {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.12);
+  color: #1d1d1f;
+}
+
+body.magnetar-light .field-select:focus {
+  border-color: #0066cc;
+}
+
+body.magnetar-light .field-select option {
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+body.magnetar-light .toggle-track { background: #d1d1d6; }
+body.magnetar-light .toggle input:checked + .toggle-track { background: #0066cc; }
+body.magnetar-light .toggle-label { color: #1d1d1f; }
+body.magnetar-light .toggle-desc { color: #86868b; }
+
+body.magnetar-light .btn-test { background: #0066cc; }
+body.magnetar-light .btn-test:hover { background: #0050a0; }
+
+body.magnetar-light .btn-small {
+  border-color: #0066cc;
+  color: #0066cc;
+}
+
+body.magnetar-light .btn-text { color: #86868b; }
+body.magnetar-light .btn-text:hover { color: #1d1d1f; }
+
+body.magnetar-light .shield-item {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.06);
+  color: #1d1d1f;
+}
+
+body.magnetar-light .history-item {
+  border-color: rgba(0,0,0,0.06);
+}
+body.magnetar-light .history-item-name { color: #1d1d1f; }
+body.magnetar-light .history-item-time,
+body.magnetar-light .history-item-hash { color: #86868b; }
+body.magnetar-light .history-item-pill {
+  background: rgba(0,0,0,0.05);
+  color: #6e6e73;
+}
+
+body.magnetar-light .history-empty { color: #86868b; }
+
+body.magnetar-light .settings-footer { color: #86868b; }
+body.magnetar-light .footer-sep { color: #d1d1d6; }
+
+body.magnetar-light .custom-site-item {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.06);
+  color: #1d1d1f;
+}
+
+/* Toggle rows — the dark cards inside sections */
+body.magnetar-light .toggle-row {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.08);
+}
+
+body.magnetar-light .toggle-row-note {
+  background: rgba(0, 102, 204, 0.04);
+  border-color: rgba(0, 102, 204, 0.1);
+}
+
+/* History section */
+body.magnetar-light .history-search,
+body.magnetar-light .history-search.field-input {
+  background: #ffffff !important;
+  border-color: rgba(0,0,0,0.12);
+  color: #1d1d1f;
+}
+
+body.magnetar-light .history-search::placeholder { color: #b0b0b5; }
+
+body.magnetar-light .history-list {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.08);
+}
+
+body.magnetar-light .history-empty {
+  background: #ffffff;
+  color: #86868b;
+}
+
+/* Shield list items */
+body.magnetar-light .shield-item {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.06);
+  color: #1d1d1f;
+}
+
+body.magnetar-light .shield-item-domain { color: #1d1d1f; }
+body.magnetar-light .shield-item-remove { color: #86868b; }
+body.magnetar-light .shield-item-remove:hover { color: #ff3b30; }
+
+/* Custom site form */
+body.magnetar-light .custom-site-form {
+  background: #f5f5f7;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* Scrollbars */
+body.magnetar-light .history-list::-webkit-scrollbar-track { background: #f0f0f2; }
+body.magnetar-light .history-list::-webkit-scrollbar-thumb { background: #c8c8cc; }
+body.magnetar-light .history-list::-webkit-scrollbar-thumb:hover { background: #a0a0a5; }
+body.magnetar-light .shield-list::-webkit-scrollbar-track { background: #f0f0f2; }
+body.magnetar-light .shield-list::-webkit-scrollbar-thumb { background: #c8c8cc; }
+
+/* Danger buttons */
+body.magnetar-light .btn-danger { color: #ff3b30; }
+body.magnetar-light .btn-danger:hover { color: #d32f2f; }
+
+/* History count badge */
+body.magnetar-light .history-count { color: #86868b; }
+
+/* BMC link */
+body.magnetar-light .settings-bmc-img { filter: none; }
