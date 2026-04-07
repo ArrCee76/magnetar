@@ -761,5 +761,73 @@
   "exportCsv": {
     "message": "Export as CSV",
     "description": "CSV export button label"
+  },
+  "obWelcomeTitle": {
+    "message": "Welcome to Magnetar",
+    "description": "Onboarding welcome heading"
+  },
+  "obWelcomeSubtitle": {
+    "message": "Let's get you set up in 3 quick steps.",
+    "description": "Onboarding welcome subtitle"
+  },
+  "obStep1Heading": {
+    "message": "Choose your download client",
+    "description": "Onboarding step 1 heading"
+  },
+  "obStep1Desc": {
+    "message": "Where should Magnetar send detected torrents?",
+    "description": "Onboarding step 1 description"
+  },
+  "obStep2Heading": {
+    "message": "How should Magnetar work?",
+    "description": "Onboarding step 2 heading"
+  },
+  "obStep2Desc": {
+    "message": "Choose how torrents are detected and displayed.",
+    "description": "Onboarding step 2 description"
+  },
+  "obBatchDesc": {
+    "message": "Show a checklist on pages with multiple torrents for bulk downloading",
+    "description": "Onboarding batch mode description"
+  },
+  "obBannerStyleDesc": {
+    "message": "Full shows name, cache status, and extra buttons. Compact shows just the send button.",
+    "description": "Onboarding banner style description"
+  },
+  "obBannerPosDesc": {
+    "message": "Where the detection banner appears on the page.",
+    "description": "Onboarding banner position description"
+  },
+  "obShieldDesc": {
+    "message": "Block popup and redirect sites that torrent pages try to open.",
+    "description": "Onboarding Shield description"
+  },
+  "obNext": {
+    "message": "Next →",
+    "description": "Onboarding next button"
+  },
+  "obBack": {
+    "message": "← Back",
+    "description": "Onboarding back button"
+  },
+  "obAllSet": {
+    "message": "You're all set!",
+    "description": "Onboarding completion message"
+  },
+  "obAllSetNote": {
+    "message": "You can change any of these settings at any time from the extension options page.",
+    "description": "Onboarding completion note"
+  },
+  "obWorksBestWith": {
+    "message": "Works best with",
+    "description": "Onboarding site grid heading"
+  },
+  "obWorksBestDesc": {
+    "message": "Magnetar detects hashes and magnet links on these sites. Shield blocks their popups and redirects automatically.",
+    "description": "Onboarding site grid description"
+  },
+  "obFinish": {
+    "message": "Start using Magnetar →",
+    "description": "Onboarding finish button"
   }
 }

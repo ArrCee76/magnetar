@@ -9,6 +9,21 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // ── i18n hydration ──
+  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const msg = t(el.dataset.i18n);
+    if (msg !== el.dataset.i18n) el.textContent = msg;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const msg = t(el.dataset.i18nPlaceholder);
+    if (msg !== el.dataset.i18nPlaceholder) el.placeholder = msg;
+  });
+  document.querySelectorAll('option[data-i18n]').forEach(el => {
+    const msg = t(el.dataset.i18n);
+    if (msg !== el.dataset.i18n) el.textContent = msg;
+  });
+
   let currentStep = 1;
   let selectedMode = 'local';
 

@@ -6,6 +6,7 @@
  * and message passing between content scripts and popup.
  */
 
+
 // ── Provider Registry ────────────────────────────────────────────────────
 
 const providers = {
@@ -41,7 +42,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   chrome.contextMenus.create({
     id: 'magnetar-send-magnet',
     title: chrome.i18n.getMessage('contextMenuSendMagnet') || 'Send magnet to Magnetar',
-    contexts: ['link']
+    contexts: ['link'],
   });
 
   chrome.contextMenus.create({
