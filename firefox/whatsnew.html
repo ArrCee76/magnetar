@@ -11,71 +11,67 @@
 
     <div class="whatsnew-header">
       <div class="whatsnew-logo">✦</div>
-      <h1 class="whatsnew-title">What's New in Magnetar</h1>
-      <span class="whatsnew-version" id="whatsnew-version">v1.3.0</span>
+      <h1 class="whatsnew-title">What's new in Magnetar</h1>
+      <span class="whatsnew-version" id="whatsnew-version">v1.4.9</span>
     </div>
 
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">📦</span>
-        Batch Mode Upgrades
-      </div>
-      <div class="whatsnew-item">Sort results by name, seeders, or file size</div>
-      <div class="whatsnew-item">File size and seeder count shown per torrent</div>
-      <div class="whatsnew-item">Progress bar during bulk sends</div>
-    </div>
+    <div class="whatsnew-pages">
 
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">🖱️</span>
-        Right-Click Send
+      <div class="whatsnew-page" data-page="1">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">📚</span>
+            Batch mode, levelled up
+          </div>
+          <p class="whatsnew-lead">The listing-page panel now gets the same treatment the banner does, with a slide-out drawer for your saved queue and recent activity.</p>
+          <div class="whatsnew-item">Theme toggle and settings cog in the batch header</div>
+          <div class="whatsnew-item">Chevron opens a drawer to the left showing your saved queue and activity</div>
+          <div class="whatsnew-item">Switch between 25 / 50 / 75 torrents shown, live</div>
+          <div class="whatsnew-item">Bookmark button on every row to save without selecting</div>
+        </div>
       </div>
-      <div class="whatsnew-item">Right-click any magnet link on any page to send it directly to your debrid service</div>
-    </div>
 
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">🔍</span>
-        Duplicate Detection
+      <div class="whatsnew-page" data-page="2" style="display:none">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">🔖</span>
+            Save for later
+          </div>
+          <p class="whatsnew-lead">Found something interesting but not ready to fire it off yet? Save it and Magnetar keeps it on a queue, across browser restarts.</p>
+          <div class="whatsnew-item">Save button on the banner and every batch row</div>
+          <div class="whatsnew-item">Saved queue shows in the expanded banner and the batch drawer</div>
+          <div class="whatsnew-item">Share or copy magnet from a saved row without sending</div>
+          <div class="whatsnew-item">Hit Send and it moves straight to history</div>
+        </div>
       </div>
-      <div class="whatsnew-item">Banner now shows a "Sent" badge if you've already downloaded a torrent</div>
-    </div>
 
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">👋</span>
-        Onboarding
+      <div class="whatsnew-page" data-page="3" style="display:none">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">✨</span>
+            Banner polish
+          </div>
+          <p class="whatsnew-lead">MAGNETAR wordmark, full titles, theme toggle up top, and tighter scroll behaviour.</p>
+          <div class="whatsnew-item">MAGNETAR wordmark added to the title lockup</div>
+          <div class="whatsnew-item">Saved and activity lists scroll after 4 items, bfoot stays put</div>
+          <div class="whatsnew-item">Settings cog, theme toggle and dismiss all live on the title row</div>
+          <div class="whatsnew-item">Theme switches apply live across every surface, no refresh needed</div>
+        </div>
       </div>
-      <div class="whatsnew-item">New welcome wizard guides first-time users through setup</div>
-      <div class="whatsnew-item">"Works Best With" site grid shows compatible torrent sites</div>
-    </div>
 
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">🌐</span>
-        Multi-Language
-      </div>
-      <div class="whatsnew-item">11 languages: English, Swedish, French, German, Russian, Italian, Spanish, Danish, Romanian, Lithuanian, Czech</div>
-    </div>
-
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">🎨</span>
-        Dark & Light Theme
-      </div>
-      <div class="whatsnew-item">Theme toggle in settings — switch between dark and light mode</div>
-    </div>
-
-    <div class="whatsnew-section">
-      <div class="whatsnew-section-title">
-        <span class="whatsnew-section-icon">📋</span>
-        History Export
-      </div>
-      <div class="whatsnew-item">Export download history as CSV or JSON from settings</div>
     </div>
 
     <div class="whatsnew-footer">
-      <button class="btn-close" id="whatsnew-close">Got it</button>
+      <div class="whatsnew-dots" id="whatsnew-dots">
+        <span class="whatsnew-dot whatsnew-dot-active" data-dot="1"></span>
+        <span class="whatsnew-dot" data-dot="2"></span>
+        <span class="whatsnew-dot" data-dot="3"></span>
+      </div>
+      <div class="whatsnew-nav">
+        <button class="btn-skip" id="whatsnew-skip">Skip</button>
+        <button class="btn-prev" id="whatsnew-prev" style="display:none">Back</button>
+        <button class="btn-next" id="whatsnew-next">Next</button>
+      </div>
     </div>
 
   </div>

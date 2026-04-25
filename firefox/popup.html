@@ -11,15 +11,26 @@
     <!-- Header -->
     <div class="popup-header">
       <div class="popup-brand">
-        <span class="popup-logo">✦</span>
+        <span class="popup-logo" aria-hidden="true"></span>
         <span class="popup-title" data-i18n="extensionName">Magnetar</span>
       </div>
-      <button class="popup-gear" id="open-settings" data-i18n-title="popupSettingsTitle" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M6.5 1.5L6.8 3.1C6.2 3.3 5.6 3.7 5.1 4.1L3.6 3.5L2.1 6L3.4 7.1C3.3 7.4 3.3 7.7 3.3 8C3.3 8.3 3.3 8.6 3.4 8.9L2.1 10L3.6 12.5L5.1 11.9C5.6 12.3 6.2 12.7 6.8 12.9L7 14.5H10L10.2 12.9C10.8 12.7 11.4 12.3 11.9 11.9L13.4 12.5L14.9 10L13.6 8.9C13.7 8.6 13.7 8.3 13.7 8C13.7 7.7 13.7 7.4 13.6 7.1L14.9 6L13.4 3.5L11.9 4.1C11.4 3.7 10.8 3.3 10.2 3.1L10 1.5H6.5Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-          <circle cx="8.5" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
-        </svg>
-      </button>
+      <div class="popup-header-buttons">
+        <button class="popup-theme" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+          <svg id="theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg id="theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+        </button>
+        <button class="popup-gear" id="open-settings" data-i18n-title="popupSettingsTitle" title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Mode -->

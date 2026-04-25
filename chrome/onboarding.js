@@ -9,6 +9,15 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // ── Theme: apply saved preference before anything renders ──
+  try {
+    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    if (themeRes?.theme === 'dark') {
+      document.documentElement.classList.add('mg-dark');
+    }
+  } catch (e) {}
+
+
   // ── i18n hydration ──
   const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
   document.querySelectorAll('[data-i18n]').forEach(el => {

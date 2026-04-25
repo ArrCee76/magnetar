@@ -4,6 +4,15 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // ── Theme: apply saved preference before anything renders ──
+  try {
+    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    if (themeRes?.theme === 'dark') {
+      document.documentElement.classList.add('mg-dark');
+    }
+  } catch (e) {}
+
+
   // ── i18n helper ──
   const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
 
@@ -406,8 +415,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="history-item-name" title="${name}">${truncName}</span>
             <div class="history-item-meta">
               <span class="history-item-time">${timeStr}</span>
-              ${providerLabel ? `<span class="history-item-pill">${providerLabel}</span>` : ''}
-              ${categoryLabel ? `<span class="history-item-pill history-item-pill-cat">${categoryLabel}</span>` : ''}
+              ${providerLabel ? `<span class="history-item-provider">${providerLabel}</span>` : ''}
+              ${categoryLabel ? `<span class="history-item-category">${categoryLabel}</span>` : ''}
               <span class="history-item-hash" title="${item.hash}">${hashShort}</span>
             </div>
           </div>
@@ -645,8 +654,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function applyTheme(theme) {
+    document.documentElement.classList.toggle('mg-dark', theme === 'dark');
     document.body.classList.toggle('magnetar-light', theme === 'light');
   }
+
+  // Live-sync: if theme is changed from another surface (popup, banner), reflect here without a refresh.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync' || !changes.magnetar) return;
+    const newTheme = changes.magnetar.newValue?.preferences?.theme;
+    if (!newTheme) return;
+    themeSelect.value = newTheme;
+    applyTheme(newTheme);
+  });
 
 
   // ═══════════════════════════════════════════════════════════════════════

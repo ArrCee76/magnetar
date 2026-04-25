@@ -4,6 +4,47 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
 
+  // ── Theme: apply saved preference before anything renders ──
+  try {
+    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    const dark = themeRes?.theme === 'dark';
+    if (dark) document.documentElement.classList.add('mg-dark');
+    const iconDark = document.getElementById('theme-icon-dark');
+    const iconLight = document.getElementById('theme-icon-light');
+    if (iconDark && iconLight) {
+      iconDark.style.display = dark ? 'none' : '';
+      iconLight.style.display = dark ? '' : 'none';
+    }
+  } catch (e) {}
+
+  document.getElementById('theme-toggle')?.addEventListener('click', async () => {
+    const isDark = document.documentElement.classList.toggle('mg-dark');
+    const iconDark = document.getElementById('theme-icon-dark');
+    const iconLight = document.getElementById('theme-icon-light');
+    if (iconDark && iconLight) {
+      iconDark.style.display = isDark ? 'none' : '';
+      iconLight.style.display = isDark ? '' : 'none';
+    }
+    try {
+      await chrome.runtime.sendMessage({ type: 'set-theme', theme: isDark ? 'dark' : 'light' });
+    } catch (e) {}
+  });
+
+  // Live-sync: if theme is changed from another surface (banner, options), reflect here.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'sync' || !changes.magnetar) return;
+    const newTheme = changes.magnetar.newValue?.preferences?.theme;
+    if (!newTheme) return;
+    const dark = newTheme === 'dark';
+    document.documentElement.classList.toggle('mg-dark', dark);
+    const iconDark = document.getElementById('theme-icon-dark');
+    const iconLight = document.getElementById('theme-icon-light');
+    if (iconDark && iconLight) {
+      iconDark.style.display = dark ? 'none' : '';
+      iconLight.style.display = dark ? '' : 'none';
+    }
+  });
+
   const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
 
   // Hydrate data-i18n attributes

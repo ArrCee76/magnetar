@@ -6,15 +6,20 @@
  * and message passing between content scripts and popup.
  */
 
-importScripts(
-  'lib/shield.js',
-  'lib/providers/local.js',
-  'lib/providers/realdebrid.js',
-  'lib/providers/rdtclient.js',
-  'lib/providers/torbox.js',
-  'lib/providers/premiumize.js',
-  'lib/providers/alldebrid.js'
-);
+// Firefox MV2 loads libs via manifest.background.scripts (no importScripts in
+// non-worker background pages). Chrome MV3 service workers must call this.
+if (typeof importScripts === 'function') {
+  importScripts(
+    'lib/shield.js',
+    'lib/cache-store.js',
+    'lib/providers/local.js',
+    'lib/providers/realdebrid.js',
+    'lib/providers/rdtclient.js',
+    'lib/providers/torbox.js',
+    'lib/providers/premiumize.js',
+    'lib/providers/alldebrid.js'
+  );
+}
 
 // ── Provider Registry ────────────────────────────────────────────────────
 
@@ -135,8 +140,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       const provider = providers[mode];
 
       if (mode === 'local') {
-        // Open magnet in default client
-        chrome.tabs.update(tab.id, { url: info.linkUrl });
+        // Open magnet in default client. Wrap in catch — the tab may be gone
+        // between right-click and execution, which raises "No tab with id: N".
+        chrome.tabs.update(tab.id, { url: info.linkUrl }).catch(() => {});
       } else if (provider) {
         const creds = settings.credentials?.[mode] || {};
         const result = await provider.sendMagnet(info.linkUrl, creds, { category: '' });
@@ -146,8 +152,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
           const hash = hashMatch ? hashMatch[1].toLowerCase() : '';
           const nameMatch = info.linkUrl.match(/[?&]dn=([^&]+)/);
           const name = nameMatch ? decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')) : '';
-          await recordHistory(hash, name, mode, '', tab.url);
-          await incrementSendCount();
+          await commitPostSend({
+            hash, name, provider: mode, category: '', pageUrl: tab.url
+          });
+          if (hash) MagnetarCacheStore.set(mode, hash, 'cached');
         }
       }
       return;
@@ -158,7 +166,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     if (info.menuItemId === 'magnetar-block') {
       await MagnetarShield.blockDomain(domain);
-      chrome.tabs.remove(tab.id);
+      // Tab may be gone already when the user right-clicks then navigates away.
+      chrome.tabs.remove(tab.id).catch(() => {});
     }
 
     if (info.menuItemId === 'magnetar-unblock') {
@@ -213,9 +222,18 @@ const iconStates = {
   }
 };
 
+// Cross-browser action API: chrome.action on MV3, chrome.browserAction on MV2 Firefox.
+const browserAction = chrome.action || chrome.browserAction;
+
 function setIconState(tabId, state) {
   const icons = iconStates[state] || iconStates.default;
-  chrome.action.setIcon({ tabId, path: icons }).catch(() => {});
+  if (!browserAction) return;
+  // setIcon returns a Promise on Chromium and via the WebExtensions polyfill.
+  // On legacy callback-based Firefox builds it doesn't, hence the try/catch wrap.
+  try {
+    const r = browserAction.setIcon({ tabId, path: icons });
+    if (r && typeof r.catch === 'function') r.catch(() => {});
+  } catch (e) {}
 }
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
@@ -225,32 +243,75 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 });
 
 
+// ── Cache invalidation on provider/credential change ────────────────────
+//
+// The cache-store keys results by (providerId, hash). Switching modes is fine
+// because old entries are keyed under the old provider and won't be queried.
+// But rotating an API key for the SAME provider means old entries could be
+// stale (new account, different cache state on the provider side). When
+// settings change, if the active mode OR its credentials changed, clear the
+// cache to be safe. Cheap operation, worst case it warms back up in a session.
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'sync' || !changes.magnetar) return;
+  const oldS = changes.magnetar.oldValue || {};
+  const newS = changes.magnetar.newValue || {};
+  const modeChanged = oldS.mode !== newS.mode;
+  const newMode = newS.mode;
+  const oldCreds = newMode ? oldS.credentials?.[newMode] : null;
+  const newCreds = newMode ? newS.credentials?.[newMode] : null;
+  const credsChanged = JSON.stringify(oldCreds || {}) !== JSON.stringify(newCreds || {});
+  if (modeChanged || credsChanged) {
+    MagnetarCacheStore.clear().catch(() => {});
+  }
+});
+
+
 // ── Download History ────────────────────────────────────────────────────
 
-async function recordHistory(hash, name, provider, category, pageUrl) {
-  const data = await chrome.storage.local.get(['magnetar-history']);
+/**
+ * Post-send storage update, done in one read + one write instead of three
+ * read/write pairs. Records history, bumps send count, and drops the hash
+ * from the saved-for-later queue if present. Returns the new send count.
+ *
+ * Two sends firing near-simultaneously can still race at the storage API
+ * level (last write wins), but each call now has a much smaller window
+ * (one round-trip) and touches exactly what it needs to touch.
+ */
+async function commitPostSend({ hash, name, provider, category, pageUrl }) {
+  const data = await chrome.storage.local.get([
+    'magnetar-history',
+    'magnetar-send-count',
+    'magnetar-saved'
+  ]);
+
   const history = data['magnetar-history'] || [];
+  const saved = data['magnetar-saved'] || [];
+  const currentCount = data['magnetar-send-count'] || 0;
 
-  if (history.some(h => h.hash === hash)) return;
+  const update = { 'magnetar-send-count': currentCount + 1 };
 
-  history.unshift({
-    hash,
-    name: name || 'Unknown',
-    provider,
-    category: category || '',
-    url: pageUrl || '',
-    timestamp: Date.now()
-  });
+  // History: dedupe by hash
+  if (hash && !history.some(h => h.hash === hash)) {
+    history.unshift({
+      hash,
+      name: name || 'Unknown',
+      provider,
+      category: category || '',
+      url: pageUrl || '',
+      timestamp: Date.now()
+    });
+    if (history.length > 500) history.length = 500;
+    update['magnetar-history'] = history;
+  }
 
-  if (history.length > 500) history.length = 500;
-  await chrome.storage.local.set({ 'magnetar-history': history });
-}
+  // Saved queue: drop this hash if present
+  if (hash && saved.some(s => s.hash === hash)) {
+    update['magnetar-saved'] = saved.filter(s => s.hash !== hash);
+  }
 
-async function incrementSendCount() {
-  const data = await chrome.storage.local.get(['magnetar-send-count']);
-  const count = (data['magnetar-send-count'] || 0) + 1;
-  await chrome.storage.local.set({ 'magnetar-send-count': count });
-  return count;
+  await chrome.storage.local.set(update);
+  return currentCount + 1;
 }
 
 
@@ -311,14 +372,16 @@ async function handleMessage(msg, sender) {
       });
 
       if (result?.success) {
-        await recordHistory(
-          msg.hash || '',
-          msg.name || '',
-          mode,
-          msg.category || '',
-          msg.pageUrl || ''
-        );
-        await incrementSendCount();
+        await commitPostSend({
+          hash: msg.hash || '',
+          name: msg.name || '',
+          provider: mode,
+          category: msg.category || '',
+          pageUrl: msg.pageUrl || ''
+        });
+        // Seed the cache store — a successful add means it's now cached
+        // for this provider. Skips a probe next time someone views this torrent.
+        if (msg.hash) MagnetarCacheStore.set(mode, msg.hash, 'cached');
       }
 
       return result;
@@ -339,7 +402,11 @@ async function handleMessage(msg, sender) {
 
         if (mode === 'local') {
           results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri });
-          await incrementSendCount();
+          // Local mode: just bump the count (no history because nothing actually sent)
+          const sc = await chrome.storage.local.get(['magnetar-send-count']);
+          await chrome.storage.local.set({
+            'magnetar-send-count': (sc['magnetar-send-count'] || 0) + 1
+          });
           continue;
         }
 
@@ -350,8 +417,14 @@ async function handleMessage(msg, sender) {
           results.push({ hash: item.hash, ...res });
 
           if (res?.success) {
-            await recordHistory(item.hash, item.name, mode, item.category || '', msg.pageUrl || '');
-            await incrementSendCount();
+            await commitPostSend({
+              hash: item.hash,
+              name: item.name,
+              provider: mode,
+              category: item.category || '',
+              pageUrl: msg.pageUrl || ''
+            });
+            MagnetarCacheStore.set(mode, item.hash, 'cached');
           }
 
           // Small delay between sends to avoid rate limiting
@@ -372,9 +445,33 @@ async function handleMessage(msg, sender) {
       const provider = providers[mode];
       if (!provider) return { status: 'unknown' };
 
+      const hash = msg.hash;
+      if (!hash) return { status: 'unknown' };
+
+      // Tier 1 + 2: memory, then persistent storage.
+      const cached = await MagnetarCacheStore.get(mode, hash);
+      if (cached) return { status: cached.status, cached: true };
+
+      // Tier 3: coalesce concurrent calls for the same hash.
       const creds = settings.credentials?.[mode] || {};
-      const status = await provider.checkCache(msg.hash, creds);
+      const status = await MagnetarCacheStore.dedup(mode, hash, async () => {
+        return await provider.checkCache(hash, creds);
+      });
+
+      // Don't store 'unknown' — that's usually a transient API / credentials error.
+      if (status === 'cached' || status === 'not_cached') {
+        MagnetarCacheStore.set(mode, hash, status);
+      }
       return { status };
+    }
+
+    case 'cache-stats': {
+      return await MagnetarCacheStore.stats();
+    }
+
+    case 'cache-clear': {
+      await MagnetarCacheStore.clear();
+      return { ok: true };
     }
 
     case 'validate-credentials': {
@@ -443,6 +540,50 @@ async function handleMessage(msg, sender) {
       return { inHistory: history.some(h => h.hash === msg.hash) };
     }
 
+    // ── Saved-for-later queue ──────────────────────────────────────────
+    case 'save-torrent': {
+      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const saved = data['magnetar-saved'] || [];
+      if (saved.some(s => s.hash === msg.hash)) {
+        return { ok: true, alreadySaved: true };
+      }
+      saved.unshift({
+        hash: msg.hash,
+        name: msg.name || 'Unknown',
+        magnetUri: msg.magnetUri || '',
+        category: msg.category || '',
+        sourceUrl: msg.sourceUrl || '',
+        savedAt: Date.now()
+      });
+      if (saved.length > 500) saved.length = 500;
+      await chrome.storage.local.set({ 'magnetar-saved': saved });
+      return { ok: true };
+    }
+
+    case 'get-saved': {
+      const data = await chrome.storage.local.get(['magnetar-saved']);
+      return data['magnetar-saved'] || [];
+    }
+
+    case 'delete-saved-item': {
+      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const saved = data['magnetar-saved'] || [];
+      const filtered = saved.filter(s => s.hash !== msg.hash);
+      await chrome.storage.local.set({ 'magnetar-saved': filtered });
+      return { ok: true };
+    }
+
+    case 'clear-saved': {
+      await chrome.storage.local.set({ 'magnetar-saved': [] });
+      return { ok: true };
+    }
+
+    case 'check-saved': {
+      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const saved = data['magnetar-saved'] || [];
+      return { isSaved: saved.some(s => s.hash === msg.hash) };
+    }
+
     case 'get-whatsnew': {
       const data = await chrome.storage.local.get(['magnetar-whatsnew']);
       return data['magnetar-whatsnew'] || null;
@@ -492,7 +633,7 @@ async function handleMessage(msg, sender) {
 
     case 'get-theme': {
       const data = await chrome.storage.sync.get(['magnetar']);
-      return { theme: data.magnetar?.preferences?.theme || 'dark' };
+      return { theme: data.magnetar?.preferences?.theme || 'light' };
     }
 
     case 'set-theme': {
@@ -500,6 +641,11 @@ async function handleMessage(msg, sender) {
       s.preferences = s.preferences || {};
       s.preferences.theme = msg.theme;
       await chrome.storage.sync.set({ magnetar: s });
+      return { ok: true };
+    }
+
+    case 'open-options': {
+      chrome.runtime.openOptionsPage();
       return { ok: true };
     }
 

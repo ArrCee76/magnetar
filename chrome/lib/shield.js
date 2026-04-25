@@ -1,9 +1,17 @@
 /**
  * Magnetar Shield — Popup/Redirect Blocker
- * 
- * Chrome: Uses declarativeNetRequest dynamic rules
- * Managed from background.js
+ *
+ * Chrome (MV3): uses declarativeNetRequest dynamic rules for network-level blocking.
+ * Firefox (MV2): no DNR available; the background's webNavigation.onBeforeNavigate
+ * listener closes tabs heading to blocked domains instead. The applyRules/
+ * clearRules methods become no-ops there, but blockDomain/unblockDomain still
+ * write the storage list, which is what the navigation listener consults.
  */
+
+// True when the host browser exposes the Chromium MV3 DNR API.
+const SHIELD_HAS_DNR = typeof chrome !== 'undefined'
+  && chrome.declarativeNetRequest
+  && typeof chrome.declarativeNetRequest.updateDynamicRules === 'function';
 
 const MagnetarShield = {
 
@@ -40,6 +48,9 @@ const MagnetarShield = {
    * Apply declarativeNetRequest rules for all blocked domains
    */
   async applyRules(domains) {
+    // Firefox MV2 path: no DNR. Storage write is enough; webNavigation handles it.
+    if (!SHIELD_HAS_DNR) return;
+
     // Build the new rules
     const rules = domains.map((domain, i) => ({
       id: this.RULE_ID_OFFSET + i,
@@ -72,6 +83,7 @@ const MagnetarShield = {
    * Clear all Shield rules
    */
   async clearRules() {
+    if (!SHIELD_HAS_DNR) return;
     const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
     const shieldRuleIds = existingRules
       .filter(r => r.id >= this.RULE_ID_OFFSET)

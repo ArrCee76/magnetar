@@ -105,8 +105,9 @@ const ProviderRealDebrid = {
         }
       }
 
-      // Clean up probe torrent
-      await fetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
+      // Clean up probe torrent — fire-and-forget. The user doesn't need
+      // to wait for this; it frees up ~200ms per cache check.
+      fetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
         method: 'DELETE',
         headers: this._headers(creds.apiKey)
       }).catch(() => {});
