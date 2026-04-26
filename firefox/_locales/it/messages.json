@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Rileva i link magnet e li invia al tuo client di download preferito. Blocco popup integrato.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Trova torrent, inviali ovunque.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Apri nel client",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Invia a Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Invia a RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Invia a TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Invia a Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Invia a AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Apri nel client",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Torrent sconosciuto",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Sconosciuto ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Verifica…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "In cache",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Non in cache",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Sconosciuto",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Condividi",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Copia magnet",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Copia hash",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Magnet copiato",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Hash copiato",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Link magnet copiato",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Inviato con successo",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Invio fallito",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Riprova",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "$COUNT$ torrent rilevati",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Mostrati $SHOWN$ di $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Seleziona tutto",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "$COUNT$ selezionati",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Invia a $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Chiudi",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Inviato",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ Aperti $COUNT$ magnet",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Inviati $SUCCESS$/$TOTAL$ torrent",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Invio batch fallito: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "E-mail",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Copia link",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Dai un'occhiata a questo torrent",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Impostazioni",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "$COUNT$ siti bloccati",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 sito bloccato",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Gestisci",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Modalità:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Hash trovato · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Nessun hash trovato — alcuni siti richiedono il login",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Hash possibile — bassa affidabilità",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Nessun hash torrent rilevato",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Impostazioni",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Supporta Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Modalità di download",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Scegli dove Magnetar invia i torrent rilevati.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Client locale",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge, ecc.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Download cloud",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Self-hosted",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Download cloud",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Download cloud",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Download cloud",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Nessuna configurazione necessaria. Magnetar invierà i link magnet al client torrent predefinito del sistema.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "Chiave API",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "URL del server",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Nome utente",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Password",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "Chiave API Real-Debrid",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(opzionale, per verifica cache)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Incolla la tua chiave API Real-Debrid",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com o http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Nome utente",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Password",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "Chiave API RD per verifica cache",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Incolla la tua chiave API TorBox",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Incolla la tua chiave API Premiumize",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Incolla la tua chiave API AllDebrid",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Ottieni la tua su $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Salva e testa",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Test in corso…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Rilevamento e banner",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Controlla come Magnetar mostra i torrent rilevati.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Mostra banner al rilevamento",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Mostra una notifica quando viene trovato un hash torrent",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Stile del banner",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Completo mostra nome, cache, condivisione e copia. Compatto mostra solo il pulsante invio.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Completo",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Compatto",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Modalità batch",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Mostra una checklist sulle pagine con più torrent",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "La modalità batch richiede il banner attivo.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Max torrent nel pannello batch",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Posizione del banner",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "In alto",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "In basso",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Blocca popup e reindirizzamenti a livello di rete.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Blocca",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Importa",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Esporta",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "Cronologia download",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Torrent inviati tramite Magnetar. Previene i duplicati in batch.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "$COUNT$ elementi",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 elemento",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Cerca nella cronologia…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Nessun download.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Nessun risultato.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Esporta cronologia",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Cancella cronologia",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Cancellare tutta la cronologia? Questa azione è irreversibile.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Siti personalizzati",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Regole di rilevamento per siti non riconosciuti automaticamente.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Aggiungi sito",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Pattern dominio",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Metodo di rilevamento",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "Selettore CSS",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "Selettore CSS",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Pattern regex (gruppo di cattura per hash)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Salva",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Annulla",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Importa",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Esporta",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Avanzate",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Esporta impostazioni",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Importa impostazioni",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Ripristina predefiniti",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Ripristinare tutte le impostazioni? Questa azione è irreversibile.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "File JSON non valido",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Blocca questo sito con Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Sblocca questo sito",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "Licenza MIT",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Inserisci una chiave API",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Validazione fallita",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Compila tutti i campi obbligatori",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Modalità",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Gestisci siti bloccati →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Questa pagina",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Verifica…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Adesso",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "$COUNT$m fa",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "$COUNT$h fa",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "$COUNT$g fa",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Invia",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Client",
+    "description": "Fallback service name when mode is unknown"
+  }
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Magnetar — What's New</title>
+  <link rel="stylesheet" href="whatsnew.css">
+</head>
+<body>
+  <div class="whatsnew">
+
+    <div class="whatsnew-header">
+      <div class="whatsnew-logo">✦</div>
+      <h1 class="whatsnew-title">What's new in Magnetar</h1>
+      <span class="whatsnew-version" id="whatsnew-version">v1.4.9</span>
+    </div>
+
+    <div class="whatsnew-pages">
+
+      <div class="whatsnew-page" data-page="1">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">📚</span>
+            Batch mode, levelled up
+          </div>
+          <p class="whatsnew-lead">The listing-page panel now gets the same treatment the banner does, with a slide-out drawer for your saved queue and recent activity.</p>
+          <div class="whatsnew-item">Theme toggle and settings cog in the batch header</div>
+          <div class="whatsnew-item">Chevron opens a drawer to the left showing your saved queue and activity</div>
+          <div class="whatsnew-item">Switch between 25 / 50 / 75 torrents shown, live</div>
+          <div class="whatsnew-item">Bookmark button on every row to save without selecting</div>
+        </div>
+      </div>
+
+      <div class="whatsnew-page" data-page="2" style="display:none">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">🔖</span>
+            Save for later
+          </div>
+          <p class="whatsnew-lead">Found something interesting but not ready to fire it off yet? Save it and Magnetar keeps it on a queue, across browser restarts.</p>
+          <div class="whatsnew-item">Save button on the banner and every batch row</div>
+          <div class="whatsnew-item">Saved queue shows in the expanded banner and the batch drawer</div>
+          <div class="whatsnew-item">Share or copy magnet from a saved row without sending</div>
+          <div class="whatsnew-item">Hit Send and it moves straight to history</div>
+        </div>
+      </div>
+
+      <div class="whatsnew-page" data-page="3" style="display:none">
+        <div class="whatsnew-section">
+          <div class="whatsnew-section-title">
+            <span class="whatsnew-section-icon">✨</span>
+            Banner polish
+          </div>
+          <p class="whatsnew-lead">MAGNETAR wordmark, full titles, theme toggle up top, and tighter scroll behaviour.</p>
+          <div class="whatsnew-item">MAGNETAR wordmark added to the title lockup</div>
+          <div class="whatsnew-item">Saved and activity lists scroll after 4 items, bfoot stays put</div>
+          <div class="whatsnew-item">Settings cog, theme toggle and dismiss all live on the title row</div>
+          <div class="whatsnew-item">Theme switches apply live across every surface, no refresh needed</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="whatsnew-footer">
+      <div class="whatsnew-dots" id="whatsnew-dots">
+        <span class="whatsnew-dot whatsnew-dot-active" data-dot="1"></span>
+        <span class="whatsnew-dot" data-dot="2"></span>
+        <span class="whatsnew-dot" data-dot="3"></span>
+      </div>
+      <div class="whatsnew-nav">
+        <button class="btn-skip" id="whatsnew-skip">Skip</button>
+        <button class="btn-prev" id="whatsnew-prev" style="display:none">Back</button>
+        <button class="btn-next" id="whatsnew-next">Next</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="whatsnew.js"></script>
+</body>
+</html>

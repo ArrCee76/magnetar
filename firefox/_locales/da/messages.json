@@ -1,0 +1,740 @@
+{
+  "extensionName": {
+    "message": "Magnetar",
+    "description": "Extension name shown in browser"
+  },
+  "extensionDescription": {
+    "message": "Registrer magnetlinks og send dem til din foretrukne downloadklient. Indbygget popup-blokering.",
+    "description": "Extension description for store listings"
+  },
+  "appTagline": {
+    "message": "Find torrents, send dem hvor som helst.",
+    "description": "Tagline shown in settings header"
+  },
+  "sendLabelLocal": {
+    "message": "Åbn i klient",
+    "description": "Send button label for local torrent client mode"
+  },
+  "sendLabelRealDebrid": {
+    "message": "Send til Real-Debrid",
+    "description": "Send button label for Real-Debrid mode"
+  },
+  "sendLabelRdtClient": {
+    "message": "Send til RDT Client",
+    "description": "Send button label for RDT Client mode"
+  },
+  "sendLabelTorBox": {
+    "message": "Send til TorBox",
+    "description": "Send button label for TorBox mode"
+  },
+  "sendLabelPremiumize": {
+    "message": "Send til Premiumize",
+    "description": "Send button label for Premiumize mode"
+  },
+  "sendLabelAllDebrid": {
+    "message": "Send til AllDebrid",
+    "description": "Send button label for AllDebrid mode"
+  },
+  "batchLabelLocal": {
+    "message": "Åbn i klient",
+    "description": "Batch send button label for local mode"
+  },
+  "batchLabelRealDebrid": {
+    "message": "Real-Debrid",
+    "description": "Batch send button label for Real-Debrid"
+  },
+  "batchLabelRdtClient": {
+    "message": "RDT Client",
+    "description": "Batch send button label for RDT Client"
+  },
+  "batchLabelTorBox": {
+    "message": "TorBox",
+    "description": "Batch send button label for TorBox"
+  },
+  "batchLabelPremiumize": {
+    "message": "Premiumize",
+    "description": "Batch send button label for Premiumize"
+  },
+  "batchLabelAllDebrid": {
+    "message": "AllDebrid",
+    "description": "Batch send button label for AllDebrid"
+  },
+  "unknownTorrent": {
+    "message": "Ukendt torrent",
+    "description": "Fallback name when torrent name cannot be determined"
+  },
+  "unknownHash": {
+    "message": "Ukendt ($HASH$…)",
+    "description": "Fallback name in batch list showing partial hash",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "cacheChecking": {
+    "message": "Tjekker…",
+    "description": "Cache status while checking"
+  },
+  "cacheCached": {
+    "message": "Cached",
+    "description": "Cache status when torrent is cached on debrid service"
+  },
+  "cacheNotCached": {
+    "message": "Ikke cached",
+    "description": "Cache status when torrent is not cached"
+  },
+  "cacheUnknown": {
+    "message": "Ukendt",
+    "description": "Cache status when check fails"
+  },
+  "shareButton": {
+    "message": "⤴ Del",
+    "description": "Share button label on banner"
+  },
+  "copyMagnetButton": {
+    "message": "Kopier magnet",
+    "description": "Copy magnet link button"
+  },
+  "copyHashButton": {
+    "message": "Kopier hash",
+    "description": "Copy hash button"
+  },
+  "magnetCopied": {
+    "message": "Magnet kopieret",
+    "description": "Toast message after copying magnet link"
+  },
+  "hashCopied": {
+    "message": "Hash kopieret",
+    "description": "Toast message after copying hash"
+  },
+  "magnetLinkCopied": {
+    "message": "Magnetlink kopieret",
+    "description": "Toast message after copying magnet link from share menu"
+  },
+  "sentSuccessfully": {
+    "message": "✓ Sendt!",
+    "description": "Success message after sending torrent"
+  },
+  "sendFailed": {
+    "message": "Afsendelse mislykkedes",
+    "description": "Default error message when send fails"
+  },
+  "retryButton": {
+    "message": "Prøv igen",
+    "description": "Button label after send failure"
+  },
+  "batchTorrentsDetected": {
+    "message": "$COUNT$ torrents fundet",
+    "description": "Batch panel header showing count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "15"
+      }
+    }
+  },
+  "batchShowingOf": {
+    "message": "Viser $SHOWN$ af $TOTAL$",
+    "description": "Truncation notice in batch panel",
+    "placeholders": {
+      "shown": {
+        "content": "$1",
+        "example": "25"
+      },
+      "total": {
+        "content": "$2",
+        "example": "50"
+      }
+    }
+  },
+  "batchSelectAll": {
+    "message": "Vælg alle",
+    "description": "Select all checkbox label in batch panel"
+  },
+  "batchSelected": {
+    "message": "$COUNT$ valgt",
+    "description": "Selection count in batch panel",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSendTo": {
+    "message": "Send til $SERVICE$",
+    "description": "Batch send button label",
+    "placeholders": {
+      "service": {
+        "content": "$1",
+        "example": "Real-Debrid"
+      }
+    }
+  },
+  "batchDismiss": {
+    "message": "Luk",
+    "description": "Dismiss button in batch panel"
+  },
+  "batchSentBadge": {
+    "message": "Sendt",
+    "description": "Badge shown on previously sent items in batch"
+  },
+  "batchOpenedMagnets": {
+    "message": "✓ Åbnede $COUNT$ magnet(er)",
+    "description": "Toast after opening magnets locally in batch",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "batchSentCount": {
+    "message": "✓ Sendt $SUCCESS$/$TOTAL$ torrents",
+    "description": "Toast after batch send completes",
+    "placeholders": {
+      "success": {
+        "content": "$1",
+        "example": "8"
+      },
+      "total": {
+        "content": "$2",
+        "example": "10"
+      }
+    }
+  },
+  "batchSendFailed": {
+    "message": "✗ Batchafsendelse mislykkedes: $ERROR$",
+    "description": "Toast when batch send fails",
+    "placeholders": {
+      "error": {
+        "content": "$1",
+        "example": "Network error"
+      }
+    }
+  },
+  "shareEmail": {
+    "message": "E-mail",
+    "description": "Share menu: email option"
+  },
+  "shareX": {
+    "message": "X",
+    "description": "Share menu: X/Twitter option"
+  },
+  "shareReddit": {
+    "message": "Reddit",
+    "description": "Share menu: Reddit option"
+  },
+  "shareTelegram": {
+    "message": "Telegram",
+    "description": "Share menu: Telegram option"
+  },
+  "shareCopyLink": {
+    "message": "Kopier link",
+    "description": "Share menu: copy link option"
+  },
+  "shareEmailSubject": {
+    "message": "Se denne torrent",
+    "description": "Default email subject when sharing"
+  },
+  "popupSettingsTitle": {
+    "message": "Indstillinger",
+    "description": "Tooltip for settings gear icon in popup"
+  },
+  "popupShieldLabel": {
+    "message": "Magnetar Shield",
+    "description": "Shield section label in popup"
+  },
+  "popupShieldCount": {
+    "message": "$COUNT$ sider blokeret",
+    "description": "Shield blocked count in popup",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "12"
+      }
+    }
+  },
+  "popupShieldCountSingular": {
+    "message": "1 side blokeret",
+    "description": "Shield blocked count singular"
+  },
+  "popupManageShield": {
+    "message": "Administrer",
+    "description": "Link to manage shield settings"
+  },
+  "popupModeLabel": {
+    "message": "Tilstand:",
+    "description": "Download mode label in popup"
+  },
+  "popupStatusHashFound": {
+    "message": "Hash fundet · $HASH$…",
+    "description": "Popup status when hash is detected",
+    "placeholders": {
+      "hash": {
+        "content": "$1",
+        "example": "a1b2c3d4"
+      }
+    }
+  },
+  "popupStatusNoHash": {
+    "message": "Ingen hash fundet — nogle sider kræver login",
+    "description": "Popup status when page looks like torrent site but no hash found"
+  },
+  "popupStatusLowConfidence": {
+    "message": "Mulig hash — lav sikkerhed",
+    "description": "Popup status when hash found but confidence is low"
+  },
+  "popupStatusNone": {
+    "message": "Ingen torrent-hash registreret",
+    "description": "Popup status when no hash detected"
+  },
+  "settingsTitle": {
+    "message": "Magnetar — Indstillinger",
+    "description": "Settings page title"
+  },
+  "supportMagnetar": {
+    "message": "Støt Magnetar",
+    "description": "BMC link tooltip"
+  },
+  "sectionDownloadMode": {
+    "message": "Downloadtilstand",
+    "description": "Settings section heading"
+  },
+  "sectionDownloadModeDesc": {
+    "message": "Vælg hvor Magnetar sender fundne torrents.",
+    "description": "Settings section description"
+  },
+  "modeLocalName": {
+    "message": "Lokal klient",
+    "description": "Local mode card name"
+  },
+  "modeLocalDesc": {
+    "message": "qBittorrent, Deluge, osv.",
+    "description": "Local mode card description"
+  },
+  "modeRealDebridName": {
+    "message": "Real-Debrid",
+    "description": "Real-Debrid mode card name"
+  },
+  "modeRealDebridDesc": {
+    "message": "Cloud-download",
+    "description": "Real-Debrid mode card description"
+  },
+  "modeRdtClientName": {
+    "message": "RDT Client",
+    "description": "RDT Client mode card name"
+  },
+  "modeRdtClientDesc": {
+    "message": "Selvhostet",
+    "description": "RDT Client mode card description"
+  },
+  "modeTorBoxName": {
+    "message": "TorBox",
+    "description": "TorBox mode card name"
+  },
+  "modeTorBoxDesc": {
+    "message": "Cloud-download",
+    "description": "TorBox mode card description"
+  },
+  "modePremiumizeName": {
+    "message": "Premiumize",
+    "description": "Premiumize mode card name"
+  },
+  "modePremiumizeDesc": {
+    "message": "Cloud-download",
+    "description": "Premiumize mode card description"
+  },
+  "modeAllDebridName": {
+    "message": "AllDebrid",
+    "description": "AllDebrid mode card name"
+  },
+  "modeAllDebridDesc": {
+    "message": "Cloud-download",
+    "description": "AllDebrid mode card description"
+  },
+  "credsNoConfig": {
+    "message": "Ingen konfiguration nødvendig. Magnetar sender magnetlinks til dit systems standard torrentklient.",
+    "description": "Local mode credentials note"
+  },
+  "labelApiKey": {
+    "message": "API-nøgle",
+    "description": "Generic API key field label"
+  },
+  "labelServerUrl": {
+    "message": "Server-URL",
+    "description": "RDT Client server URL label"
+  },
+  "labelUsername": {
+    "message": "Brugernavn",
+    "description": "Username field label"
+  },
+  "labelPassword": {
+    "message": "Adgangskode",
+    "description": "Password field label"
+  },
+  "labelRdApiKeyOptional": {
+    "message": "Real-Debrid API-nøgle",
+    "description": "Optional RD key label for RDT Client"
+  },
+  "labelRdApiKeyOptionalHint": {
+    "message": "(valgfrit, til cache-tjek)",
+    "description": "Hint for optional RD key"
+  },
+  "placeholderRdApiKey": {
+    "message": "Indsæt din Real-Debrid API-nøgle",
+    "description": "Placeholder for RD API key input"
+  },
+  "placeholderRdtUrl": {
+    "message": "https://rdt.example.com eller http://192.168.1.111:6500",
+    "description": "Placeholder for RDT Client URL input"
+  },
+  "placeholderUsername": {
+    "message": "Brugernavn",
+    "description": "Placeholder for username input"
+  },
+  "placeholderPassword": {
+    "message": "Adgangskode",
+    "description": "Placeholder for password input"
+  },
+  "placeholderRdtRdKey": {
+    "message": "RD API-nøgle til cache-tjek",
+    "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderTorBoxKey": {
+    "message": "Indsæt din TorBox API-nøgle",
+    "description": "Placeholder for TorBox API key"
+  },
+  "placeholderPremiumizeKey": {
+    "message": "Indsæt din Premiumize API-nøgle",
+    "description": "Placeholder for Premiumize API key"
+  },
+  "placeholderAllDebridKey": {
+    "message": "Indsæt din AllDebrid API-nøgle",
+    "description": "Placeholder for AllDebrid API key"
+  },
+  "hintRdApiKey": {
+    "message": "Få din på $LINK$",
+    "description": "Hint text with link for API keys",
+    "placeholders": {
+      "link": {
+        "content": "$1",
+        "example": "real-debrid.com/apitoken"
+      }
+    }
+  },
+  "btnSaveTest": {
+    "message": "Gem & test",
+    "description": "Save and test credentials button"
+  },
+  "btnTesting": {
+    "message": "Tester…",
+    "description": "Button label while testing credentials"
+  },
+  "sectionDetection": {
+    "message": "Registrering & banner",
+    "description": "Settings section heading"
+  },
+  "sectionDetectionDesc": {
+    "message": "Styr hvordan Magnetar viser fundne torrents.",
+    "description": "Settings section description"
+  },
+  "toggleBannerLabel": {
+    "message": "Vis banner ved registrering",
+    "description": "Toggle label"
+  },
+  "toggleBannerDesc": {
+    "message": "Vis en notifikation når en torrent-hash findes",
+    "description": "Toggle description"
+  },
+  "toggleBannerStyleLabel": {
+    "message": "Bannerstil",
+    "description": "Banner style toggle label"
+  },
+  "toggleBannerStyleDesc": {
+    "message": "Fuld viser navn, cache, del og kopier. Kompakt viser kun send-knappen.",
+    "description": "Banner style toggle description"
+  },
+  "bannerStyleFull": {
+    "message": "Fuld",
+    "description": "Banner style option"
+  },
+  "bannerStyleCompact": {
+    "message": "Kompakt",
+    "description": "Banner style option"
+  },
+  "toggleBatchLabel": {
+    "message": "Batchtilstand",
+    "description": "Batch mode toggle label"
+  },
+  "toggleBatchDesc": {
+    "message": "Vis en checkliste på sider med flere torrents",
+    "description": "Batch mode toggle description"
+  },
+  "batchNoteText": {
+    "message": "Batchtilstand kræver at banneren er aktiveret.",
+    "description": "Info note about batch mode"
+  },
+  "batchMaxLabel": {
+    "message": "Maks torrents i batchpanel",
+    "description": "Batch max setting label"
+  },
+  "bannerPositionLabel": {
+    "message": "Bannerposition",
+    "description": "Banner position setting label"
+  },
+  "bannerPositionTop": {
+    "message": "Øverst på siden",
+    "description": "Banner position option"
+  },
+  "bannerPositionBottom": {
+    "message": "Nederst på siden",
+    "description": "Banner position option"
+  },
+  "sectionShield": {
+    "message": "Magnetar Shield",
+    "description": "Shield settings section heading"
+  },
+  "sectionShieldDesc": {
+    "message": "Bloker popup- og omdirigeringssider på netværksniveau.",
+    "description": "Shield section description"
+  },
+  "shieldDomainPlaceholder": {
+    "message": "example.com",
+    "description": "Placeholder for shield domain input"
+  },
+  "shieldBlockButton": {
+    "message": "Bloker",
+    "description": "Block domain button"
+  },
+  "shieldImport": {
+    "message": "Importer",
+    "description": "Import shield list button"
+  },
+  "shieldExport": {
+    "message": "Eksporter",
+    "description": "Export shield list button"
+  },
+  "sectionHistory": {
+    "message": "Downloadhistorik",
+    "description": "History section heading"
+  },
+  "sectionHistoryDesc": {
+    "message": "Torrents sendt via Magnetar. Forhindrer dubletter i batchtilstand.",
+    "description": "History section description"
+  },
+  "historyCount": {
+    "message": "$COUNT$ elementer",
+    "description": "History item count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "historyCountSingular": {
+    "message": "1 element",
+    "description": "History item count singular"
+  },
+  "historySearchPlaceholder": {
+    "message": "Søg i historik…",
+    "description": "History search input placeholder"
+  },
+  "historyEmpty": {
+    "message": "Ingen downloads endnu.",
+    "description": "Empty history message"
+  },
+  "historyNoMatches": {
+    "message": "Ingen resultater.",
+    "description": "No search results in history"
+  },
+  "historyExport": {
+    "message": "Eksporter historik",
+    "description": "Export history button"
+  },
+  "historyClear": {
+    "message": "Ryd al historik",
+    "description": "Clear history button"
+  },
+  "historyClearConfirm": {
+    "message": "Ryd al downloadhistorik? Denne handling kan ikke fortrydes.",
+    "description": "Confirm dialog for clearing history"
+  },
+  "sectionCustomSites": {
+    "message": "Brugerdefinerede sider",
+    "description": "Custom sites section heading"
+  },
+  "sectionCustomSitesDesc": {
+    "message": "Definer registreringsregler for sider der ikke registreres automatisk.",
+    "description": "Custom sites section description"
+  },
+  "customSiteAdd": {
+    "message": "+ Tilføj side",
+    "description": "Add custom site button"
+  },
+  "customSiteDomainLabel": {
+    "message": "Domænemønster",
+    "description": "Domain pattern field label"
+  },
+  "customSiteDomainPlaceholder": {
+    "message": "*.example.com",
+    "description": "Domain pattern placeholder"
+  },
+  "customSiteMethodLabel": {
+    "message": "Registreringsmetode",
+    "description": "Detection method field label"
+  },
+  "customSiteMethodSelector": {
+    "message": "CSS-vælger",
+    "description": "CSS selector detection method"
+  },
+  "customSiteMethodRegex": {
+    "message": "Regex",
+    "description": "Regex detection method"
+  },
+  "customSiteValueLabelSelector": {
+    "message": "CSS-vælger",
+    "description": "Value field label when method is selector"
+  },
+  "customSiteValueLabelRegex": {
+    "message": "Regex-mønster (fangstgruppe for hash)",
+    "description": "Value field label when method is regex"
+  },
+  "customSiteValuePlaceholder": {
+    "message": "#info-hash code",
+    "description": "Value field placeholder"
+  },
+  "customSiteSave": {
+    "message": "Gem",
+    "description": "Save custom site button"
+  },
+  "customSiteCancel": {
+    "message": "Annuller",
+    "description": "Cancel custom site button"
+  },
+  "customSiteImport": {
+    "message": "Importer",
+    "description": "Import custom sites button"
+  },
+  "customSiteExport": {
+    "message": "Eksporter",
+    "description": "Export custom sites button"
+  },
+  "sectionAdvanced": {
+    "message": "Avanceret",
+    "description": "Advanced section heading"
+  },
+  "advancedExport": {
+    "message": "Eksporter alle indstillinger",
+    "description": "Export all settings button"
+  },
+  "advancedImport": {
+    "message": "Importer indstillinger",
+    "description": "Import settings button"
+  },
+  "advancedReset": {
+    "message": "Nulstil til standard",
+    "description": "Reset all settings button"
+  },
+  "advancedResetConfirm": {
+    "message": "Nulstil alle indstillinger? Denne handling kan ikke fortrydes.",
+    "description": "Confirm dialog for resetting settings"
+  },
+  "invalidJsonFile": {
+    "message": "Ugyldig JSON-fil",
+    "description": "Alert when imported file is not valid JSON"
+  },
+  "contextMenuBlock": {
+    "message": "Bloker denne side med Magnetar",
+    "description": "Context menu item to block current site"
+  },
+  "contextMenuUnblock": {
+    "message": "Fjern blokering af side",
+    "description": "Context menu item to unblock current site"
+  },
+  "footerGitHub": {
+    "message": "GitHub",
+    "description": "Footer link text"
+  },
+  "footerLicence": {
+    "message": "MIT-licens",
+    "description": "Footer link text"
+  },
+  "validationEnterApiKey": {
+    "message": "Indtast en API-nøgle",
+    "description": "Error shown when API key field is empty"
+  },
+  "validationFailed": {
+    "message": "Validering mislykkedes",
+    "description": "Default error when credential validation fails"
+  },
+  "validationEnterFields": {
+    "message": "Udfyld alle påkrævede felter",
+    "description": "Error shown when required fields are empty"
+  },
+  "popupModeLabel2": {
+    "message": "Tilstand",
+    "description": "Mode label in popup"
+  },
+  "popupShieldTitle": {
+    "message": "Shield",
+    "description": "Shield section title in popup"
+  },
+  "popupManageBlocked": {
+    "message": "Administrer blokerede sider →",
+    "description": "Link to manage blocked sites in popup"
+  },
+  "popupThisPage": {
+    "message": "Denne side",
+    "description": "This page section title in popup"
+  },
+  "popupChecking": {
+    "message": "Tjekker…",
+    "description": "Default status text while checking page"
+  },
+  "timeJustNow": {
+    "message": "Lige nu",
+    "description": "Time ago: less than a minute"
+  },
+  "timeMinutesAgo": {
+    "message": "$COUNT$m siden",
+    "description": "Time ago: minutes",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    }
+  },
+  "timeHoursAgo": {
+    "message": "$COUNT$t siden",
+    "description": "Time ago: hours",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "timeDaysAgo": {
+    "message": "$COUNT$d siden",
+    "description": "Time ago: days",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "sendFallback": {
+    "message": "Send",
+    "description": "Fallback send button label when mode is unknown"
+  },
+  "clientFallback": {
+    "message": "Klient",
+    "description": "Fallback service name when mode is unknown"
+  }
+}
