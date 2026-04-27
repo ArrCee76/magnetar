@@ -15,12 +15,12 @@ const ProviderRealDebrid = {
   },
 
   async validateCredentials(creds) {
-    const ctrl = new AbortController();
-    const timeout = setTimeout(() => ctrl.abort(), 12000);
+    const apiKey = String(creds?.apiKey || '').trim();
+    if (!apiKey) return { valid: false, error: 'API key is required' };
+
     try {
-      const res = await fetch(`${this.baseUrl}/user`, {
-        headers: this._headers(creds.apiKey),
-        signal: ctrl.signal
+      const res = await magnetarFetch(`${this.baseUrl}/user`, {
+        headers: this._headers(apiKey)
       });
       if (!res.ok) return { valid: false, error: `Invalid API key (HTTP ${res.status})` };
       const data = await res.json();
@@ -29,18 +29,13 @@ const ProviderRealDebrid = {
         userInfo: `${data.username} — ${data.type} (expires ${new Date(data.expiration).toLocaleDateString()})`
       };
     } catch (e) {
-      if (e.name === 'AbortError') {
-        return { valid: false, error: 'Connection timed out. Check your network or whether api.real-debrid.com is being blocked.' };
-      }
-      return { valid: false, error: 'Connection failed: ' + e.message };
-    } finally {
-      clearTimeout(timeout);
+      return { valid: false, error: e.message || 'Connection failed' };
     }
   },
 
   async sendMagnet(magnetUri, creds) {
     try {
-      const res = await fetch(`${this.baseUrl}/torrents/addMagnet`, {
+      const res = await magnetarFetch(`${this.baseUrl}/torrents/addMagnet`, {
         method: 'POST',
         headers: this._headers(creds.apiKey),
         body: `magnet=${encodeURIComponent(magnetUri)}`
@@ -51,13 +46,13 @@ const ProviderRealDebrid = {
       }
       const data = await res.json();
 
-      // Auto-select all files
+      // Auto-select all files. Fire-and-forget so a slow selectFiles call does not fail the addMagnet request.
       if (data.id) {
-        await fetch(`${this.baseUrl}/torrents/selectFiles/${data.id}`, {
+        magnetarFetch(`${this.baseUrl}/torrents/selectFiles/${data.id}`, {
           method: 'POST',
           headers: this._headers(creds.apiKey),
           body: 'files=all'
-        });
+        }).catch(() => {});
       }
 
       return { success: true, id: data.id };
@@ -70,7 +65,7 @@ const ProviderRealDebrid = {
     if (!creds?.apiKey) return 'unknown';
     try {
       const magnet = `magnet:?xt=urn:btih:${hash}`;
-      const addRes = await fetch(`${this.baseUrl}/torrents/addMagnet`, {
+      const addRes = await magnetarFetch(`${this.baseUrl}/torrents/addMagnet`, {
         method: 'POST',
         headers: this._headers(creds.apiKey),
         body: `magnet=${encodeURIComponent(magnet)}`
@@ -85,7 +80,7 @@ const ProviderRealDebrid = {
       await new Promise(r => setTimeout(r, 1500));
 
       // Check torrent info
-      const infoRes = await fetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
+      const infoRes = await magnetarFetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
         headers: this._headers(creds.apiKey)
       });
 
@@ -97,7 +92,7 @@ const ProviderRealDebrid = {
         } else if (info.status === 'magnet_conversion') {
           // Could still be resolving — wait a bit more and retry once
           await new Promise(r => setTimeout(r, 2000));
-          const retryRes = await fetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
+          const retryRes = await magnetarFetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
             headers: this._headers(creds.apiKey)
           });
           if (retryRes.ok) {
@@ -115,7 +110,7 @@ const ProviderRealDebrid = {
 
       // Clean up probe torrent — fire-and-forget. The user doesn't need
       // to wait for this; it frees up ~200ms per cache check.
-      fetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
+      magnetarFetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
         method: 'DELETE',
         headers: this._headers(creds.apiKey)
       }).catch(() => {});
@@ -127,6 +122,6 @@ const ProviderRealDebrid = {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.ProviderRealDebrid = ProviderRealDebrid;
+if (typeof self !== 'undefined') {
+  self.ProviderRealDebrid = ProviderRealDebrid;
 }

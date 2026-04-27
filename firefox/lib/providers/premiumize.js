@@ -15,7 +15,7 @@ const ProviderPremiumize = {
 
   async validateCredentials(creds) {
     try {
-      const res = await fetch(`${this.baseUrl}/account/info`, {
+      const res = await magnetarFetch(`${this.baseUrl}/account/info`, {
         headers: this._headers(creds.apiKey)
       });
       if (!res.ok) return { valid: false, error: 'Invalid API key' };
@@ -39,7 +39,7 @@ const ProviderPremiumize = {
       const formData = new URLSearchParams();
       formData.append('src', magnetUri);
 
-      const res = await fetch(`${this.baseUrl}/transfer/create`, {
+      const res = await magnetarFetch(`${this.baseUrl}/transfer/create`, {
         method: 'POST',
         headers: this._headers(creds.apiKey),
         body: formData
@@ -61,7 +61,7 @@ const ProviderPremiumize = {
   async checkCache(hash, creds) {
     if (!creds?.apiKey) return 'unknown';
     try {
-      const res = await fetch(`${this.baseUrl}/cache/check?items[]=${hash}`, {
+      const res = await magnetarFetch(`${this.baseUrl}/cache/check?items[]=${hash}`, {
         headers: this._headers(creds.apiKey)
       });
       if (!res.ok) return 'unknown';
@@ -79,6 +79,6 @@ const ProviderPremiumize = {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.ProviderPremiumize = ProviderPremiumize;
+if (typeof self !== 'undefined') {
+  self.ProviderPremiumize = ProviderPremiumize;
 }

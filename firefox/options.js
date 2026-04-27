@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Theme: apply saved preference before anything renders ──
   try {
-    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
     if (themeRes?.theme === 'dark') {
       document.documentElement.classList.add('mg-dark');
     }
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ── i18n helper ──
-  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+  const t = (key, ...subs) => MAGNETAR_API.i18n.getMessage(key, subs) || key;
 
   // Hydrate data-i18n and data-i18n-placeholder attributes
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -31,8 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ── Load all settings ──
-  const settings = await chrome.runtime.sendMessage({ type: 'get-settings' });
-  const shield = await chrome.runtime.sendMessage({ type: 'shield-get' });
+  const settings = await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' });
+  const shield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
 
   const currentMode = settings?.mode || 'local';
 
@@ -57,9 +57,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.addEventListener('click', async () => {
       const mode = card.dataset.mode;
       selectMode(mode);
-      const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+      const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
       s.mode = mode;
-      await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+      await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
     });
   });
 
@@ -86,40 +86,66 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Save & Test handlers ──
 
-  document.getElementById('rd-test').addEventListener('click', async () => {
-    const btn = document.getElementById('rd-test');
-    const result = document.getElementById('rd-result');
-    const apiKey = document.getElementById('rd-apikey').value.trim();
+  function timeout(ms, message) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), ms);
+    });
+  }
 
-    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
+  async function sendRuntimeMessage(message, ms = 20000) {
+    return await Promise.race([
+      MAGNETAR_API.runtime.sendMessage(message),
+      timeout(ms, 'No response from extension background. Reload the extension and try again.')
+    ]);
+  }
+
+  async function getSettingsForUpdate() {
+    const s = await sendRuntimeMessage({ type: 'get-settings' }, 8000);
+    return (s && typeof s === 'object') ? s : {};
+  }
+
+  async function saveCredentialsAndValidate(mode, credentials) {
+    const s = await getSettingsForUpdate();
+    s.credentials = s.credentials || {};
+    s.credentials[mode] = credentials;
+    await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
+
+    const res = await sendRuntimeMessage({
+      type: 'validate-credentials',
+      mode,
+      credentials
+    }, 20000);
+
+    return res || { valid: false, error: 'No response from extension background.' };
+  }
+
+  async function runCredentialTest(btnId, resultId, mode, credentials) {
+    const btn = document.getElementById(btnId);
+    const result = document.getElementById(resultId);
 
     btn.disabled = true;
     btn.textContent = t('btnTesting');
 
     try {
-      const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-      s.credentials = s.credentials || {};
-      s.credentials.realdebrid = { apiKey };
-      await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-      const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'realdebrid', credentials: { apiKey } });
-      if (!res) {
-        showResult(result, 'No response from extension background. Reload the page and try again.', false);
-      } else {
-        showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
-      }
+      const res = await saveCredentialsAndValidate(mode, credentials);
+      showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
     } catch (e) {
       showResult(result, 'Test failed: ' + (e?.message || 'unknown error'), false);
     } finally {
       btn.disabled = false;
       btn.textContent = t('btnSaveTest');
     }
+  }
+
+  document.getElementById('rd-test').addEventListener('click', async () => {
+    const result = document.getElementById('rd-result');
+    const apiKey = document.getElementById('rd-apikey').value.trim();
+    if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
+    await runCredentialTest('rd-test', 'rd-result', 'realdebrid', { apiKey });
   });
 
   document.getElementById('rdt-test').addEventListener('click', async () => {
-    const btn = document.getElementById('rdt-test');
     const result = document.getElementById('rdt-result');
-
     const creds = {
       url: document.getElementById('rdt-url').value.trim(),
       username: document.getElementById('rdt-username').value.trim(),
@@ -128,88 +154,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     if (!creds.url || !creds.username) { showResult(result, t('validationEnterFields'), false); return; }
-
-    btn.disabled = true;
-    btn.textContent = t('btnTesting');
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.rdtclient = creds;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'rdtclient', credentials: creds });
-    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = t('btnSaveTest');
+    await runCredentialTest('rdt-test', 'rdt-result', 'rdtclient', creds);
   });
 
   document.getElementById('tb-test').addEventListener('click', async () => {
-    const btn = document.getElementById('tb-test');
     const result = document.getElementById('tb-result');
     const apiKey = document.getElementById('tb-apikey').value.trim();
-
     if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
-
-    btn.disabled = true;
-    btn.textContent = t('btnTesting');
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.torbox = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'torbox', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = t('btnSaveTest');
+    await runCredentialTest('tb-test', 'tb-result', 'torbox', { apiKey });
   });
 
-  // Premiumize
   document.getElementById('pm-test').addEventListener('click', async () => {
-    const btn = document.getElementById('pm-test');
     const result = document.getElementById('pm-result');
     const apiKey = document.getElementById('pm-apikey').value.trim();
-
     if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
-
-    btn.disabled = true;
-    btn.textContent = t('btnTesting');
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.premiumize = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'premiumize', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = t('btnSaveTest');
+    await runCredentialTest('pm-test', 'pm-result', 'premiumize', { apiKey });
   });
 
-  // AllDebrid
   document.getElementById('ad-test').addEventListener('click', async () => {
-    const btn = document.getElementById('ad-test');
     const result = document.getElementById('ad-result');
     const apiKey = document.getElementById('ad-apikey').value.trim();
-
     if (!apiKey) { showResult(result, t('validationEnterApiKey'), false); return; }
-
-    btn.disabled = true;
-    btn.textContent = t('btnTesting');
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.alldebrid = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'alldebrid', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || t('validationFailed')), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = t('btnSaveTest');
+    await runCredentialTest('ad-test', 'ad-result', 'alldebrid', { apiKey });
   });
 
   function showResult(el, message, success) {
@@ -256,43 +222,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateBannerInterlock();
 
   bannerEnabled.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.bannerEnabled = bannerEnabled.checked;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
     updateBannerInterlock();
   });
 
   bannerStyleEl.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.bannerStyle = bannerStyleEl.value;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
   });
 
   batchMode.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.batchMode = batchMode.checked;
     if (batchMode.checked) {
       s.preferences.bannerEnabled = true;
     }
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
     updateBannerInterlock();
   });
 
   batchMaxEl.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.batchMax = parseInt(batchMaxEl.value);
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
   });
 
   bannerPos.addEventListener('change', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.bannerPosition = bannerPos.value;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
   });
 
 
@@ -304,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   shieldEnabled.checked = shield?.enabled !== false;
 
   shieldEnabled.addEventListener('change', async () => {
-    await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled.checked });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled.checked });
   });
 
   renderShieldList(shield?.blockedDomains || []);
@@ -314,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const domain = input.value.trim().toLowerCase();
     if (!domain) return;
 
-    const updated = await chrome.runtime.sendMessage({ type: 'shield-block', domain });
+    const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-block', domain });
     renderShieldList(updated.blockedDomains);
     input.value = '';
   });
@@ -334,14 +300,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     list.querySelectorAll('.shield-item-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const updated = await chrome.runtime.sendMessage({ type: 'shield-unblock', domain: btn.dataset.domain });
+        const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-unblock', domain: btn.dataset.domain });
         renderShieldList(updated.blockedDomains);
       });
     });
   }
 
   document.getElementById('shield-export').addEventListener('click', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'shield-get' });
+    const s = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
     downloadJSON('magnetar-shield.json', { blockedDomains: s.blockedDomains });
   });
 
@@ -358,9 +324,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = JSON.parse(text);
       if (data.blockedDomains && Array.isArray(data.blockedDomains)) {
         for (const domain of data.blockedDomains) {
-          await chrome.runtime.sendMessage({ type: 'shield-block', domain });
+          await MAGNETAR_API.runtime.sendMessage({ type: 'shield-block', domain });
         }
-        const updated = await chrome.runtime.sendMessage({ type: 'shield-get' });
+        const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
         renderShieldList(updated.blockedDomains);
       }
     } catch (err) {
@@ -381,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const historySearch = document.getElementById('history-search');
 
   async function loadHistory() {
-    allHistory = await chrome.runtime.sendMessage({ type: 'get-history' });
+    allHistory = await MAGNETAR_API.runtime.sendMessage({ type: 'get-history' });
     renderHistory(allHistory);
   }
 
@@ -441,7 +407,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Delete handlers
     historyList.querySelectorAll('.history-item-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
-        await chrome.runtime.sendMessage({ type: 'delete-history-item', hash: btn.dataset.hash });
+        await MAGNETAR_API.runtime.sendMessage({ type: 'delete-history-item', hash: btn.dataset.hash });
         await loadHistory();
       });
     });
@@ -471,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Clear history
   document.getElementById('history-clear').addEventListener('click', async () => {
     if (!confirm(t('historyClearConfirm'))) return;
-    await chrome.runtime.sendMessage({ type: 'clear-history' });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'clear-history' });
     await loadHistory();
   });
 
@@ -515,10 +481,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       regex: method === 'regex' ? value : null
     };
 
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.customSites = s.customSites || [];
     s.customSites.push(site);
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
 
     renderCustomSites(s.customSites);
     document.getElementById('custom-site-form').style.display = 'none';
@@ -550,16 +516,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     list.querySelectorAll('.shield-item-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+        const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
         s.customSites.splice(parseInt(btn.dataset.index), 1);
-        await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+        await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
         renderCustomSites(s.customSites);
       });
     });
   }
 
   document.getElementById('cs-export').addEventListener('click', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     downloadJSON('magnetar-custom-sites.json', { customSites: s.customSites || [] });
   });
 
@@ -575,9 +541,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const text = await file.text();
       const data = JSON.parse(text);
       if (data.customSites && Array.isArray(data.customSites)) {
-        const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+        const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
         s.customSites = [...(s.customSites || []), ...data.customSites];
-        await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+        await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
         renderCustomSites(s.customSites);
       }
     } catch (err) {
@@ -593,9 +559,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Export all
   document.getElementById('export-all').addEventListener('click', async () => {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    const sh = await chrome.runtime.sendMessage({ type: 'shield-get' });
-    const hist = await chrome.runtime.sendMessage({ type: 'get-history' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+    const sh = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
+    const hist = await MAGNETAR_API.runtime.sendMessage({ type: 'get-history' });
     downloadJSON('magnetar-backup.json', { settings: s, shield: sh, history: hist });
   });
 
@@ -613,16 +579,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = JSON.parse(text);
 
       if (data.settings) {
-        await chrome.runtime.sendMessage({ type: 'save-settings', data: data.settings });
+        await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: data.settings });
       }
       if (data.shield) {
-        await chrome.storage.local.set({ shield: data.shield });
+        await MAGNETAR_API.storage.local.set({ shield: data.shield });
         if (data.shield.enabled) {
-          await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
+          await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
         }
       }
       if (data.history && Array.isArray(data.history)) {
-        await chrome.storage.local.set({ 'magnetar-history': data.history });
+        await MAGNETAR_API.storage.local.set({ 'magnetar-history': data.history });
       }
 
       window.location.reload();
@@ -636,11 +602,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('reset-all').addEventListener('click', async () => {
     if (!confirm(t('advancedResetConfirm'))) return;
 
-    await chrome.storage.sync.remove(['magnetar']);
-    await chrome.storage.local.remove(['shield']);
-    await chrome.storage.local.set({ 'magnetar-history': [] });
+    await MAGNETAR_API.storage.sync.remove(['magnetar']);
+    await MAGNETAR_API.storage.local.remove(['shield']);
+    await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
 
-    await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
     window.location.reload();
   });
 
@@ -650,14 +616,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   const themeSelect = document.getElementById('theme-select');
-  const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+  const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
   const currentTheme = themeRes?.theme || 'dark';
   themeSelect.value = currentTheme;
   applyTheme(currentTheme);
 
   themeSelect.addEventListener('change', async () => {
     const theme = themeSelect.value;
-    await chrome.runtime.sendMessage({ type: 'set-theme', theme });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'set-theme', theme });
     applyTheme(theme);
   });
 
@@ -667,7 +633,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Live-sync: if theme is changed from another surface (popup, banner), reflect here without a refresh.
-  chrome.storage.onChanged.addListener((changes, area) => {
+  MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
     const newTheme = changes.magnetar.newValue?.preferences?.theme;
     if (!newTheme) return;
@@ -681,7 +647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ═══════════════════════════════════════════════════════════════════════
 
   document.getElementById('history-export-csv')?.addEventListener('click', async () => {
-    const res = await chrome.runtime.sendMessage({ type: 'export-history-csv' });
+    const res = await MAGNETAR_API.runtime.sendMessage({ type: 'export-history-csv' });
     if (res?.csv) {
       const blob = new Blob([res.csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
@@ -698,7 +664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Footer
   // ═══════════════════════════════════════════════════════════════════════
 
-  const manifest = chrome.runtime.getManifest();
+  const manifest = MAGNETAR_API.runtime.getManifest();
   document.getElementById('settings-version').textContent = `v${manifest.version}`;
 
 

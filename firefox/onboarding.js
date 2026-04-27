@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Theme: apply saved preference before anything renders ──
   try {
-    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
     if (themeRes?.theme === 'dark') {
       document.documentElement.classList.add('mg-dark');
     }
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
   // ── i18n hydration ──
-  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+  const t = (key, ...subs) => MAGNETAR_API.i18n.getMessage(key, subs) || key;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const msg = t(el.dataset.i18n);
     if (msg !== el.dataset.i18n) el.textContent = msg;
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('finish').addEventListener('click', async () => {
     await savePreferences();
     // Mark onboarding complete
-    await chrome.storage.local.set({ 'magnetar-onboarded': true });
+    await MAGNETAR_API.storage.local.set({ 'magnetar-onboarded': true });
     // Close this tab
     window.close();
   });
@@ -113,31 +113,67 @@ document.addEventListener('DOMContentLoaded', async () => {
     el.className = 'test-result ' + (success ? 'success' : 'fail');
   }
 
-  // Real-Debrid
-  document.getElementById('rd-test').addEventListener('click', async () => {
-    const btn = document.getElementById('rd-test');
-    const result = document.getElementById('rd-result');
-    const apiKey = document.getElementById('rd-apikey').value.trim();
-    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+  function timeout(ms, message) {
+    return new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), ms);
+    });
+  }
+
+  async function sendRuntimeMessage(message, ms = 20000) {
+    return await Promise.race([
+      MAGNETAR_API.runtime.sendMessage(message),
+      timeout(ms, 'No response from extension background. Reload the extension and try again.')
+    ]);
+  }
+
+  async function getSettingsForUpdate() {
+    const s = await sendRuntimeMessage({ type: 'get-settings' }, 8000);
+    return (s && typeof s === 'object') ? s : {};
+  }
+
+  async function saveCredentialsAndValidate(mode, credentials) {
+    const s = await getSettingsForUpdate();
+    s.credentials = s.credentials || {};
+    s.credentials[mode] = credentials;
+    await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
+
+    const res = await sendRuntimeMessage({
+      type: 'validate-credentials',
+      mode,
+      credentials
+    }, 20000);
+
+    return res || { valid: false, error: 'No response from extension background.' };
+  }
+
+  async function runCredentialTest(btnId, resultId, mode, credentials) {
+    const btn = document.getElementById(btnId);
+    const result = document.getElementById(resultId);
 
     btn.disabled = true;
     btn.textContent = 'Testing…';
 
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.realdebrid = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    try {
+      const res = await saveCredentialsAndValidate(mode, credentials);
+      showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
+    } catch (e) {
+      showResult(result, 'Test failed: ' + (e?.message || 'unknown error'), false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save & Test';
+    }
+  }
 
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'realdebrid', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = 'Save & Test';
+  // Real-Debrid
+  document.getElementById('rd-test').addEventListener('click', async () => {
+    const result = document.getElementById('rd-result');
+    const apiKey = document.getElementById('rd-apikey').value.trim();
+    if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
+    await runCredentialTest('rd-test', 'rd-result', 'realdebrid', { apiKey });
   });
 
   // RDT Client
   document.getElementById('rdt-test').addEventListener('click', async () => {
-    const btn = document.getElementById('rdt-test');
     const result = document.getElementById('rdt-result');
     const creds = {
       url: document.getElementById('rdt-url').value.trim(),
@@ -146,108 +182,53 @@ document.addEventListener('DOMContentLoaded', async () => {
       rdApiKey: document.getElementById('rdt-rdkey').value.trim()
     };
     if (!creds.url || !creds.username) { showResult(result, 'URL and username are required', false); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Testing…';
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.rdtclient = creds;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'rdtclient', credentials: creds });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    await runCredentialTest('rdt-test', 'rdt-result', 'rdtclient', creds);
   });
 
   // TorBox
   document.getElementById('tb-test').addEventListener('click', async () => {
-    const btn = document.getElementById('tb-test');
     const result = document.getElementById('tb-result');
     const apiKey = document.getElementById('tb-apikey').value.trim();
     if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Testing…';
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.torbox = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'torbox', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    await runCredentialTest('tb-test', 'tb-result', 'torbox', { apiKey });
   });
 
   // Premiumize
   document.getElementById('pm-test').addEventListener('click', async () => {
-    const btn = document.getElementById('pm-test');
     const result = document.getElementById('pm-result');
     const apiKey = document.getElementById('pm-apikey').value.trim();
     if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Testing…';
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.premiumize = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'premiumize', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    await runCredentialTest('pm-test', 'pm-result', 'premiumize', { apiKey });
   });
 
   // AllDebrid
   document.getElementById('ad-test').addEventListener('click', async () => {
-    const btn = document.getElementById('ad-test');
     const result = document.getElementById('ad-result');
     const apiKey = document.getElementById('ad-apikey').value.trim();
     if (!apiKey) { showResult(result, 'Please enter an API key', false); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Testing…';
-
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
-    s.credentials = s.credentials || {};
-    s.credentials.alldebrid = { apiKey };
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
-
-    const res = await chrome.runtime.sendMessage({ type: 'validate-credentials', mode: 'alldebrid', credentials: { apiKey } });
-    showResult(result, res.valid ? res.userInfo : (res.error || 'Validation failed'), res.valid);
-
-    btn.disabled = false;
-    btn.textContent = 'Save & Test';
+    await runCredentialTest('ad-test', 'ad-result', 'alldebrid', { apiKey });
   });
 
 
   // ── Save Functions ───────────────────────────────────────────────────
 
   async function saveMode() {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.mode = selectedMode;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
   }
 
   async function savePreferences() {
-    const s = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
     s.preferences.batchMode = document.getElementById('ob-batch-mode').checked;
     s.preferences.bannerStyle = document.getElementById('ob-banner-style').value;
     s.preferences.bannerPosition = document.getElementById('ob-banner-position').value;
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: s });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
 
     // Shield toggle
     const shieldEnabled = document.getElementById('ob-shield').checked;
-    await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled });
   }
 
 });

@@ -5,7 +5,7 @@
  * from the banner and batch panel. Three layers:
  *
  *   1. In-memory LRU (fastest, lives with the service worker)
- *   2. Persistent chrome.storage.local (survives SW restarts)
+ *   2. Persistent MAGNETAR_API.storage.local (survives SW restarts)
  *   3. In-flight promise dedup (10 parallel calls for same hash → 1 API hit)
  *
  * TTL policy is status-aware:
@@ -55,7 +55,7 @@ const MagnetarCacheStore = (() => {
   async function loadPersist() {
     if (persistLoaded) return;
     try {
-      const data = await chrome.storage.local.get([STORAGE_KEY]);
+      const data = await MAGNETAR_API.storage.local.get([STORAGE_KEY]);
       const raw = data[STORAGE_KEY] || {};
       persistMap = new Map(Object.entries(raw));
     } catch (e) {
@@ -87,7 +87,7 @@ const MagnetarCacheStore = (() => {
       // restart — we don't want to keep poisoning storage.set() calls from
       // other modules (history, saved, shield).
       const tryWrite = async () => {
-        await chrome.storage.local.set({
+        await MAGNETAR_API.storage.local.set({
           [STORAGE_KEY]: Object.fromEntries(persistMap)
         });
       };
@@ -114,7 +114,7 @@ const MagnetarCacheStore = (() => {
         // than hammering storage.set() on every subsequent write.
         persistMap = null;
         persistLoaded = false;
-        try { await chrome.storage.local.remove([STORAGE_KEY]); } catch (_) {}
+        try { await MAGNETAR_API.storage.local.remove([STORAGE_KEY]); } catch (_) {}
       }
     }, 2000);
   }
@@ -204,7 +204,7 @@ const MagnetarCacheStore = (() => {
     persistMap = new Map();
     persistLoaded = true;
     try {
-      await chrome.storage.local.remove([STORAGE_KEY]);
+      await MAGNETAR_API.storage.local.remove([STORAGE_KEY]);
     } catch (e) {}
   }
 

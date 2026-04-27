@@ -1,13 +1,12 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "1.4.10",
+  "version": "1.4.13",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
     "storage",
     "contextMenus",
-    "tabs",
     "webNavigation",
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
@@ -26,6 +25,8 @@
         "<all_urls>"
       ],
       "js": [
+        "lib/browser-polyfill.min.js",
+        "lib/api-shim.js",
         "lib/detector.js",
         "lib/categories.js",
         "content.js"

@@ -14,7 +14,7 @@ const ProviderAllDebrid = {
 
   async validateCredentials(creds) {
     try {
-      const res = await fetch(`${this.baseUrl}/user?${this._params(creds.apiKey)}`);
+      const res = await magnetarFetch(`${this.baseUrl}/user?${this._params(creds.apiKey)}`);
       if (!res.ok) return { valid: false, error: 'Invalid API key' };
       const data = await res.json();
 
@@ -40,7 +40,7 @@ const ProviderAllDebrid = {
       const formData = new URLSearchParams();
       formData.append('magnets[]', magnetUri);
 
-      const res = await fetch(`${this.baseUrl}/magnet/upload?${this._params(creds.apiKey)}`, {
+      const res = await magnetarFetch(`${this.baseUrl}/magnet/upload?${this._params(creds.apiKey)}`, {
         method: 'POST',
         body: formData
       });
@@ -64,7 +64,7 @@ const ProviderAllDebrid = {
   async checkCache(hash, creds) {
     if (!creds?.apiKey) return 'unknown';
     try {
-      const res = await fetch(
+      const res = await magnetarFetch(
         `${this.baseUrl}/magnet/instant?${this._params(creds.apiKey)}&magnets[]=${hash}`
       );
       if (!res.ok) return 'unknown';
@@ -82,6 +82,6 @@ const ProviderAllDebrid = {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.ProviderAllDebrid = ProviderAllDebrid;
+if (typeof self !== 'undefined') {
+  self.ProviderAllDebrid = ProviderAllDebrid;
 }

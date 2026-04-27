@@ -9,7 +9,7 @@ const ProviderRdtClient = {
   async validateCredentials(creds) {
     try {
       const url = creds.url.replace(/\/+$/, '');
-      const res = await fetch(`${url}/api/v2/auth/login`, {
+      const res = await magnetarFetch(`${url}/api/v2/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `username=${encodeURIComponent(creds.username)}&password=${encodeURIComponent(creds.password)}`
@@ -26,7 +26,7 @@ const ProviderRdtClient = {
       const url = creds.url.replace(/\/+$/, '');
 
       // Login first to get session
-      const loginRes = await fetch(`${url}/api/v2/auth/login`, {
+      const loginRes = await magnetarFetch(`${url}/api/v2/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `username=${encodeURIComponent(creds.username)}&password=${encodeURIComponent(creds.password)}`
@@ -42,7 +42,7 @@ const ProviderRdtClient = {
         body += `&category=${encodeURIComponent(options.category)}`;
       }
 
-      const addRes = await fetch(`${url}/api/v2/torrents/add`, {
+      const addRes = await magnetarFetch(`${url}/api/v2/torrents/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -69,6 +69,6 @@ const ProviderRdtClient = {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.ProviderRdtClient = ProviderRdtClient;
+if (typeof self !== 'undefined') {
+  self.ProviderRdtClient = ProviderRdtClient;
 }

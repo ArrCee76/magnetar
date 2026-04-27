@@ -27,6 +27,6 @@ const ProviderLocal = {
   }
 };
 
-if (typeof window !== 'undefined') {
-  window.ProviderLocal = ProviderLocal;
+if (typeof self !== 'undefined') {
+  self.ProviderLocal = ProviderLocal;
 }

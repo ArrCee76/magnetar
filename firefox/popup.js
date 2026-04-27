@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Theme: apply saved preference before anything renders ──
   try {
-    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
     const dark = themeRes?.theme === 'dark';
     if (dark) document.documentElement.classList.add('mg-dark');
     const iconDark = document.getElementById('theme-icon-dark');
@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       iconLight.style.display = isDark ? '' : 'none';
     }
     try {
-      await chrome.runtime.sendMessage({ type: 'set-theme', theme: isDark ? 'dark' : 'light' });
+      await MAGNETAR_API.runtime.sendMessage({ type: 'set-theme', theme: isDark ? 'dark' : 'light' });
     } catch (e) {}
   });
 
   // Live-sync: if theme is changed from another surface (banner, options), reflect here.
-  chrome.storage.onChanged.addListener((changes, area) => {
+  MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
     const newTheme = changes.magnetar.newValue?.preferences?.theme;
     if (!newTheme) return;
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  const t = (key, ...subs) => chrome.i18n.getMessage(key, subs) || key;
+  const t = (key, ...subs) => MAGNETAR_API.i18n.getMessage(key, subs) || key;
 
   // Hydrate data-i18n attributes
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -59,15 +59,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // ── Load settings ──
-  const settings = await chrome.runtime.sendMessage({ type: 'get-settings' });
-  const shield = await chrome.runtime.sendMessage({ type: 'shield-get' });
+  const settings = await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' });
+  const shield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
 
   // ── Mode selector ──
   const modeSelect = document.getElementById('mode-select');
   modeSelect.value = settings?.mode || 'local';
 
   modeSelect.addEventListener('change', async () => {
-    const newSettings = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    const newSettings = await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' });
     newSettings.mode = modeSelect.value;
 
     // Check if credentials exist for this mode
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => gear.style.color = '', 1500);
     }
 
-    await chrome.runtime.sendMessage({ type: 'save-settings', data: newSettings });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: newSettings });
   });
 
   // ── Shield toggle ──
@@ -91,23 +91,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   shieldCount.textContent = count === 1 ? t('popupShieldCountSingular') : t('popupShieldCount', String(count));
 
   shieldToggle.addEventListener('change', async () => {
-    await chrome.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldToggle.checked });
+    await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldToggle.checked });
   });
 
   // ── Manage shield → open settings ──
   document.getElementById('manage-shield').addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
+    MAGNETAR_API.runtime.openOptionsPage();
   });
 
   // ── Settings gear ──
   document.getElementById('open-settings').addEventListener('click', () => {
-    chrome.runtime.openOptionsPage();
+    MAGNETAR_API.runtime.openOptionsPage();
   });
 
   // ── Page status ──
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await MAGNETAR_API.tabs.query({ active: true, currentWindow: true });
   if (tab?.id) {
-    const detection = await chrome.runtime.sendMessage({ type: 'get-detection', tabId: tab.id });
+    const detection = await MAGNETAR_API.runtime.sendMessage({ type: 'get-detection', tabId: tab.id });
     const statusIcon = document.getElementById('status-icon');
     const statusText = document.getElementById('status-text');
 
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ── Version ──
-  const manifest = chrome.runtime.getManifest();
+  const manifest = MAGNETAR_API.runtime.getManifest();
   document.getElementById('popup-version').textContent = `v${manifest.version}`;
 
 });

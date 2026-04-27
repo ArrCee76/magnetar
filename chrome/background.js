@@ -8,8 +8,12 @@
 
 // Firefox MV2 loads libs via manifest.background.scripts (no importScripts in
 // non-worker background pages). Chrome MV3 service workers must call this.
+// The polyfill+shim load first so every subsequent lib sees the Promise API.
 if (typeof importScripts === 'function') {
   importScripts(
+    'lib/browser-polyfill.min.js',
+    'lib/api-shim.js',
+    'lib/fetch-helper.js',
     'lib/shield.js',
     'lib/cache-store.js',
     'lib/providers/local.js',
@@ -34,41 +38,41 @@ const providers = {
 
 // ── Init ─────────────────────────────────────────────────────────────────
 
-chrome.runtime.onInstalled.addListener(async (details) => {
+MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
   // First install — open onboarding
   if (details.reason === 'install') {
-    chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
+    MAGNETAR_API.tabs.create({ url: MAGNETAR_API.runtime.getURL('onboarding.html') });
   }
 
   // Update — show What's New
   if (details.reason === 'update') {
     const prev = details.previousVersion;
-    const curr = chrome.runtime.getManifest().version;
+    const curr = MAGNETAR_API.runtime.getManifest().version;
     if (prev !== curr) {
-      await chrome.storage.local.set({ 'magnetar-whatsnew': { from: prev, to: curr, seen: false } });
-      chrome.tabs.create({ url: chrome.runtime.getURL('whatsnew.html') });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-whatsnew': { from: prev, to: curr, seen: false } });
+      MAGNETAR_API.tabs.create({ url: MAGNETAR_API.runtime.getURL('whatsnew.html') });
     }
   }
 
   // Set up context menus
-  chrome.contextMenus.removeAll();
+  await MAGNETAR_API.contextMenus.removeAll();
 
-  chrome.contextMenus.create({
+  MAGNETAR_API.contextMenus.create({
     id: 'magnetar-send-magnet',
-    title: chrome.i18n.getMessage('contextMenuSendMagnet') || 'Send magnet to Magnetar',
+    title: MAGNETAR_API.i18n.getMessage('contextMenuSendMagnet') || 'Send magnet to Magnetar',
     contexts: ['link'],
     targetUrlPatterns: ['magnet:*']
   });
 
-  chrome.contextMenus.create({
+  MAGNETAR_API.contextMenus.create({
     id: 'magnetar-block',
-    title: chrome.i18n.getMessage('contextMenuBlock'),
+    title: MAGNETAR_API.i18n.getMessage('contextMenuBlock'),
     contexts: ['page']
   });
 
-  chrome.contextMenus.create({
+  MAGNETAR_API.contextMenus.create({
     id: 'magnetar-unblock',
-    title: chrome.i18n.getMessage('contextMenuUnblock'),
+    title: MAGNETAR_API.i18n.getMessage('contextMenuUnblock'),
     contexts: ['page']
   });
 
@@ -76,14 +80,15 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   await MagnetarShield.init();
 
   // Set default settings if needed
-  const data = await chrome.storage.sync.get(['magnetar']);
+  const data = await MAGNETAR_API.storage.sync.get(['magnetar']);
   if (!data.magnetar) {
-    await chrome.storage.sync.set({
+    await MAGNETAR_API.storage.sync.set({
       magnetar: {
         mode: 'local',
         credentials: {},
         customSites: [],
         preferences: {
+          theme: 'dark',
           bannerPosition: 'top',
           bannerEnabled: true,
           batchMode: false,
@@ -100,9 +105,26 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         }
       }
     });
-  } else if (data.magnetar.preferences) {
-    // Migrate existing installs — add new preference keys
+  } else {
+    // Migrate existing installs — add any missing containers / preference keys.
     let dirty = false;
+    if (!data.magnetar.credentials) {
+      data.magnetar.credentials = {};
+      dirty = true;
+    }
+    if (!Array.isArray(data.magnetar.customSites)) {
+      data.magnetar.customSites = [];
+      dirty = true;
+    }
+    if (!data.magnetar.preferences) {
+      data.magnetar.preferences = {};
+      dirty = true;
+    }
+
+    if (data.magnetar.preferences.theme === undefined) {
+      data.magnetar.preferences.theme = 'dark';
+      dirty = true;
+    }
     if (data.magnetar.preferences.bannerEnabled === undefined) {
       data.magnetar.preferences.bannerEnabled = true;
       dirty = true;
@@ -112,14 +134,14 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       dirty = true;
     }
     if (dirty) {
-      await chrome.storage.sync.set({ magnetar: data.magnetar });
+      await MAGNETAR_API.storage.sync.set({ magnetar: data.magnetar });
     }
   }
 
   // Init download history storage if needed
-  const hist = await chrome.storage.local.get(['magnetar-history']);
+  const hist = await MAGNETAR_API.storage.local.get(['magnetar-history']);
   if (!hist['magnetar-history']) {
-    await chrome.storage.local.set({ 'magnetar-history': [] });
+    await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
   }
 });
 
@@ -130,19 +152,19 @@ MagnetarShield.init().catch(() => {});
 
 // ── Context Menu Handling ────────────────────────────────────────────────
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.url) return;
 
   try {
     if (info.menuItemId === 'magnetar-send-magnet' && info.linkUrl?.startsWith('magnet:')) {
-      const settings = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       const mode = settings.mode || 'local';
       const provider = providers[mode];
 
       if (mode === 'local') {
         // Open magnet in default client. Wrap in catch — the tab may be gone
         // between right-click and execution, which raises "No tab with id: N".
-        chrome.tabs.update(tab.id, { url: info.linkUrl }).catch(() => {});
+        MAGNETAR_API.tabs.update(tab.id, { url: info.linkUrl }).catch(() => {});
       } else if (provider) {
         const creds = settings.credentials?.[mode] || {};
         const result = await provider.sendMagnet(info.linkUrl, creds, { category: '' });
@@ -167,7 +189,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     if (info.menuItemId === 'magnetar-block') {
       await MagnetarShield.blockDomain(domain);
       // Tab may be gone already when the user right-clicks then navigates away.
-      chrome.tabs.remove(tab.id).catch(() => {});
+      MAGNETAR_API.tabs.remove(tab.id).catch(() => {});
     }
 
     if (info.menuItemId === 'magnetar-unblock') {
@@ -181,7 +203,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // ── Tab Navigation — close tabs heading to blocked domains ───────────────
 
-chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+MAGNETAR_API.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId !== 0) return;
 
   try {
@@ -191,7 +213,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
     if (blocked) {
       try {
-        await chrome.tabs.remove(details.tabId);
+        await MAGNETAR_API.tabs.remove(details.tabId);
       } catch (e) {
         // Tab may already be closed — ignore
       }
@@ -222,20 +244,20 @@ const iconStates = {
   }
 };
 
-// Cross-browser action API: chrome.action on MV3, chrome.browserAction on MV2 Firefox.
-const browserAction = chrome.action || chrome.browserAction;
+// Cross-browser action API: MAGNETAR_API.action on MV3, MAGNETAR_API.browserAction on MV2 Firefox.
+const browserAction = MAGNETAR_API.action || MAGNETAR_API.browserAction;
 
-// chrome.storage.session is MV3-only. Fall back to an in-memory Map on Firefox.
+// MAGNETAR_API.storage.session is MV3-only. Fall back to an in-memory Map on Firefox.
 // Service-worker restarts on Chrome wipe storage.session anyway, so the
 // semantics (per-session, non-persistent) are equivalent.
 const sessionStore = (() => {
-  if (typeof chrome !== 'undefined'
-      && chrome.storage
-      && chrome.storage.session
-      && typeof chrome.storage.session.set === 'function') {
+  if (typeof MAGNETAR_API !== 'undefined'
+      && MAGNETAR_API.storage
+      && MAGNETAR_API.storage.session
+      && typeof MAGNETAR_API.storage.session.set === 'function') {
     return {
-      async set(obj) { return chrome.storage.session.set(obj); },
-      async get(keys) { return chrome.storage.session.get(keys); }
+      async set(obj) { return MAGNETAR_API.storage.session.set(obj); },
+      async get(keys) { return MAGNETAR_API.storage.session.get(keys); }
     };
   }
   const mem = new Map();
@@ -261,7 +283,7 @@ function setIconState(tabId, state) {
   } catch (e) {}
 }
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+MAGNETAR_API.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === 'loading') {
     setIconState(tabId, 'default');
   }
@@ -277,7 +299,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 // settings change, if the active mode OR its credentials changed, clear the
 // cache to be safe. Cheap operation, worst case it warms back up in a session.
 
-chrome.storage.onChanged.addListener((changes, area) => {
+MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
   if (area !== 'sync' || !changes.magnetar) return;
   const oldS = changes.magnetar.oldValue || {};
   const newS = changes.magnetar.newValue || {};
@@ -304,7 +326,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
  * (one round-trip) and touches exactly what it needs to touch.
  */
 async function commitPostSend({ hash, name, provider, category, pageUrl }) {
-  const data = await chrome.storage.local.get([
+  const data = await MAGNETAR_API.storage.local.get([
     'magnetar-history',
     'magnetar-send-count',
     'magnetar-saved'
@@ -335,7 +357,7 @@ async function commitPostSend({ hash, name, provider, category, pageUrl }) {
     update['magnetar-saved'] = saved.filter(s => s.hash !== hash);
   }
 
-  await chrome.storage.local.set(update);
+  await MAGNETAR_API.storage.local.set(update);
   return currentCount + 1;
 }
 
@@ -352,12 +374,20 @@ async function commitPostSend({ hash, name, provider, category, pageUrl }) {
 // resolves. That's the symptom hudsgiant reported: settings get saved (the
 // quick handler resolves in time) but validate-credentials hangs (the slower
 // fetch handler returns after the listener exits).
-chrome.runtime.onMessage.addListener((msg, sender) => {
+MAGNETAR_API.runtime.onMessage.addListener((msg, sender) => {
   return handleMessage(msg, sender).catch(err => {
     console.error('Magnetar: message handler error', err);
     return { error: err.message };
   });
 });
+
+function withTimeout(promise, ms, timeoutResult) {
+  let timer;
+  const timeoutPromise = new Promise(resolve => {
+    timer = setTimeout(() => resolve(timeoutResult), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
+}
 
 async function handleMessage(msg, sender) {
   const tabId = sender.tab?.id;
@@ -380,17 +410,17 @@ async function handleMessage(msg, sender) {
     }
 
     case 'get-settings': {
-      const data = await chrome.storage.sync.get(['magnetar']);
+      const data = await MAGNETAR_API.storage.sync.get(['magnetar']);
       return data.magnetar || {};
     }
 
     case 'save-settings': {
-      await chrome.storage.sync.set({ magnetar: msg.data });
+      await MAGNETAR_API.storage.sync.set({ magnetar: msg.data });
       return { ok: true };
     }
 
     case 'send-magnet': {
-      const settings = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       const mode = settings.mode || 'local';
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
@@ -422,7 +452,7 @@ async function handleMessage(msg, sender) {
     }
 
     case 'batch-send': {
-      const settings = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       const mode = settings.mode || 'local';
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
@@ -437,8 +467,8 @@ async function handleMessage(msg, sender) {
         if (mode === 'local') {
           results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri });
           // Local mode: just bump the count (no history because nothing actually sent)
-          const sc = await chrome.storage.local.get(['magnetar-send-count']);
-          await chrome.storage.local.set({
+          const sc = await MAGNETAR_API.storage.local.get(['magnetar-send-count']);
+          await MAGNETAR_API.storage.local.set({
             'magnetar-send-count': (sc['magnetar-send-count'] || 0) + 1
           });
           continue;
@@ -474,7 +504,7 @@ async function handleMessage(msg, sender) {
     }
 
     case 'check-cache': {
-      const settings = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       const mode = settings.mode || 'local';
       const provider = providers[mode];
       if (!provider) return { status: 'unknown' };
@@ -511,11 +541,15 @@ async function handleMessage(msg, sender) {
     case 'validate-credentials': {
       const provider = providers[msg.mode];
       if (!provider) return { valid: false, error: 'Unknown mode' };
-      return await provider.validateCredentials(msg.credentials);
+      return await withTimeout(
+        provider.validateCredentials(msg.credentials || {}),
+        15000,
+        { valid: false, error: 'Connection timed out. Check the API key, network, or provider status.' }
+      );
     }
 
     case 'shield-get': {
-      const data = await chrome.storage.local.get(['shield']);
+      const data = await MAGNETAR_API.storage.local.get(['shield']);
       return data.shield || { enabled: true, blockedDomains: [] };
     }
 
@@ -540,25 +574,25 @@ async function handleMessage(msg, sender) {
     }
 
     case 'get-history': {
-      const data = await chrome.storage.local.get(['magnetar-history']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       return data['magnetar-history'] || [];
     }
 
     case 'clear-history': {
-      await chrome.storage.local.set({ 'magnetar-history': [] });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
       return { ok: true };
     }
 
     case 'delete-history-item': {
-      const data = await chrome.storage.local.get(['magnetar-history']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
       const filtered = history.filter(h => h.hash !== msg.hash);
-      await chrome.storage.local.set({ 'magnetar-history': filtered });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-history': filtered });
       return { ok: true };
     }
 
     case 'check-history': {
-      const data = await chrome.storage.local.get(['magnetar-history']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
       const historyHashes = new Set(history.map(h => h.hash));
       const results = {};
@@ -569,14 +603,14 @@ async function handleMessage(msg, sender) {
     }
 
     case 'check-single-history': {
-      const data = await chrome.storage.local.get(['magnetar-history']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
       return { inHistory: history.some(h => h.hash === msg.hash) };
     }
 
     // ── Saved-for-later queue ──────────────────────────────────────────
     case 'save-torrent': {
-      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
       const saved = data['magnetar-saved'] || [];
       if (saved.some(s => s.hash === msg.hash)) {
         return { ok: true, alreadySaved: true };
@@ -590,62 +624,62 @@ async function handleMessage(msg, sender) {
         savedAt: Date.now()
       });
       if (saved.length > 500) saved.length = 500;
-      await chrome.storage.local.set({ 'magnetar-saved': saved });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': saved });
       return { ok: true };
     }
 
     case 'get-saved': {
-      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
       return data['magnetar-saved'] || [];
     }
 
     case 'delete-saved-item': {
-      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
       const saved = data['magnetar-saved'] || [];
       const filtered = saved.filter(s => s.hash !== msg.hash);
-      await chrome.storage.local.set({ 'magnetar-saved': filtered });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': filtered });
       return { ok: true };
     }
 
     case 'clear-saved': {
-      await chrome.storage.local.set({ 'magnetar-saved': [] });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': [] });
       return { ok: true };
     }
 
     case 'check-saved': {
-      const data = await chrome.storage.local.get(['magnetar-saved']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
       const saved = data['magnetar-saved'] || [];
       return { isSaved: saved.some(s => s.hash === msg.hash) };
     }
 
     case 'get-whatsnew': {
-      const data = await chrome.storage.local.get(['magnetar-whatsnew']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-whatsnew']);
       return data['magnetar-whatsnew'] || null;
     }
 
     case 'dismiss-whatsnew': {
-      const data = await chrome.storage.local.get(['magnetar-whatsnew']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-whatsnew']);
       if (data['magnetar-whatsnew']) {
         data['magnetar-whatsnew'].seen = true;
-        await chrome.storage.local.set({ 'magnetar-whatsnew': data['magnetar-whatsnew'] });
+        await MAGNETAR_API.storage.local.set({ 'magnetar-whatsnew': data['magnetar-whatsnew'] });
       }
       return { ok: true };
     }
 
     case 'get-send-count': {
-      const data = await chrome.storage.local.get(['magnetar-send-count']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-send-count']);
       return { count: data['magnetar-send-count'] || 0 };
     }
 
     case 'dismiss-review-prompt': {
-      await chrome.storage.local.set({ 'magnetar-review-dismissed': true });
+      await MAGNETAR_API.storage.local.set({ 'magnetar-review-dismissed': true });
       return { ok: true };
     }
 
     case 'get-review-status': {
       const [countData, dismissData] = await Promise.all([
-        chrome.storage.local.get(['magnetar-send-count']),
-        chrome.storage.local.get(['magnetar-review-dismissed'])
+        MAGNETAR_API.storage.local.get(['magnetar-send-count']),
+        MAGNETAR_API.storage.local.get(['magnetar-review-dismissed'])
       ]);
       return {
         count: countData['magnetar-send-count'] || 0,
@@ -654,7 +688,7 @@ async function handleMessage(msg, sender) {
     }
 
     case 'export-history-csv': {
-      const data = await chrome.storage.local.get(['magnetar-history']);
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
       const header = 'Name,Hash,Provider,Category,URL,Date';
       const rows = history.map(h => {
@@ -666,20 +700,20 @@ async function handleMessage(msg, sender) {
     }
 
     case 'get-theme': {
-      const data = await chrome.storage.sync.get(['magnetar']);
-      return { theme: data.magnetar?.preferences?.theme || 'light' };
+      const data = await MAGNETAR_API.storage.sync.get(['magnetar']);
+      return { theme: data.magnetar?.preferences?.theme || 'dark' };
     }
 
     case 'set-theme': {
-      const s = (await chrome.storage.sync.get(['magnetar'])).magnetar || {};
+      const s = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       s.preferences = s.preferences || {};
       s.preferences.theme = msg.theme;
-      await chrome.storage.sync.set({ magnetar: s });
+      await MAGNETAR_API.storage.sync.set({ magnetar: s });
       return { ok: true };
     }
 
     case 'open-options': {
-      chrome.runtime.openOptionsPage();
+      MAGNETAR_API.runtime.openOptionsPage();
       return { ok: true };
     }
 

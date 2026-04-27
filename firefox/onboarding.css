@@ -785,3 +785,53 @@ body .field-select option {
   background: var(--mg-surface) !important;
   color: var(--mg-ink) !important;
 }
+
+/* ── 1.4.14: onboarding button palette fix ──────────────────────────────
+   Keep setup buttons on the Magnetar cream/charcoal palette in dark mode.
+   This overrides older white text / blue hover rules. */
+.btn-test,
+.btn-next,
+#finish {
+  background: var(--mg-ink) !important;
+  color: var(--mg-bg) !important;
+  border: 1px solid var(--mg-ink) !important;
+  border-radius: 8px !important;
+  font-family: var(--mg-font) !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  transition: all 0.15s ease !important;
+}
+
+.btn-test:hover:not(:disabled),
+.btn-next:hover:not(:disabled),
+#finish:hover:not(:disabled) {
+  background: var(--mg-ink-2) !important;
+  border-color: var(--mg-ink-2) !important;
+  color: var(--mg-bg) !important;
+}
+
+.btn-test:disabled,
+.btn-next:disabled,
+#finish:disabled {
+  background: var(--mg-surface-3) !important;
+  color: var(--mg-ink-3) !important;
+  border-color: var(--mg-border-mid) !important;
+  cursor: default !important;
+  opacity: 1 !important;
+}
+
+.btn-back {
+  background: transparent !important;
+  color: var(--mg-ink-3) !important;
+  border: 1px solid var(--mg-border) !important;
+  border-radius: 8px !important;
+  font-family: var(--mg-font) !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-back:hover:not(:disabled) {
+  background: var(--mg-surface-2) !important;
+  color: var(--mg-ink) !important;
+  border-color: var(--mg-border-mid) !important;
+}

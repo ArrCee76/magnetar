@@ -6,14 +6,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Theme: apply saved preference before anything renders ──
   try {
-    const themeRes = await chrome.runtime.sendMessage({ type: 'get-theme' });
+    const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
     if (themeRes?.theme === 'dark') {
       document.documentElement.classList.add('mg-dark');
     }
   } catch (e) {}
 
   // Live-sync if the user toggles theme from another surface while this tab is open.
-  chrome.storage?.onChanged?.addListener((changes, area) => {
+  MAGNETAR_API.storage?.onChanged?.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
     const newTheme = changes.magnetar.newValue?.preferences?.theme;
     if (!newTheme) return;
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Show version
-  const manifest = chrome.runtime.getManifest();
+  const manifest = MAGNETAR_API.runtime.getManifest();
   document.getElementById('whatsnew-version').textContent = `v${manifest.version}`;
 
   // ── Pagination ──
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function dismiss() {
-    await chrome.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
+    await MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
     window.close();
   }
 
@@ -76,5 +76,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   showPage(1);
 
   // Mark as seen on first view
-  chrome.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
+  MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
 });

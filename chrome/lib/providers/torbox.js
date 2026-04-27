@@ -15,21 +15,34 @@ const ProviderTorBox = {
   },
 
   async validateCredentials(creds) {
+    const apiKey = String(creds?.apiKey || '').trim();
+    if (!apiKey) return { valid: false, error: 'API key is required' };
+
     try {
-      const res = await fetch(`${this.baseUrl}/user/me`, {
-        headers: this._headers(creds.apiKey),
+      const res = await magnetarFetch(`${this.baseUrl}/user/me`, {
+        headers: this._headers(apiKey),
       });
-      if (!res.ok) return { valid: false, error: "Invalid API key" };
-      const data = await res.json();
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        return {
+          valid: false,
+          error: data.detail || data.error || `Invalid API key (HTTP ${res.status})`,
+        };
+      }
+
       const user = data.data || data;
+      const planNames = ['Free', 'Essential', 'Pro', 'Standard'];
+      const rawPlan = user.plan ?? user.account_type ?? user.subscription?.plan;
+      const rawPlanNumber = Number(rawPlan);
+      const plan = Number.isInteger(rawPlanNumber) ? planNames[rawPlanNumber] : rawPlan;
+
       return {
         valid: true,
-        userInfo: `${user.email || "Connected"} — ${
-          user.plan ? user.plan + " plan" : "Active"
-        }`,
+        userInfo: `${user.email || user.username || 'Connected'} — ${plan ? plan + ' plan' : 'Active'}`,
       };
     } catch (e) {
-      return { valid: false, error: "Connection failed: " + e.message };
+      return { valid: false, error: e.message || 'Connection failed' };
     }
   },
 
@@ -38,7 +51,7 @@ const ProviderTorBox = {
       const formData = new FormData();
       formData.append("magnet", magnetUri);
 
-      const res = await fetch(`${this.baseUrl}/torrents/createtorrent`, {
+      const res = await magnetarFetch(`${this.baseUrl}/torrents/createtorrent`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${creds.apiKey}`,
@@ -62,7 +75,7 @@ const ProviderTorBox = {
   async checkCache(hash, creds) {
     if (!creds?.apiKey) return "unknown";
     try {
-      const res = await fetch(
+      const res = await magnetarFetch(
         `${this.baseUrl}/torrents/checkcached?hash=${hash}&format=object`,
         {
           headers: this._headers(creds.apiKey),
@@ -82,6 +95,6 @@ const ProviderTorBox = {
   },
 };
 
-if (typeof window !== "undefined") {
-  window.ProviderTorBox = ProviderTorBox;
+if (typeof self !== 'undefined') {
+  self.ProviderTorBox = ProviderTorBox;
 }

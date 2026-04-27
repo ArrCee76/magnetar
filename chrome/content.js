@@ -14,12 +14,12 @@
 
   // ── i18n helper ──
   const t = (key, ...subs) => {
-    const msg = chrome.i18n.getMessage(key, subs);
+    const msg = MAGNETAR_API.i18n.getMessage(key, subs);
     return msg || key;
   };
 
-  // Browser detection. Firefox exposes the `browser` namespace and a
-  // gecko-only `getBrowserInfo` method — Chromium has neither.
+  // Browser detection. After webextension-polyfill, `browser` exists on both
+  // Chromium and Firefox, but `browser.runtime.getBrowserInfo` is gecko-only.
   const IS_FIREFOX = typeof browser !== 'undefined'
     && typeof browser.runtime?.getBrowserInfo === 'function';
   const STORE_URL = IS_FIREFOX
@@ -29,7 +29,7 @@
   // ── Get settings ──
   let settings;
   try {
-    settings = await chrome.runtime.sendMessage({ type: 'get-settings' });
+    settings = await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' });
   } catch (e) {
     return;
   }
@@ -41,7 +41,7 @@
   let batchMax = settings?.preferences?.batchMax || 25;
   const bannerPosition = settings?.preferences?.bannerPosition || 'top';
   const mode = settings?.mode || 'local';
-  let theme = settings?.preferences?.theme || 'light';
+  let theme = settings?.preferences?.theme || 'dark';
 
   // ── Run detection ──
   const result = MagnetarDetector.detect(customSites);
@@ -52,7 +52,7 @@
   if (result) result.category = category;
 
   // Report to background
-  chrome.runtime.sendMessage({ type: 'detection-result', data: result }).catch(() => {});
+  MAGNETAR_API.runtime.sendMessage({ type: 'detection-result', data: result }).catch(() => {});
 
   // ── Batch mode: show panel if multiple magnets found ──
   if (batchMode && allMagnets.length > 2) {
@@ -69,7 +69,7 @@
   // ── Duplicate detection ──
   let alreadySent = false;
   try {
-    const histCheck = await chrome.runtime.sendMessage({ type: 'check-single-history', hash: result.hash });
+    const histCheck = await MAGNETAR_API.runtime.sendMessage({ type: 'check-single-history', hash: result.hash });
     alreadySent = histCheck?.inHistory === true;
   } catch (e) {}
   if (result) result.alreadySent = alreadySent;
@@ -77,7 +77,7 @@
   // ── Cache check ──
   let cacheStatus = 'unknown';
   if (mode !== 'local') {
-    chrome.runtime.sendMessage({ type: 'check-cache', hash: result.hash })
+    MAGNETAR_API.runtime.sendMessage({ type: 'check-cache', hash: result.hash })
       .then(res => {
         if (res?.status) {
           cacheStatus = res.status;
@@ -119,14 +119,14 @@
     banner.querySelector('#magnetar-dismiss')?.addEventListener('click', () => dismissBanner());
     banner.querySelector('#magnetar-banner-settings')?.addEventListener('click', (e) => {
       e.preventDefault();
-      chrome.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
     });
 
     // Save-for-later button
     const saveBtn = banner.querySelector('#magnetar-save');
     if (saveBtn) {
       // Initial state: is this torrent already in the saved queue?
-      chrome.runtime.sendMessage({ type: 'check-saved', hash: detection.hash })
+      MAGNETAR_API.runtime.sendMessage({ type: 'check-saved', hash: detection.hash })
         .then(res => {
           if (res?.isSaved) markSaveButtonSaved(saveBtn);
         })
@@ -135,7 +135,7 @@
       saveBtn.addEventListener('click', async () => {
         if (saveBtn.classList.contains('magnetar-btn-saved')) return;
         try {
-          await chrome.runtime.sendMessage({
+          await MAGNETAR_API.runtime.sendMessage({
             type: 'save-torrent',
             hash: detection.hash,
             name: detection.name,
@@ -158,7 +158,7 @@
     banner.querySelector('#magnetar-theme')?.addEventListener('click', () => {
       theme = theme === 'dark' ? 'light' : 'dark';
       applyTheme(theme);
-      chrome.runtime.sendMessage({ type: 'set-theme', theme }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'set-theme', theme }).catch(() => {});
     });
   }
 
@@ -181,7 +181,7 @@
   }
 
   // Live-sync: follow theme changes made on any other surface (popup, options).
-  chrome.storage?.onChanged?.addListener((changes, area) => {
+  MAGNETAR_API.storage?.onChanged?.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
     const newTheme = changes.magnetar.newValue?.preferences?.theme;
     if (!newTheme || newTheme === theme) return;
@@ -219,10 +219,10 @@
     let saved = [];
     try {
       const [sc, hi, sh, sv] = await Promise.all([
-        chrome.runtime.sendMessage({ type: 'get-send-count' }).catch(() => ({})),
-        chrome.runtime.sendMessage({ type: 'get-history' }).catch(() => []),
-        chrome.runtime.sendMessage({ type: 'shield-get' }).catch(() => ({})),
-        chrome.runtime.sendMessage({ type: 'get-saved' }).catch(() => [])
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-send-count' }).catch(() => ({})),
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-history' }).catch(() => []),
+        MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' }).catch(() => ({})),
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-saved' }).catch(() => [])
       ]);
       sendCount = sc?.count || 0;
       history = Array.isArray(hi) ? hi : (hi?.history || []);
@@ -298,7 +298,7 @@
         </div>
         <div class="magnetar-activity">${activityHTML}</div>
         <div class="magnetar-bfoot">
-          <span>v${chrome.runtime.getManifest().version} · ${modeUpper}</span>
+          <span>v${MAGNETAR_API.runtime.getManifest().version} · ${modeUpper}</span>
           <div class="magnetar-bfoot-links">
             <a href="${STORE_URL}" target="_blank">review</a>
             <a href="https://buymeacoffee.com/arrcee76" target="_blank" class="magnetar-coffee">coffee</a>
@@ -309,7 +309,7 @@
 
     wrap.querySelector('#magnetar-view-history')?.addEventListener('click', (e) => {
       e.preventDefault();
-      chrome.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
     });
 
     // Saved-for-later: Send pill
@@ -321,7 +321,7 @@
         btn.disabled = true;
         btn.textContent = '…';
         try {
-          const result = await chrome.runtime.sendMessage({
+          const result = await MAGNETAR_API.runtime.sendMessage({
             type: 'send-magnet',
             hash: item.hash,
             name: item.name,
@@ -333,7 +333,7 @@
             if (result?.action === 'open-magnet' && result.magnetUri) {
               window.open(result.magnetUri, '_self');
               // Remove from saved queue for local mode (no auto-removal since recordHistory doesn't fire)
-              await chrome.runtime.sendMessage({ type: 'delete-saved-item', hash: item.hash }).catch(() => {});
+              await MAGNETAR_API.runtime.sendMessage({ type: 'delete-saved-item', hash: item.hash }).catch(() => {});
             }
             showToast('Sent');
             await populateExpanded(detection, mode);
@@ -381,7 +381,7 @@
     wrap.querySelectorAll('.magnetar-saved-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
         const hash = btn.dataset.hash;
-        await chrome.runtime.sendMessage({ type: 'delete-saved-item', hash }).catch(() => {});
+        await MAGNETAR_API.runtime.sendMessage({ type: 'delete-saved-item', hash }).catch(() => {});
         await populateExpanded(detection, mode);
         // If the removed hash is the one currently on the banner, also flip Save button back
         if (hash === detection.hash) {
@@ -499,7 +499,7 @@
 
     let historyMap = {};
     try {
-      historyMap = await chrome.runtime.sendMessage({
+      historyMap = await MAGNETAR_API.runtime.sendMessage({
         type: 'check-history',
         hashes: magnets.map(m => m.hash)
       });
@@ -690,7 +690,7 @@
       const checkOne = async (idx) => {
         const m = magnets[idx];
         try {
-          const res = await chrome.runtime.sendMessage({
+          const res = await MAGNETAR_API.runtime.sendMessage({
             type: 'check-cache', hash: m.hash
           });
           const dot = panel.querySelector(`#magnetar-bcd-${idx}`);
@@ -808,7 +808,7 @@
           const items = selected.map(m => ({
             hash: m.hash, name: m.name, magnetUri: m.magnetUri, category: mappedCategory
           }));
-          const response = await chrome.runtime.sendMessage({
+          const response = await MAGNETAR_API.runtime.sendMessage({
             type: 'batch-send', items, pageUrl: window.location.href
           });
           if (response?.results) {
@@ -854,7 +854,7 @@
 
       // Review prompt check
       try {
-        const review = await chrome.runtime.sendMessage({ type: 'get-review-status' });
+        const review = await MAGNETAR_API.runtime.sendMessage({ type: 'get-review-status' });
         if (review.count >= 200 && !review.dismissed) {
           showReviewPrompt();
         }
@@ -878,12 +878,12 @@
       theme = theme === 'dark' ? 'light' : 'dark';
       applyBatchTheme(theme);
       applyTheme(theme); // keep any open banner in sync
-      chrome.runtime.sendMessage({ type: 'set-theme', theme }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'set-theme', theme }).catch(() => {});
     });
 
     // ── Settings cog ──
     panel.querySelector('#magnetar-batch-settings')?.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
     });
 
     // ── Drawer: slide-out saved + history ──
@@ -900,15 +900,15 @@
 
     panel.querySelector('#magnetar-batch-view-history')?.addEventListener('click', (e) => {
       e.preventDefault();
-      chrome.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'open-options' }).catch(() => {});
     });
 
     async function refreshDrawer() {
       const [saved, history, sendCountRes, shieldRes] = await Promise.all([
-        chrome.runtime.sendMessage({ type: 'get-saved' }).catch(() => []),
-        chrome.runtime.sendMessage({ type: 'get-history' }).catch(() => []),
-        chrome.runtime.sendMessage({ type: 'get-send-count' }).catch(() => ({})),
-        chrome.runtime.sendMessage({ type: 'shield-get' }).catch(() => ({}))
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-saved' }).catch(() => []),
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-history' }).catch(() => []),
+        MAGNETAR_API.runtime.sendMessage({ type: 'get-send-count' }).catch(() => ({})),
+        MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' }).catch(() => ({}))
       ]);
       const savedList = Array.isArray(saved) ? saved : [];
       const histList = Array.isArray(history) ? history : (history?.history || []);
@@ -986,7 +986,7 @@
             btn.disabled = true;
             btn.textContent = '…';
             try {
-              const result = await chrome.runtime.sendMessage({
+              const result = await MAGNETAR_API.runtime.sendMessage({
                 type: 'send-magnet',
                 hash: item.hash, name: item.name, magnetUri: item.magnetUri,
                 category: item.category || '', pageUrl: item.sourceUrl || ''
@@ -994,7 +994,7 @@
               if (result?.success || result?.action === 'open-magnet') {
                 if (result?.action === 'open-magnet' && result.magnetUri) {
                   window.open(result.magnetUri, '_self');
-                  await chrome.runtime.sendMessage({ type: 'delete-saved-item', hash: item.hash }).catch(() => {});
+                  await MAGNETAR_API.runtime.sendMessage({ type: 'delete-saved-item', hash: item.hash }).catch(() => {});
                 }
                 showToast('Sent');
                 await refreshDrawer();
@@ -1011,7 +1011,7 @@
 
         savedHost.querySelectorAll('.magnetar-saved-delete').forEach(btn => {
           btn.addEventListener('click', async () => {
-            await chrome.runtime.sendMessage({ type: 'delete-saved-item', hash: btn.dataset.hash }).catch(() => {});
+            await MAGNETAR_API.runtime.sendMessage({ type: 'delete-saved-item', hash: btn.dataset.hash }).catch(() => {});
             await refreshDrawer();
           });
         });
@@ -1044,10 +1044,10 @@
         batchMax = n;
         // Persist
         try {
-          const current = (await chrome.runtime.sendMessage({ type: 'get-settings' })) || {};
+          const current = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
           current.preferences = current.preferences || {};
           current.preferences.batchMax = n;
-          await chrome.runtime.sendMessage({ type: 'save-settings', data: current });
+          await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: current });
         } catch (e) {}
         // Redraw panel — simplest path: remove it and re-detect.
         // `allMagnets` is captured in the outer closure; we re-slice here.
@@ -1067,7 +1067,7 @@
         if (!m) return;
         if (btn.classList.contains('magnetar-batch-row-save-done')) return;
         try {
-          await chrome.runtime.sendMessage({
+          await MAGNETAR_API.runtime.sendMessage({
             type: 'save-torrent',
             hash: m.hash, name: m.name, magnetUri: m.magnetUri,
             category: MagnetarCategories.detect(),
@@ -1081,7 +1081,7 @@
     });
 
     // Pre-mark rows for items already in the saved queue
-    chrome.runtime.sendMessage({ type: 'get-saved' }).then(saved => {
+    MAGNETAR_API.runtime.sendMessage({ type: 'get-saved' }).then(saved => {
       const hashes = new Set((Array.isArray(saved) ? saved : []).map(s => s.hash));
       panel.querySelectorAll('.magnetar-batch-row-save').forEach(btn => {
         const idx = parseInt(btn.dataset.index, 10);
@@ -1115,7 +1115,7 @@
     btn.disabled = true;
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await MAGNETAR_API.runtime.sendMessage({
         type: 'send-magnet',
         magnetUri: detection.magnetUri,
         hash: detection.hash,
@@ -1131,7 +1131,7 @@
         showSuccess();
         // Review prompt check
         try {
-          const review = await chrome.runtime.sendMessage({ type: 'get-review-status' });
+          const review = await MAGNETAR_API.runtime.sendMessage({ type: 'get-review-status' });
           if (review.count >= 200 && !review.dismissed) {
             setTimeout(() => showReviewPrompt(), 3000);
           }
@@ -1370,7 +1370,7 @@
     // Any of the three actions permanently dismisses — the user shouldn't
     // see this prompt again whether they rated, donated, or declined.
     const dismiss = () => {
-      chrome.runtime.sendMessage({ type: 'dismiss-review-prompt' }).catch(() => {});
+      MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-review-prompt' }).catch(() => {});
       prompt.classList.remove('magnetar-visible');
       setTimeout(() => prompt.remove(), 300);
     };
