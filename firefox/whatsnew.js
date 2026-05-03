@@ -1,18 +1,17 @@
 /**
- * Magnetar — What's New Script
+ * Magnetar What's New
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.getElementById('whatsnew-form');
+  const goButton = document.getElementById('whatsnew-go');
+  const status = document.getElementById('whatsnew-status');
 
-  // ── Theme: apply saved preference before anything renders ──
   try {
     const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
-    if (themeRes?.theme === 'dark') {
-      document.documentElement.classList.add('mg-dark');
-    }
+    document.documentElement.classList.toggle('mg-dark', themeRes?.theme === 'dark');
   } catch (e) {}
 
-  // Live-sync if the user toggles theme from another surface while this tab is open.
   MAGNETAR_API.storage?.onChanged?.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
     const newTheme = changes.magnetar.newValue?.preferences?.theme;
@@ -20,61 +19,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.classList.toggle('mg-dark', newTheme === 'dark');
   });
 
-  // Show version
-  const manifest = MAGNETAR_API.runtime.getManifest();
-  document.getElementById('whatsnew-version').textContent = `v${manifest.version}`;
-
-  // ── Pagination ──
-  const pages = Array.from(document.querySelectorAll('.whatsnew-page'));
-  const dots = Array.from(document.querySelectorAll('.whatsnew-dot'));
-  const btnPrev = document.getElementById('whatsnew-prev');
-  const btnNext = document.getElementById('whatsnew-next');
-  const btnSkip = document.getElementById('whatsnew-skip');
-
-  let current = 1;
-  const total = pages.length;
-
-  function showPage(n) {
-    current = Math.max(1, Math.min(total, n));
-    pages.forEach(p => {
-      p.style.display = Number(p.dataset.page) === current ? '' : 'none';
-    });
-    dots.forEach(d => {
-      d.classList.toggle('whatsnew-dot-active', Number(d.dataset.dot) === current);
-    });
-    btnPrev.style.display = current > 1 ? '' : 'none';
-    btnSkip.style.display = current < total ? '' : 'none';
-    btnNext.textContent = current === total ? 'Got it' : 'Next';
+  function setChecked(name, value, fallback) {
+    const safeValue = value || fallback;
+    const control = document.querySelector(`input[name="${name}"][value="${safeValue}"]`);
+    if (control) control.checked = true;
   }
 
-  async function dismiss() {
+  try {
+    const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+    const preferences = settings.preferences || {};
+    setChecked('interface-mode', preferences.interfaceMode === 'advanced' ? 'advanced' : 'standard', 'standard');
+    setChecked('toolbar-style', preferences.bannerStyle === 'compact' ? 'compact' : 'full', 'full');
+  } catch (e) {
+    setChecked('interface-mode', 'standard', 'standard');
+    setChecked('toolbar-style', 'full', 'full');
+  }
+
+  async function dismissWhatsNew() {
     await MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
-    window.close();
   }
 
-  btnPrev.addEventListener('click', () => showPage(current - 1));
-  btnNext.addEventListener('click', () => {
-    if (current === total) {
-      dismiss();
-    } else {
-      showPage(current + 1);
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    goButton.disabled = true;
+    status.textContent = 'Saving...';
+
+    try {
+      const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+      settings.preferences = settings.preferences || {};
+
+      const interfaceMode = document.querySelector('input[name="interface-mode"]:checked')?.value;
+      const toolbarStyle = document.querySelector('input[name="toolbar-style"]:checked')?.value;
+
+      settings.preferences.interfaceMode = interfaceMode === 'advanced' ? 'advanced' : 'standard';
+      settings.preferences.bannerStyle = toolbarStyle === 'compact' ? 'compact' : 'full';
+
+      await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: settings });
+      await dismissWhatsNew();
+      window.close();
+      status.textContent = 'Saved.';
+    } catch (e) {
+      status.textContent = 'Could not save. Try again.';
+      goButton.disabled = false;
     }
   });
-  btnSkip.addEventListener('click', dismiss);
 
-  dots.forEach(d => {
-    d.addEventListener('click', () => showPage(Number(d.dataset.dot)));
-  });
-
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') btnNext.click();
-    if (e.key === 'ArrowLeft' && current > 1) showPage(current - 1);
-    if (e.key === 'Escape') dismiss();
-  });
-
-  showPage(1);
-
-  // Mark as seen on first view
   MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
 });

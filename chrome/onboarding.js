@@ -105,6 +105,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Start with local selected
   selectMode('local');
 
+  try {
+    const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+    document.getElementById('ob-interface-mode').value =
+      settings?.preferences?.interfaceMode === 'advanced' ? 'advanced' : 'standard';
+  } catch (e) {}
+
 
   // ── Step 1: Credential Save & Test ───────────────────────────────────
 
@@ -135,6 +141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const s = await getSettingsForUpdate();
     s.credentials = s.credentials || {};
     s.credentials[mode] = credentials;
+    s.providerStatus = s.providerStatus || {};
+    s.providerStatus[mode] = { valid: false, testedAt: Date.now() };
     await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
 
     const res = await sendRuntimeMessage({
@@ -142,6 +150,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       mode,
       credentials
     }, 20000);
+
+    s.providerStatus[mode] = {
+      valid: res?.valid === true,
+      testedAt: Date.now()
+    };
+    await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
 
     return res || { valid: false, error: 'No response from extension background.' };
   }
@@ -221,6 +235,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function savePreferences() {
     const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     s.preferences = s.preferences || {};
+    const interfaceMode = document.getElementById('ob-interface-mode').value;
+    s.preferences.interfaceMode = interfaceMode === 'advanced' ? 'advanced' : 'standard';
     s.preferences.batchMode = document.getElementById('ob-batch-mode').checked;
     s.preferences.bannerStyle = document.getElementById('ob-banner-style').value;
     s.preferences.bannerPosition = document.getElementById('ob-banner-position').value;

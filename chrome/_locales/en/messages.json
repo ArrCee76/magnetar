@@ -392,9 +392,21 @@
     "message": "(optional, for cache checking)",
     "description": "Hint for optional RD key"
   },
+  "labelQbDashboardUrl": {
+    "message": "qBittorrent dashboard URL",
+    "description": "Optional qBittorrent dashboard URL label"
+  },
+  "labelDashboardUrl": {
+    "message": "Dashboard URL",
+    "description": "Optional provider dashboard URL label"
+  },
   "placeholderRdApiKey": {
     "message": "Paste your Real-Debrid API key",
     "description": "Placeholder for RD API key input"
+  },
+  "placeholderQbDashboardUrl": {
+    "message": "http://localhost:8080",
+    "description": "Placeholder for qBittorrent dashboard URL"
   },
   "placeholderRdtUrl": {
     "message": "https://rdt.example.com or http://192.168.1.111:6500",
@@ -411,6 +423,14 @@
   "placeholderRdtRdKey": {
     "message": "RD API key for cache checks",
     "description": "Placeholder for optional RD key in RDT Client"
+  },
+  "placeholderRdtDashboardUrl": {
+    "message": "https://rdt.example.com",
+    "description": "Placeholder for RDT Client dashboard URL"
+  },
+  "hintDashboardUrlOptional": {
+    "message": "Optional. Used only for the Open provider button after a successful send.",
+    "description": "Hint for optional provider dashboard URLs"
   },
   "placeholderTorBoxKey": {
     "message": "Paste your TorBox API key",
@@ -504,7 +524,23 @@
     "description": "Banner position option"
   },
 
-  "sectionShield": {
+    "interfaceModeLabel": {
+    "message": "Interface mode",
+    "description": "Interface mode setting label"
+  },
+  "interfaceModeDesc": {
+    "message": "Standard keeps Magnetar simple. Advanced shows extra controls for power users.",
+    "description": "Interface mode setting description"
+  },
+  "interfaceModeStandard": {
+    "message": "Standard",
+    "description": "Standard interface mode option"
+  },
+  "interfaceModeAdvanced": {
+    "message": "Advanced",
+    "description": "Advanced interface mode option"
+  },
+"sectionShield": {
     "message": "Magnetar Shield",
     "description": "Shield settings section heading"
   },

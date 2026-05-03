@@ -66,6 +66,9 @@
       <!-- Credential panels -->
       <div class="creds-panel" id="creds-local" style="display:none">
         <div class="creds-note" data-i18n="credsNoConfig">No configuration needed. Magnetar will fire magnet links to your system's default torrent client.</div>
+        <label class="field-label" data-i18n="labelQbDashboardUrl">qBittorrent dashboard URL</label>
+        <input type="url" class="field-input" id="local-dashboard-url" data-i18n-placeholder="placeholderQbDashboardUrl" placeholder="http://localhost:8080">
+        <div class="field-hint" data-i18n="hintDashboardUrlOptional">Optional. Used only for the Open provider button after a successful send.</div>
       </div>
 
       <div class="creds-panel" id="creds-realdebrid" style="display:none">
@@ -85,6 +88,9 @@
         <input type="password" class="field-input" id="rdt-password" data-i18n-placeholder="placeholderPassword" placeholder="Password">
         <label class="field-label"><span data-i18n="labelRdApiKeyOptional">Real-Debrid API Key</span> <span class="field-optional" data-i18n="labelRdApiKeyOptionalHint">(optional, for cache checking)</span></label>
         <input type="password" class="field-input" id="rdt-rdkey" data-i18n-placeholder="placeholderRdtRdKey" placeholder="RD API key for cache checks">
+        <label class="field-label" data-i18n="labelDashboardUrl">Dashboard URL</label>
+        <input type="url" class="field-input" id="rdt-dashboard-url" data-i18n-placeholder="placeholderRdtDashboardUrl" placeholder="https://rdt.example.com">
+        <div class="field-hint" data-i18n="hintDashboardUrlOptional">Optional. Used only for the Open provider button after a successful send.</div>
         <button class="btn-test" id="rdt-test" data-i18n="btnSaveTest">Save &amp; Test</button>
         <div class="test-result" id="rdt-result"></div>
       </div>
@@ -118,6 +124,17 @@
     <section class="settings-section">
       <h2 class="section-heading" data-i18n="sectionDetection">Detection &amp; Banner</h2>
       <p class="section-desc" data-i18n="sectionDetectionDesc">Control how Magnetar displays detected torrents on pages.</p>
+
+      <div class="toggle-row">
+        <div class="toggle-info">
+          <span class="toggle-label" data-i18n="interfaceModeLabel">Interface mode</span>
+          <span class="toggle-desc" data-i18n="interfaceModeDesc">Standard keeps Magnetar simple. Advanced shows extra controls for power users.</span>
+        </div>
+        <select class="field-select field-select-inline" id="interface-mode">
+          <option value="standard" data-i18n="interfaceModeStandard">Standard</option>
+          <option value="advanced" data-i18n="interfaceModeAdvanced">Advanced</option>
+        </select>
+      </div>
 
       <div class="toggle-row">
         <div class="toggle-info">
@@ -174,7 +191,17 @@
       </select>
     </section>
 
-    <!-- Section 3: Magnetar Shield -->
+    <!-- Section 3: Ignored Websites -->
+    <section class="settings-section">
+      <h2 class="section-heading">Ignored websites</h2>
+      <p class="section-desc">Magnetar will not show detection banners on these websites.</p>
+
+      <div class="shield-list" id="ignored-websites-list">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Section 4: Magnetar Shield -->
     <section class="settings-section">
       <div class="section-heading-row">
         <h2 class="section-heading" data-i18n="sectionShield">Magnetar Shield</h2>
@@ -200,7 +227,7 @@
       </div>
     </section>
 
-    <!-- Section 4: Download History -->
+    <!-- Section 5: Download History -->
     <section class="settings-section">
       <div class="section-heading-row">
         <h2 class="section-heading" data-i18n="sectionHistory">Download History</h2>
@@ -223,7 +250,7 @@
       </div>
     </section>
 
-    <!-- Section 5: Custom Sites -->
+    <!-- Section 6: Custom Sites -->
     <section class="settings-section">
       <h2 class="section-heading" data-i18n="sectionCustomSites">Custom Sites</h2>
       <p class="section-desc" data-i18n="sectionCustomSitesDesc">Define hash detection rules for sites that aren't auto-detected.</p>
@@ -232,7 +259,11 @@
         <!-- Populated by JS -->
       </div>
 
-      <button class="btn-small" id="add-custom-site" data-i18n="customSiteAdd">+ Add Custom Site</button>
+      <div class="custom-site-actions">
+        <button class="btn-small" id="add-custom-site" data-i18n="customSiteAdd">+ Add Custom Site</button>
+        <button class="btn-text" id="cs-import" data-i18n="customSiteImport">Import</button>
+        <button class="btn-text" id="cs-export" data-i18n="customSiteExport">Export</button>
+      </div>
 
       <div class="custom-site-form" id="custom-site-form" style="display:none">
         <label class="field-label" data-i18n="customSiteDomainLabel">Domain pattern</label>
@@ -248,11 +279,6 @@
           <button class="btn-small" id="cs-save" data-i18n="customSiteSave">Save</button>
           <button class="btn-text" id="cs-cancel" data-i18n="customSiteCancel">Cancel</button>
         </div>
-      </div>
-
-      <div class="shield-actions">
-        <button class="btn-text" id="cs-import" data-i18n="customSiteImport">Import</button>
-        <button class="btn-text" id="cs-export" data-i18n="customSiteExport">Export</button>
       </div>
     </section>
 
@@ -285,7 +311,7 @@
 
     <!-- Footer -->
     <footer class="settings-footer">
-      <span id="settings-version">v1.3.1</span>
+      <span id="settings-version">v2.0.0</span>
       <span class="footer-sep">·</span>
       <a href="https://github.com/ArrCee76/magnetar" target="_blank" data-i18n="footerGitHub">GitHub</a>
       <span class="footer-sep">·</span>

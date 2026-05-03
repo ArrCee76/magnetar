@@ -36,6 +36,132 @@ const providers = {
   alldebrid: ProviderAllDebrid
 };
 
+const providerLabels = {
+  local: 'Local torrent client',
+  realdebrid: 'Real-Debrid',
+  rdtclient: 'RDT Client',
+  torbox: 'TorBox',
+  premiumize: 'Premiumize',
+  alldebrid: 'AllDebrid'
+};
+
+const providerOrder = ['local', 'realdebrid', 'rdtclient', 'torbox', 'premiumize', 'alldebrid'];
+
+const providerDashboardUrls = {
+  realdebrid: 'https://real-debrid.com/torrents',
+  torbox: 'https://torbox.app/dashboard',
+  premiumize: 'https://www.premiumize.me/transfers',
+  alldebrid: 'https://alldebrid.com/magnets/'
+};
+
+const DEFAULT_SETTINGS = {
+  mode: 'local',
+  credentials: {},
+  providerStatus: {},
+  customSites: [],
+  ignoredWebsites: [],
+  preferences: {
+    theme: 'dark',
+    bannerPosition: 'top',
+    bannerStyle: 'full',
+    interfaceMode: 'standard',
+    bannerEnabled: true,
+    batchMode: false,
+    batchMax: 25,
+    defaultTrackers: [],
+    categoryMap: {
+      audiobooks: 'audiobooks',
+      music: 'music',
+      video: 'video',
+      ebooks: 'ebooks',
+      software: 'software',
+      games: 'games',
+      general: ''
+    }
+  }
+};
+
+function mergeSettingsDefaults(settings = {}) {
+  return {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+    credentials: settings.credentials && typeof settings.credentials === 'object' ? settings.credentials : {},
+    providerStatus: settings.providerStatus && typeof settings.providerStatus === 'object' ? settings.providerStatus : {},
+    customSites: Array.isArray(settings.customSites) ? settings.customSites : [],
+    ignoredWebsites: Array.isArray(settings.ignoredWebsites) ? settings.ignoredWebsites : [],
+    preferences: {
+      ...DEFAULT_SETTINGS.preferences,
+      ...(settings.preferences && typeof settings.preferences === 'object' ? settings.preferences : {}),
+      categoryMap: {
+        ...DEFAULT_SETTINGS.preferences.categoryMap,
+        ...(settings.preferences?.categoryMap && typeof settings.preferences.categoryMap === 'object'
+          ? settings.preferences.categoryMap
+          : {})
+      },
+      defaultTrackers: Array.isArray(settings.preferences?.defaultTrackers)
+        ? settings.preferences.defaultTrackers
+        : []
+    }
+  };
+}
+
+function hasUsableProviderCredentials(settings, mode) {
+  if (mode === 'local') return true;
+  const creds = settings.credentials?.[mode];
+  if (!creds || typeof creds !== 'object') return false;
+  if (mode === 'rdtclient') return !!(creds.url && creds.username);
+  return !!creds.apiKey;
+}
+
+function isQuickSendProviderAvailable(settings, mode) {
+  if (mode === 'local') return true;
+  const status = settings.providerStatus?.[mode];
+  if (status?.valid === true) return true;
+  if (status?.valid === false) return false;
+  return hasUsableProviderCredentials(settings, mode);
+}
+
+function getQuickSendProviders(settings) {
+  const currentMode = settings.mode || 'local';
+  return providerOrder
+    .filter(mode => mode !== currentMode)
+    .filter(mode => isQuickSendProviderAvailable(settings, mode))
+    .map(mode => ({
+      id: mode,
+      label: providerLabels[mode] || mode,
+      isDefault: false
+    }));
+}
+
+function normaliseDashboardUrl(value) {
+  if (!value || typeof value !== 'string') return '';
+  try {
+    const url = new URL(value.trim());
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    if (url.username || url.password) return '';
+    return url.href;
+  } catch (e) {
+    return '';
+  }
+}
+
+function getProviderOpenTarget(settings, mode) {
+  const label = providerLabels[mode] || mode;
+  if (providerDashboardUrls[mode]) {
+    return { mode, label, url: providerDashboardUrls[mode] };
+  }
+
+  const creds = settings.credentials?.[mode] || {};
+  const customUrl = normaliseDashboardUrl(creds.dashboardUrl);
+  if (!customUrl) return null;
+
+  return {
+    mode,
+    label: mode === 'local' ? 'qBittorrent' : label,
+    url: customUrl
+  };
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────
 
 MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
@@ -81,61 +207,9 @@ MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
 
   // Set default settings if needed
   const data = await MAGNETAR_API.storage.sync.get(['magnetar']);
-  if (!data.magnetar) {
-    await MAGNETAR_API.storage.sync.set({
-      magnetar: {
-        mode: 'local',
-        credentials: {},
-        customSites: [],
-        preferences: {
-          theme: 'dark',
-          bannerPosition: 'top',
-          bannerEnabled: true,
-          batchMode: false,
-          defaultTrackers: [],
-          categoryMap: {
-            audiobooks: 'audiobooks',
-            music: 'music',
-            video: 'video',
-            ebooks: 'ebooks',
-            software: 'software',
-            games: 'games',
-            general: ''
-          }
-        }
-      }
-    });
-  } else {
-    // Migrate existing installs — add any missing containers / preference keys.
-    let dirty = false;
-    if (!data.magnetar.credentials) {
-      data.magnetar.credentials = {};
-      dirty = true;
-    }
-    if (!Array.isArray(data.magnetar.customSites)) {
-      data.magnetar.customSites = [];
-      dirty = true;
-    }
-    if (!data.magnetar.preferences) {
-      data.magnetar.preferences = {};
-      dirty = true;
-    }
-
-    if (data.magnetar.preferences.theme === undefined) {
-      data.magnetar.preferences.theme = 'dark';
-      dirty = true;
-    }
-    if (data.magnetar.preferences.bannerEnabled === undefined) {
-      data.magnetar.preferences.bannerEnabled = true;
-      dirty = true;
-    }
-    if (data.magnetar.preferences.batchMode === undefined) {
-      data.magnetar.preferences.batchMode = false;
-      dirty = true;
-    }
-    if (dirty) {
-      await MAGNETAR_API.storage.sync.set({ magnetar: data.magnetar });
-    }
+  const mergedSettings = mergeSettingsDefaults(data.magnetar);
+  if (JSON.stringify(data.magnetar || null) !== JSON.stringify(mergedSettings)) {
+    await MAGNETAR_API.storage.sync.set({ magnetar: mergedSettings });
   }
 
   // Init download history storage if needed
@@ -174,8 +248,10 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
           const hash = hashMatch ? hashMatch[1].toLowerCase() : '';
           const nameMatch = info.linkUrl.match(/[?&]dn=([^&]+)/);
           const name = nameMatch ? decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')) : '';
+          const cacheEntry = hash ? await MagnetarCacheStore.get(mode, hash) : null;
           await commitPostSend({
-            hash, name, provider: mode, category: '', pageUrl: tab.url
+            hash, name, provider: mode, category: '', pageUrl: tab.url,
+            cacheAtSend: cacheEntry?.status
           });
           if (hash) MagnetarCacheStore.set(mode, hash, 'cached');
         }
@@ -325,7 +401,7 @@ MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
  * level (last write wins), but each call now has a much smaller window
  * (one round-trip) and touches exactly what it needs to touch.
  */
-async function commitPostSend({ hash, name, provider, category, pageUrl }) {
+async function commitPostSend({ hash, name, provider, category, pageUrl, cacheAtSend }) {
   const data = await MAGNETAR_API.storage.local.get([
     'magnetar-history',
     'magnetar-send-count',
@@ -340,14 +416,18 @@ async function commitPostSend({ hash, name, provider, category, pageUrl }) {
 
   // History: dedupe by hash
   if (hash && !history.some(h => h.hash === hash)) {
-    history.unshift({
+    const entry = {
       hash,
       name: name || 'Unknown',
       provider,
       category: category || '',
       url: pageUrl || '',
       timestamp: Date.now()
-    });
+    };
+    if (cacheAtSend === 'cached' || cacheAtSend === 'not_cached') {
+      entry.cacheAtSend = cacheAtSend;
+    }
+    history.unshift(entry);
     if (history.length > 500) history.length = 500;
     update['magnetar-history'] = history;
   }
@@ -419,41 +499,82 @@ async function handleMessage(msg, sender) {
       return { ok: true };
     }
 
+    case 'get-tab-pin': {
+      if (!tabId) return { pinned: false };
+      const data = await sessionStore.get([`pin-tab-${tabId}`]);
+      return { pinned: data[`pin-tab-${tabId}`] === true };
+    }
+
+    case 'set-tab-pin': {
+      if (!tabId) return { ok: false };
+      await sessionStore.set({ [`pin-tab-${tabId}`]: msg.pinned === true });
+      return { ok: true, pinned: msg.pinned === true };
+    }
+
+    case 'get-quick-send-providers': {
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
+      return getQuickSendProviders(settings);
+    }
+
+    case 'get-provider-open-target': {
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
+      const mode = msg.mode || settings.mode || 'local';
+      return getProviderOpenTarget(settings, mode);
+    }
+
+    case 'open-downloads-folder': {
+      const downloadsApi = MAGNETAR_API.downloads;
+      if (!downloadsApi || typeof downloadsApi.showDefaultFolder !== 'function') {
+        return { success: false, error: 'Downloads folder is not available in this browser.' };
+      }
+
+      try {
+        const result = downloadsApi.showDefaultFolder();
+        if (result && typeof result.then === 'function') await result;
+        return { success: true };
+      } catch (e) {
+        return { success: false, error: e?.message || 'Could not open downloads folder.' };
+      }
+    }
+
     case 'send-magnet': {
       const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
-      const mode = settings.mode || 'local';
+      const mode = msg.mode || settings.mode || 'local';
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
 
       const creds = settings.credentials?.[mode] || {};
 
       if (mode === 'local') {
-        return { success: true, action: 'open-magnet', magnetUri: msg.magnetUri };
+        return { success: true, action: 'open-magnet', magnetUri: msg.magnetUri, provider: mode };
       }
 
       const result = await provider.sendMagnet(msg.magnetUri, creds, {
         category: msg.category || ''
-      });
+      }) || { success: false, error: 'Provider returned no response' };
 
       if (result?.success) {
+        const cacheEntry = msg.hash ? await MagnetarCacheStore.get(mode, msg.hash) : null;
+        const displayName = result.name || result.title || result.filename || msg.name || '';
         await commitPostSend({
           hash: msg.hash || '',
-          name: msg.name || '',
+          name: displayName,
           provider: mode,
           category: msg.category || '',
-          pageUrl: msg.pageUrl || ''
+          pageUrl: msg.pageUrl || '',
+          cacheAtSend: cacheEntry?.status
         });
         // Seed the cache store — a successful add means it's now cached
         // for this provider. Skips a probe next time someone views this torrent.
         if (msg.hash) MagnetarCacheStore.set(mode, msg.hash, 'cached');
       }
 
-      return result;
+      return { ...result, provider: mode };
     }
 
     case 'batch-send': {
       const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
-      const mode = settings.mode || 'local';
+      const mode = msg.mode || settings.mode || 'local';
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
 
@@ -465,7 +586,7 @@ async function handleMessage(msg, sender) {
         const item = items[i];
 
         if (mode === 'local') {
-          results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri });
+          results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri, provider: mode });
           // Local mode: just bump the count (no history because nothing actually sent)
           const sc = await MAGNETAR_API.storage.local.get(['magnetar-send-count']);
           await MAGNETAR_API.storage.local.set({
@@ -477,16 +598,18 @@ async function handleMessage(msg, sender) {
         try {
           const res = await provider.sendMagnet(item.magnetUri, creds, {
             category: item.category || ''
-          });
-          results.push({ hash: item.hash, ...res });
+          }) || { success: false, error: 'Provider returned no response' };
+          results.push({ hash: item.hash, ...res, provider: mode });
 
           if (res?.success) {
+            const cacheEntry = item.hash ? await MagnetarCacheStore.get(mode, item.hash) : null;
             await commitPostSend({
               hash: item.hash,
               name: item.name,
               provider: mode,
               category: item.category || '',
-              pageUrl: msg.pageUrl || ''
+              pageUrl: msg.pageUrl || '',
+              cacheAtSend: cacheEntry?.status
             });
             MagnetarCacheStore.set(mode, item.hash, 'cached');
           }

@@ -1376,3 +1376,762 @@ body.magnetar-light .shield-item { all: unset; }
   color: var(--mg-ink-3);
   letter-spacing: 0.04em;
 }
+
+/* ── Magnetar UI consistency pass ───────────────────────────────────── */
+:root {
+  --mg-brand-outline: #1e1a14;
+  --mg-control-outline: #1e1a14;
+  --mg-passive-outline: rgba(30, 26, 20, 0.28);
+}
+
+:root.mg-dark {
+  --mg-brand-outline: #f5f1e8;
+  --mg-control-outline: #f5f1e8;
+  --mg-passive-outline: rgba(245, 241, 232, 0.28);
+}
+
+body {
+  font-family: var(--mg-font);
+  background: var(--mg-bg);
+  color: var(--mg-ink);
+}
+
+.settings {
+  max-width: 720px;
+}
+
+.settings-header {
+  border-bottom-color: var(--mg-passive-outline);
+}
+
+.settings-logo {
+  color: var(--mg-ink);
+  filter: grayscale(1);
+  text-shadow: none;
+}
+
+.settings-title,
+.section-heading {
+  letter-spacing: 0;
+}
+
+.settings-subtitle,
+.section-desc,
+.field-hint,
+.toggle-desc {
+  color: var(--mg-ink-3);
+}
+
+.settings-section {
+  background: var(--mg-surface);
+  border: 2px solid var(--mg-brand-outline);
+  border-radius: 14px;
+  box-shadow: var(--mg-shadow-sm);
+}
+
+.section-heading-row {
+  align-items: center;
+  gap: 12px;
+}
+
+.section-heading {
+  color: var(--mg-ink);
+}
+
+.history-count {
+  flex: 0 0 auto;
+  color: var(--mg-ink-3);
+  font-family: var(--mg-mono);
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 9px;
+  border: 1px solid var(--mg-passive-outline);
+  border-radius: 999px;
+  background: var(--mg-surface-2);
+}
+
+.mode-card,
+.toggle-row,
+.toggle-row-note,
+.custom-site-form,
+.custom-site-item,
+.shield-item,
+.history-list {
+  background: var(--mg-surface-2) !important;
+  border: 1px solid var(--mg-passive-outline) !important;
+  border-radius: 10px !important;
+}
+
+.mode-card:hover,
+.toggle-row:hover,
+.shield-item:hover,
+.history-item:hover,
+.custom-site-item:hover {
+  background: var(--mg-surface-3) !important;
+}
+
+.mode-card.active {
+  background: var(--mg-surface) !important;
+  border: 2px solid var(--mg-control-outline) !important;
+}
+
+.mode-card.active::before {
+  background: var(--mg-control-outline);
+}
+
+.mode-icon {
+  border-color: var(--mg-passive-outline);
+  color: var(--mg-ink-2);
+  filter: grayscale(1) opacity(0.85);
+}
+
+body .field-input,
+body input[type="text"],
+body input[type="password"],
+body input[type="url"],
+body input[type="search"],
+body .field-select,
+body .field-select-inline {
+  background-color: var(--mg-surface-2) !important;
+  color: var(--mg-ink) !important;
+  border: 2px solid var(--mg-control-outline) !important;
+  border-radius: 8px !important;
+  font-family: var(--mg-font) !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  box-shadow: none !important;
+}
+
+body .field-input:focus,
+body input[type="text"]:focus,
+body input[type="password"]:focus,
+body input[type="url"]:focus,
+body input[type="search"]:focus,
+body .field-select:focus,
+body .field-select-inline:focus {
+  border-color: var(--mg-control-outline) !important;
+  background-color: var(--mg-surface) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--mg-signal-bg) !important;
+}
+
+body .field-input::placeholder,
+body input::placeholder {
+  color: var(--mg-ink-4) !important;
+}
+
+.field-label,
+.toggle-label {
+  color: var(--mg-ink);
+}
+
+body .btn-test,
+body .btn-primary,
+body .btn-small,
+body .btn-add,
+body .btn-text,
+.settings-bmc,
+.history-item-delete,
+.shield-item-remove {
+  border: 2px solid var(--mg-control-outline) !important;
+  border-radius: 8px !important;
+  font-family: var(--mg-font) !important;
+  font-weight: 600 !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body .btn-test,
+body .btn-primary {
+  background: var(--mg-ink) !important;
+  color: var(--mg-bg) !important;
+}
+
+body .btn-small,
+body .btn-add,
+body .btn-text,
+.settings-bmc {
+  background: transparent !important;
+  color: var(--mg-ink-2) !important;
+}
+
+body .btn-small:hover,
+body .btn-add:hover,
+body .btn-text:hover,
+.settings-bmc:hover {
+  background: var(--mg-surface-2) !important;
+  color: var(--mg-ink) !important;
+}
+
+body .btn-danger {
+  color: #a44545 !important;
+}
+
+body .btn-danger:hover {
+  color: #7a2f2f !important;
+}
+
+:root.mg-dark body .btn-danger {
+  color: #e6a0a0 !important;
+}
+
+:root.mg-dark body .btn-danger:hover {
+  color: #f2b8b8 !important;
+}
+
+body .toggle-track {
+  border: 2px solid var(--mg-control-outline) !important;
+  background: var(--mg-surface-2) !important;
+}
+
+body .toggle-track::after {
+  background: var(--mg-ink-3) !important;
+}
+
+body .toggle input:checked + .toggle-track {
+  background: var(--mg-ink) !important;
+  border-color: var(--mg-control-outline) !important;
+}
+
+.shield-add,
+.history-search-row,
+.history-actions,
+.shield-actions,
+.advanced-actions,
+.custom-site-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-search-row {
+  margin-bottom: 12px;
+}
+
+.history-search {
+  min-height: 38px;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 14px;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mg-ink-5) transparent;
+}
+
+body.magnetar-light .history-item,
+.history-item {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: var(--mg-ink);
+  background: var(--mg-surface);
+  border-bottom: 1px solid var(--mg-border);
+  cursor: default;
+}
+
+.history-item:last-child {
+  border-bottom: 0;
+}
+
+.history-item-main {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+}
+
+.history-item-name {
+  display: block;
+  color: var(--mg-ink) !important;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--mg-ink-3) !important;
+  font-family: var(--mg-mono);
+  font-size: 10.5px;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.history-item-time,
+.history-item-provider,
+.history-item-category,
+.history-item-hash {
+  color: var(--mg-ink-3);
+  min-width: 0;
+}
+
+.history-item-provider::before,
+.history-item-category::before,
+.history-item-hash::before {
+  content: none;
+}
+
+.history-item-provider,
+.history-item-category,
+.history-item-hash {
+  padding: 2px 7px;
+  border: 1px solid var(--mg-border-mid);
+  border-radius: 999px;
+  background: var(--mg-surface-2);
+}
+
+.history-item-hash {
+  color: var(--mg-ink-4);
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-item-delete,
+.shield-item-remove {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  color: var(--mg-ink-3) !important;
+  opacity: 1;
+}
+
+.history-item-delete:hover,
+.shield-item-remove:hover {
+  background: var(--mg-surface-2) !important;
+  color: #a44545 !important;
+}
+
+.history-empty {
+  background: var(--mg-surface) !important;
+  color: var(--mg-ink-3) !important;
+  border: 1px dashed var(--mg-passive-outline) !important;
+}
+
+body.magnetar-light .shield-item,
+.shield-item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  color: var(--mg-ink);
+  background: var(--mg-surface-2) !important;
+  border: 1px solid var(--mg-passive-outline) !important;
+  border-radius: 10px !important;
+}
+
+.shield-list,
+.custom-sites-list {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-bmc-img {
+  filter: grayscale(1) opacity(0.8);
+}
+
+/* ── Options polish: logo, type rhythm, compact actions ─────────────── */
+.settings-brand {
+  align-items: center;
+}
+
+.settings-logo {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--mg-brand-outline);
+  border-radius: 8px;
+  background: #f5f1e8;
+  color: #1e1a14;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1;
+  filter: none;
+}
+
+:root.mg-dark .settings-logo {
+  background: var(--mg-ink);
+  color: var(--mg-bg);
+  border-color: var(--mg-brand-outline);
+}
+
+.settings-title {
+  font-size: 25px;
+  font-weight: 680;
+  line-height: 1.05;
+}
+
+.settings-subtitle {
+  margin-left: 44px;
+  font-size: 13px;
+  font-weight: 450;
+}
+
+.section-heading {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.section-desc {
+  font-size: 12.5px;
+  font-weight: 450;
+  line-height: 1.45;
+}
+
+.field-label,
+.toggle-label,
+.mode-name,
+.history-item-name,
+.custom-site-domain,
+.shield-item-domain {
+  font-weight: 600;
+}
+
+.mode-desc,
+.history-item-meta,
+.custom-site-method,
+.field-hint,
+.toggle-desc {
+  font-weight: 450;
+}
+
+body .btn-small,
+body .btn-add,
+body .btn-text,
+body .btn-test,
+body .btn-primary {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px !important;
+  font-size: 12px !important;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+body .btn-text {
+  min-width: max-content;
+}
+
+body .btn-test,
+body .btn-primary {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+.history-actions,
+.shield-actions,
+.advanced-actions {
+  gap: 8px;
+}
+
+.history-count {
+  font-weight: 550;
+}
+
+.history-item-name {
+  font-weight: 600;
+}
+
+.history-item-meta {
+  font-size: 10.25px;
+}
+
+body .field-select,
+body .field-select-inline {
+  color-scheme: light;
+  accent-color: var(--mg-control-outline);
+}
+
+:root.mg-dark body .field-select,
+:root.mg-dark body .field-select-inline {
+  color-scheme: dark;
+}
+
+body .field-select option,
+body .field-select-inline option {
+  background: var(--mg-surface) !important;
+  color: var(--mg-ink) !important;
+}
+
+body .field-select option:checked,
+body .field-select-inline option:checked {
+  background: var(--mg-surface-3) !important;
+  color: var(--mg-ink) !important;
+}
+
+/* ── Final native-style cleanup ─────────────────────────────────────── */
+body.magnetar-light .settings-logo,
+:root:not(.mg-dark) .settings-logo {
+  background: #f5f1e8 !important;
+  color: #1e1a14 !important;
+  border-color: #1e1a14 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.mode-card.active .mode-icon {
+  filter: grayscale(1) opacity(0.9) !important;
+  color: var(--mg-ink-2) !important;
+}
+
+.settings-section,
+.mode-card,
+.toggle-row,
+.field-label,
+.toggle-label,
+.mode-name,
+.history-item-name,
+.custom-site-domain,
+.shield-item-domain,
+body .btn-test,
+body .btn-primary,
+body .btn-small,
+body .btn-add,
+body .btn-text {
+  font-family: var(--mg-font) !important;
+}
+
+.section-heading {
+  font-weight: 620;
+}
+
+.field-label,
+.toggle-label,
+.mode-name,
+.history-item-name,
+.custom-site-domain,
+.shield-item-domain {
+  font-weight: 580;
+}
+
+.section-desc,
+.toggle-desc,
+.field-hint,
+.mode-desc,
+.history-item-meta,
+.custom-site-method {
+  font-weight: 430;
+}
+
+.history-actions,
+.shield-actions,
+.advanced-actions,
+.custom-site-form-actions {
+  flex-wrap: nowrap;
+}
+
+body .btn-text {
+  min-height: 32px;
+  padding: 7px 10px !important;
+  font-size: 11.5px !important;
+}
+
+body .field-select,
+body .field-select-inline {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-color: var(--mg-surface-2) !important;
+}
+
+body .field-select option,
+body .field-select-inline option {
+  background-color: var(--mg-surface) !important;
+  color: var(--mg-ink) !important;
+}
+
+body .field-select option:hover,
+body .field-select-inline option:hover,
+body .field-select option:focus,
+body .field-select-inline option:focus,
+body .field-select option:checked,
+body .field-select-inline option:checked {
+  background-color: var(--mg-surface-3) !important;
+  color: var(--mg-ink) !important;
+  box-shadow: 0 0 0 100vmax var(--mg-surface-3) inset !important;
+}
+
+/* Final polish: type, selects, and action alignment */
+body,
+button,
+input,
+select {
+  font-family: var(--mg-font) !important;
+}
+
+.settings-title { font-weight: 650; }
+.section-heading { font-weight: 600; }
+.field-label,
+.toggle-label,
+.mode-name,
+.history-item-name,
+.custom-site-domain,
+.shield-item-domain { font-weight: 560; }
+.section-desc,
+.toggle-desc,
+.field-hint,
+.mode-desc,
+.history-item-meta,
+.custom-site-method,
+.history-count { font-weight: 430; }
+
+.custom-site-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-top: 12px;
+}
+
+.custom-site-actions .btn-small,
+.custom-site-actions .btn-text {
+  flex: 0 0 auto;
+}
+
+.history-actions,
+.shield-actions,
+.advanced-actions,
+.custom-site-form-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+body .field-select,
+body .field-select-inline {
+  color-scheme: only light;
+  background-color: var(--mg-surface-2) !important;
+  border-color: var(--mg-control-outline) !important;
+  outline-color: var(--mg-control-outline) !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root.mg-dark body .field-select,
+:root.mg-dark body .field-select-inline {
+  color-scheme: only dark;
+}
+
+body .field-select:focus,
+body .field-select-inline:focus,
+body .field-select:focus-visible,
+body .field-select-inline:focus-visible {
+  outline: none !important;
+  border-color: var(--mg-control-outline) !important;
+  box-shadow: 0 0 0 2px var(--mg-passive-outline) !important;
+}
+
+body .field-select option,
+body .field-select-inline option {
+  background: var(--mg-surface) !important;
+  color: var(--mg-ink) !important;
+}
+
+body .field-select option:checked,
+body .field-select-inline option:checked {
+  background: linear-gradient(var(--mg-surface-3), var(--mg-surface-3)) !important;
+  color: var(--mg-ink) !important;
+}
+
+/* Shield list polish: match Download History list rhythm */
+#shield-list.shield-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 380px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 14px;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mg-ink-5) transparent;
+}
+
+body.magnetar-light #shield-list .shield-item,
+#shield-list .shield-item {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: var(--mg-ink);
+  background: var(--mg-surface) !important;
+  border-bottom: 1px solid var(--mg-border) !important;
+  border-radius: 0 !important;
+  cursor: default;
+}
+
+#shield-list .shield-item:last-child {
+  border-bottom: 0 !important;
+}
+
+#shield-list .shield-item span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--mg-ink);
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 1.25;
+  text-align: left;
+}
+
+#shield-list .shield-item-remove {
+  width: 28px;
+  height: 28px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+  background: transparent !important;
+  color: var(--mg-ink-3) !important;
+  border: 2px solid var(--mg-control-outline) !important;
+  border-radius: 8px !important;
+  opacity: 1;
+}
+
+#shield-list .shield-item-remove:hover {
+  background: var(--mg-surface-2) !important;
+  color: #a44545 !important;
+}
+
+.shield-actions {
+  justify-content: flex-start;
+  margin-top: 0;
+  margin-bottom: 0;
+}

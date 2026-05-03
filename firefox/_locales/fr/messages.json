@@ -493,7 +493,23 @@
     "message": "Bas de page",
     "description": "Banner position option"
   },
-  "sectionShield": {
+    "interfaceModeLabel": {
+    "message": "Interface mode",
+    "description": "Interface mode setting label"
+  },
+  "interfaceModeDesc": {
+    "message": "Standard keeps Magnetar simple. Advanced shows extra controls for power users.",
+    "description": "Interface mode setting description"
+  },
+  "interfaceModeStandard": {
+    "message": "Standard",
+    "description": "Standard interface mode option"
+  },
+  "interfaceModeAdvanced": {
+    "message": "Advanced",
+    "description": "Advanced interface mode option"
+  },
+"sectionShield": {
     "message": "Magnetar Shield",
     "description": "Shield settings section heading"
   },

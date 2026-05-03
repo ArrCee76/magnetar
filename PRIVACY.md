@@ -49,6 +49,7 @@ Magnetar requests browser permissions for the following reasons:
 | `tabs` | Detect blocked tabs and update the extension icon |
 | `webNavigation` | Intercept navigations to blocked sites |
 | `declarativeNetRequest` (Chrome) | Block requests to sites on your Shield blocklist |
+| `downloads` | Open your browser's downloads folder from the Magnetar toolbar |
 | `clipboardWrite` | Copy magnet links and hashes to your clipboard |
 | `activeTab` | Access the current page to detect torrent hashes |
 | `scripting` (Chrome) | Inject content scripts for hash detection |

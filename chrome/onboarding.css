@@ -786,7 +786,7 @@ body .field-select option {
   color: var(--mg-ink) !important;
 }
 
-/* ── 1.4.14: onboarding button palette fix ──────────────────────────────
+/* Onboarding button palette fix
    Keep setup buttons on the Magnetar cream/charcoal palette in dark mode.
    This overrides older white text / blue hover rules. */
 .btn-test,

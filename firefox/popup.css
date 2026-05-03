@@ -334,6 +334,32 @@ body {
   color: var(--mg-ink-3);
 }
 
+.popup-primary-action {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--mg-ink);
+  border-radius: 8px;
+  background: var(--mg-ink);
+  color: var(--mg-bg);
+  cursor: pointer;
+  font-family: var(--mg-font);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 8px 10px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.popup-primary-action:hover:not(:disabled) {
+  background: var(--mg-ink-2);
+  border-color: var(--mg-ink-2);
+}
+
+.popup-primary-action:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 /* ── Footer ───────────────────────────────────────────────────────────── */
 
 .popup-footer {

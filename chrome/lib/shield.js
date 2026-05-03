@@ -25,6 +25,22 @@ const MagnetarShield = {
 
   RULE_ID_OFFSET: 10000, // Shield rules start at 10000 to avoid conflicts
 
+  normaliseDomain(domain) {
+    domain = String(domain || '').trim().toLowerCase();
+    if (!domain || /[\s/?#:*\\]/.test(domain)) return null;
+    domain = domain.replace(/^www\./, '');
+    if (domain.length > 253 || !domain.includes('.')) return null;
+    const labels = domain.split('.');
+    const valid = labels.every(label =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      /^[a-z0-9-]+$/.test(label) &&
+      !label.startsWith('-') &&
+      !label.endsWith('-')
+    );
+    return valid ? domain : null;
+  },
+
   /**
    * Initialise Shield — load blocklist from storage, apply rules
    */
@@ -51,8 +67,12 @@ const MagnetarShield = {
     // Firefox MV2 path: no DNR. Storage write is enough; webNavigation handles it.
     if (!SHIELD_HAS_DNR) return;
 
+    const validDomains = [...new Set((domains || [])
+      .map(domain => this.normaliseDomain(domain))
+      .filter(Boolean))];
+
     // Build the new rules
-    const rules = domains.map((domain, i) => ({
+    const rules = validDomains.map((domain, i) => ({
       id: this.RULE_ID_OFFSET + i,
       priority: 1,
       action: { type: 'block' },
@@ -99,9 +119,10 @@ const MagnetarShield = {
    * Add a domain to the blocklist
    */
   async blockDomain(domain) {
-    domain = domain.toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, '').replace(/\/.*$/, '');
     const data = await MAGNETAR_API.storage.local.get(['shield']);
     const shield = data.shield || { enabled: true, blockedDomains: [] };
+    domain = this.normaliseDomain(domain);
+    if (!domain) return shield;
 
     if (shield.blockedDomains.includes(domain)) return shield;
 
@@ -119,9 +140,10 @@ const MagnetarShield = {
    * Remove a domain from the blocklist
    */
   async unblockDomain(domain) {
-    domain = domain.toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, '').replace(/\/.*$/, '');
     const data = await MAGNETAR_API.storage.local.get(['shield']);
     const shield = data.shield || { enabled: true, blockedDomains: [] };
+    domain = this.normaliseDomain(domain);
+    if (!domain) return shield;
 
     shield.blockedDomains = shield.blockedDomains.filter(d => d !== domain);
     await MAGNETAR_API.storage.local.set({ shield });
@@ -155,7 +177,8 @@ const MagnetarShield = {
    * Check if a domain is blocked
    */
   async isBlocked(domain) {
-    domain = domain.toLowerCase().replace(/^(?:https?:\/\/)?(?:www\.)?/, '').replace(/\/.*$/, '');
+    domain = this.normaliseDomain(domain);
+    if (!domain) return false;
     const data = await MAGNETAR_API.storage.local.get(['shield']);
     const shield = data.shield || { enabled: true, blockedDomains: [] };
     return shield.blockedDomains.some(d => domain === d || domain.endsWith('.' + d));

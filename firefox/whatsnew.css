@@ -1,346 +1,205 @@
-/* ── Magnetar v2 tokens ───────────────────────────────────────────────── */
-
 :root {
-  --mg-font: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI',
-             system-ui, Roboto, 'Helvetica Neue', sans-serif;
-  --mg-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
-
-  --mg-bg:          #f5f1e8;
-  --mg-surface:     #fbf8f0;
-  --mg-surface-2:   #efe9dc;
-  --mg-surface-3:   #e4ddc9;
-  --mg-border:      rgba(30, 26, 20, 0.08);
-  --mg-border-mid:  rgba(30, 26, 20, 0.14);
-  --mg-border-strong: rgba(30, 26, 20, 0.22);
-
-  --mg-ink:    #1e1a14;
-  --mg-ink-2:  #3b362d;
-  --mg-ink-3:  #6b6459;
-  --mg-ink-4:  #9a9286;
-  --mg-ink-5:  #c5bda9;
-
-  --mg-signal:      #4a7c5c;
-  --mg-signal-bg:   rgba(74, 124, 92, 0.10);
-  --mg-signal-line: rgba(74, 124, 92, 0.28);
-
-  --mg-shadow-sm: 0 1px 2px rgba(30, 26, 20, 0.06);
-  --mg-shadow-md: 0 4px 16px rgba(30, 26, 20, 0.08), 0 1px 3px rgba(30, 26, 20, 0.06);
+  --mg-font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI",
+             system-ui, Roboto, "Helvetica Neue", sans-serif;
+  --mg-bg: #f5f1e8;
+  --mg-surface: #fbf8f0;
+  --mg-surface-2: #efe9dc;
+  --mg-ink: #1e1a14;
+  --mg-ink-2: #3b362d;
+  --mg-ink-3: #6b6459;
+  --mg-outline: #1e1a14;
+  --mg-shadow: 0 12px 40px rgba(30, 26, 20, 0.12);
 }
 
 :root.mg-dark {
-  --mg-bg:          #1a1816;
-  --mg-surface:     #232119;
-  --mg-surface-2:   #2d2a20;
-  --mg-surface-3:   #3a3528;
-  --mg-border:      rgba(245, 241, 232, 0.07);
-  --mg-border-mid:  rgba(245, 241, 232, 0.12);
-  --mg-border-strong: rgba(245, 241, 232, 0.2);
-
-  --mg-ink:    #f5f1e8;
-  --mg-ink-2:  #d9d3c2;
-  --mg-ink-3:  #8a8275;
-  --mg-ink-4:  #5f594e;
-  --mg-ink-5:  #3d3830;
-
-  --mg-signal:      #7ba68c;
-  --mg-signal-bg:   rgba(123, 166, 140, 0.12);
-  --mg-signal-line: rgba(123, 166, 140, 0.3);
+  --mg-bg: #1a1816;
+  --mg-surface: #232119;
+  --mg-surface-2: #2d2a20;
+  --mg-ink: #f5f1e8;
+  --mg-ink-2: #d9d3c2;
+  --mg-ink-3: #8a8275;
+  --mg-outline: #f5f1e8;
+  --mg-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
 }
 
-/* ── Magnetar What's New ──────────────────────────────────────────────── */
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+}
 
 body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
   background: var(--mg-bg);
   color: var(--mg-ink);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--mg-font);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5;
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-a { color: var(--mg-ink); text-decoration: none; }
-a:hover { color: var(--mg-ink-2); }
-
 .whatsnew {
-  max-width: 520px;
-  width: 100%;
-  padding: 24px;
+  width: min(100% - 40px, 460px);
+  padding: 30px;
+  background: var(--mg-surface);
+  border: 3px solid var(--mg-outline);
+  border-radius: 18px;
+  box-shadow: var(--mg-shadow);
 }
 
 .whatsnew-header {
-  text-align: center;
-  margin-bottom: 28px;
-}
-
-.whatsnew-logo { font-size: 36px; margin-bottom: 8px; }
-
-.whatsnew-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  margin-bottom: 4px;
-}
-
-.whatsnew-version {
-  font-size: 13px;
-  color: var(--mg-ink);
-  font-weight: 600;
-}
-
-.whatsnew-section {
-  background: var(--mg-bg);
-  border: 1px solid rgba(58, 63, 74, 0.25);
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 14px;
-}
-
-.whatsnew-section-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.whatsnew-section-icon {
-  font-size: 18px;
-}
-
-.whatsnew-item {
-  font-size: 13px;
-  color: #b0b5c0;
-  padding: 4px 0;
-  padding-left: 16px;
-  position: relative;
-}
-
-.whatsnew-item::before {
-  content: '•';
-  position: absolute;
-  left: 4px;
-  color: var(--mg-ink);
-}
-
-.whatsnew-footer {
-  text-align: center;
-  margin-top: 24px;
-}
-
-.btn-close {
-  padding: 10px 32px;
-  background: var(--mg-ink);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s ease;
-}
-
-.btn-close:hover { background: #4a7ae5; }
-
-
-/* ════════════════════════════════════════════════════════════════════════
-   v2 visual upgrades (appended)
-   ════════════════════════════════════════════════════════════════════════ */
-
-body {
-  font-family: var(--mg-font);
-  font-feature-settings: 'cv11' 1, 'ss01' 1;
-  background: var(--mg-bg);
-  color: var(--mg-ink);
-  letter-spacing: -0.005em;
-  -webkit-font-smoothing: antialiased;
+  margin-bottom: 22px;
 }
 
 .whatsnew-logo {
-  background: var(--mg-ink);
-  color: var(--mg-bg);
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-shadow: none;
+  width: 44px;
+  height: 44px;
+  display: block;
+  margin-bottom: 16px;
+  object-fit: contain;
+}
+
+.whatsnew-kicker {
+  margin: 0 0 6px;
+  color: var(--mg-ink-3);
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .whatsnew-title {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  margin: 0;
   color: var(--mg-ink);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.08;
 }
 
-.whatsnew-version {
-  font-family: var(--mg-mono);
-  font-size: 11px;
-  color: var(--mg-ink-3);
-  background: var(--mg-surface-2);
-  border: 1px solid var(--mg-border);
-  padding: 3px 10px;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-}
-
-.whatsnew-section {
-  background: var(--mg-surface);
-  border: 1px solid var(--mg-border);
-  border-radius: 12px;
-  padding: 18px 20px;
-  margin-bottom: 12px;
-}
-
-.whatsnew-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  color: var(--mg-ink);
-  margin-bottom: 10px;
-}
-
-.whatsnew-item {
-  font-size: 13px;
-  line-height: 1.55;
+.whatsnew-copy {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 26px;
   color: var(--mg-ink-2);
-  padding: 6px 0 6px 18px;
-  position: relative;
+  font-size: 15px;
 }
 
-.whatsnew-item::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 14px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--mg-ink-4);
+.whatsnew-copy p {
+  margin: 0;
 }
 
-.btn-close {
-  background: var(--mg-ink) !important;
-  color: var(--mg-bg) !important;
-  border: 1px solid var(--mg-ink) !important;
-  font-family: var(--mg-font);
+.whatsnew-form {
+  display: grid;
+  gap: 18px;
+}
+
+.choice-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.choice-group legend {
+  margin-bottom: 8px;
+  color: var(--mg-ink);
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  border-radius: 8px;
-  padding: 11px 28px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  font-weight: 650;
 }
 
-.btn-close:hover {
-  background: var(--mg-ink-2) !important;
-  border-color: var(--mg-ink-2) !important;
-}
-
-/* ── 1.4.3: paginated walkthrough ───────────────────────────────────────── */
-
-.whatsnew-lead {
-  font-size: 13px;
-  color: var(--mg-ink-3);
-  line-height: 1.55;
-  letter-spacing: -0.005em;
-  margin-bottom: 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--mg-border);
-}
-
-.whatsnew-pages {
-  min-height: 280px;
-}
-
-.whatsnew-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 22px;
-  gap: 16px;
-}
-
-.whatsnew-dots {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.whatsnew-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--mg-ink-5);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.whatsnew-dot:hover { background: var(--mg-ink-4); }
-
-.whatsnew-dot-active {
-  background: var(--mg-ink);
-  width: 18px;
-  border-radius: 999px;
-}
-
-.whatsnew-nav {
-  display: flex;
+.choice-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.choice-option {
+  min-width: 0;
+}
+
+.choice-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice-option span {
+  display: flex;
   align-items: center;
-}
-
-.btn-skip,
-.btn-prev,
-.btn-next {
-  font-family: var(--mg-font);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  border-radius: 8px;
-  padding: 9px 20px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  line-height: 1.2;
-}
-
-.btn-skip {
-  background: transparent;
-  color: var(--mg-ink-3);
-  border: 1px solid transparent;
-}
-
-.btn-skip:hover {
+  justify-content: center;
+  min-height: 42px;
+  padding: 9px 14px;
   color: var(--mg-ink);
   background: var(--mg-surface-2);
+  border: 2px solid var(--mg-outline);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn-prev {
-  background: transparent;
-  color: var(--mg-ink-2);
-  border: 1px solid var(--mg-border-mid);
-}
-
-.btn-prev:hover {
-  background: var(--mg-surface-2);
-  border-color: var(--mg-border-strong);
-}
-
-.btn-next {
+.choice-option input:checked + span {
   background: var(--mg-ink);
   color: var(--mg-bg);
-  border: 1px solid var(--mg-ink);
 }
 
-.btn-next:hover {
+.choice-option input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(107, 100, 89, 0.28);
+}
+
+.choice-option span:hover {
+  background: var(--mg-bg);
+}
+
+.choice-option input:checked + span:hover {
+  background: var(--mg-ink);
+}
+
+.btn-go {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 2px;
+  color: var(--mg-bg);
+  background: var(--mg-ink);
+  border: 2px solid var(--mg-outline);
+  border-radius: 10px;
+  font-family: var(--mg-font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-go:hover {
+  transform: translateY(-1px);
   background: var(--mg-ink-2);
-  border-color: var(--mg-ink-2);
+}
+
+.btn-go:disabled {
+  cursor: default;
+  opacity: 0.65;
+  transform: none;
+}
+
+.whatsnew-status {
+  min-height: 18px;
+  margin: -8px 0 0;
+  color: var(--mg-ink-3);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .whatsnew {
+    width: min(100% - 24px, 460px);
+    padding: 24px;
+  }
+
+  .whatsnew-title {
+    font-size: 24px;
+  }
 }

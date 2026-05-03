@@ -64,6 +64,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function loadCredentials(creds) {
+    if (creds.local?.dashboardUrl) {
+      document.getElementById('local-dashboard-url').value = creds.local.dashboardUrl;
+    }
     if (creds.realdebrid?.apiKey) {
       document.getElementById('rd-apikey').value = creds.realdebrid.apiKey;
     }
@@ -72,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('rdt-username').value = creds.rdtclient.username || '';
       document.getElementById('rdt-password').value = creds.rdtclient.password || '';
       document.getElementById('rdt-rdkey').value = creds.rdtclient.rdApiKey || '';
+      document.getElementById('rdt-dashboard-url').value = creds.rdtclient.dashboardUrl || '';
     }
     if (creds.torbox?.apiKey) {
       document.getElementById('tb-apikey').value = creds.torbox.apiKey;
@@ -104,10 +108,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     return (s && typeof s === 'object') ? s : {};
   }
 
+  function normaliseDomain(domain) {
+    domain = String(domain || '').trim().toLowerCase().replace(/^www\./, '');
+    if (!domain || /[\s/?#:*\\]/.test(domain)) return '';
+    if (domain.length > 253 || !domain.includes('.')) return '';
+    const labels = domain.split('.');
+    const valid = labels.every(label =>
+      label.length > 0 &&
+      label.length <= 63 &&
+      /^[a-z0-9-]+$/.test(label) &&
+      !label.startsWith('-') &&
+      !label.endsWith('-')
+    );
+    return valid ? domain : '';
+  }
+
   async function saveCredentialsAndValidate(mode, credentials) {
     const s = await getSettingsForUpdate();
     s.credentials = s.credentials || {};
     s.credentials[mode] = credentials;
+    s.providerStatus = s.providerStatus || {};
+    s.providerStatus[mode] = { valid: false, testedAt: Date.now() };
     await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
 
     const res = await sendRuntimeMessage({
@@ -116,7 +137,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       credentials
     }, 20000);
 
+    s.providerStatus[mode] = {
+      valid: res?.valid === true,
+      testedAt: Date.now()
+    };
+    await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
+
     return res || { valid: false, error: 'No response from extension background.' };
+  }
+
+  async function saveDashboardUrl(mode, inputId) {
+    const dashboardUrl = document.getElementById(inputId).value.trim();
+    const s = await getSettingsForUpdate();
+    s.credentials = s.credentials || {};
+    s.credentials[mode] = s.credentials[mode] || {};
+    if (dashboardUrl) {
+      s.credentials[mode].dashboardUrl = dashboardUrl;
+    } else {
+      delete s.credentials[mode].dashboardUrl;
+    }
+    await sendRuntimeMessage({ type: 'save-settings', data: s }, 8000);
   }
 
   async function runCredentialTest(btnId, resultId, mode, credentials) {
@@ -144,17 +184,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     await runCredentialTest('rd-test', 'rd-result', 'realdebrid', { apiKey });
   });
 
+  document.getElementById('local-dashboard-url').addEventListener('change', async () => {
+    await saveDashboardUrl('local', 'local-dashboard-url');
+  });
+
   document.getElementById('rdt-test').addEventListener('click', async () => {
     const result = document.getElementById('rdt-result');
     const creds = {
       url: document.getElementById('rdt-url').value.trim(),
       username: document.getElementById('rdt-username').value.trim(),
       password: document.getElementById('rdt-password').value,
-      rdApiKey: document.getElementById('rdt-rdkey').value.trim()
+      rdApiKey: document.getElementById('rdt-rdkey').value.trim(),
+      dashboardUrl: document.getElementById('rdt-dashboard-url').value.trim()
     };
 
     if (!creds.url || !creds.username) { showResult(result, t('validationEnterFields'), false); return; }
     await runCredentialTest('rdt-test', 'rdt-result', 'rdtclient', creds);
+  });
+
+  document.getElementById('rdt-dashboard-url').addEventListener('change', async () => {
+    await saveDashboardUrl('rdtclient', 'rdt-dashboard-url');
   });
 
   document.getElementById('tb-test').addEventListener('click', async () => {
@@ -196,12 +245,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const batchMaxRow = document.getElementById('batch-max-row');
   const batchMaxEl = document.getElementById('batch-max');
   const bannerPos = document.getElementById('banner-position');
+  const interfaceMode = document.getElementById('interface-mode');
 
   bannerEnabled.checked = settings?.preferences?.bannerEnabled !== false;
   bannerStyleEl.value = settings?.preferences?.bannerStyle || 'full';
   batchMode.checked = settings?.preferences?.batchMode === true;
   batchMaxEl.value = String(settings?.preferences?.batchMax || 25);
   bannerPos.value = settings?.preferences?.bannerPosition || 'top';
+  interfaceMode.value = settings?.preferences?.interfaceMode === 'advanced' ? 'advanced' : 'standard';
 
   function updateBannerInterlock() {
     if (batchMode.checked) {
@@ -220,6 +271,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     bannerStyleRow.style.display = bannerEnabled.checked ? 'flex' : 'none';
   }
   updateBannerInterlock();
+  renderIgnoredWebsites(settings?.ignoredWebsites || []);
 
   bannerEnabled.addEventListener('change', async () => {
     const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
@@ -261,11 +313,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
   });
 
+  interfaceMode.addEventListener('change', async () => {
+    const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+    s.preferences = s.preferences || {};
+    s.preferences.interfaceMode = interfaceMode.value === 'advanced' ? 'advanced' : 'standard';
+    await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
+  });
+
 
   // ═══════════════════════════════════════════════════════════════════════
-  // Section 3: Magnetar Shield
+  // Section 3: Ignored Websites
   // ═══════════════════════════════════════════════════════════════════════
 
+  function renderIgnoredWebsites(domains) {
+    const list = document.getElementById('ignored-websites-list');
+    if (!list) return;
+    const normalized = [...new Set((domains || []).map(normaliseDomain).filter(Boolean))].sort();
+    if (!normalized.length) {
+      list.innerHTML = '<div class="history-empty">No ignored websites.</div>';
+      return;
+    }
+
+    list.innerHTML = normalized.map(domain => `
+      <div class="shield-item">
+        <span>${escapeHtml(domain)}</span>
+        <button class="shield-item-remove" data-domain="${escapeAttr(domain)}" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.shield-item-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const s = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
+        const domain = normaliseDomain(btn.dataset.domain);
+        s.ignoredWebsites = (s.ignoredWebsites || []).map(normaliseDomain).filter(d => d && d !== domain);
+        await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: s });
+        renderIgnoredWebsites(s.ignoredWebsites);
+      });
+    });
+  }
+
+  // Section 4: Magnetar Shield
   const shieldEnabled = document.getElementById('shield-enabled');
   shieldEnabled.checked = shield?.enabled !== false;
 
@@ -291,12 +378,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderShieldList(domains) {
     const list = document.getElementById('shield-list');
-    list.innerHTML = domains.map(d => `
+    list.innerHTML = domains.map(d => {
+      const domain = String(d || '');
+      return `
       <div class="shield-item">
-        <span>${d}</span>
-        <button class="shield-item-remove" data-domain="${d}" title="Remove">✕</button>
+        <span>${escapeHtml(domain)}</span>
+        <button class="shield-item-remove" data-domain="${escapeAttr(domain)}" title="Remove">✕</button>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     list.querySelectorAll('.shield-item-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -369,32 +459,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const html = items.map(item => {
       const date = new Date(item.timestamp);
       const timeStr = formatDate(date);
-      const name = escapeHtml(item.name || t('cacheUnknown'));
-      const truncName = name.length > 55 ? name.substring(0, 52) + '…' : name;
-      const hashShort = item.hash ? item.hash.substring(0, 10) + '…' : '';
+      const rawName = item.name || t('cacheUnknown');
+      const truncName = rawName.length > 55 ? rawName.substring(0, 52) + '…' : rawName;
+      const rawHash = item.hash || '';
+      const hashShort = rawHash ? rawHash.substring(0, 10) + '…' : '';
 
       const providerLabels = {
         local: t('modeLocalName'),
         realdebrid: t('modeRealDebridName'),
         rdtclient: t('modeRdtClientName'),
-        torbox: t('modeTorBoxName')
+        torbox: t('modeTorBoxName'),
+        premiumize: t('modePremiumizeName'),
+        alldebrid: t('modeAllDebridName')
       };
 
       const providerLabel = providerLabels[item.provider] || item.provider || '';
       const categoryLabel = item.category || '';
 
       return `
-        <div class="history-item" data-hash="${item.hash}">
+        <div class="history-item" data-hash="${escapeAttr(rawHash)}">
           <div class="history-item-main">
-            <span class="history-item-name" title="${name}">${truncName}</span>
+            <span class="history-item-name" title="${escapeAttr(rawName)}">${escapeHtml(truncName)}</span>
             <div class="history-item-meta">
               <span class="history-item-time">${timeStr}</span>
-              ${providerLabel ? `<span class="history-item-provider">${providerLabel}</span>` : ''}
-              ${categoryLabel ? `<span class="history-item-category">${categoryLabel}</span>` : ''}
-              <span class="history-item-hash" title="${item.hash}">${hashShort}</span>
+              ${providerLabel ? `<span class="history-item-provider">${escapeHtml(providerLabel)}</span>` : ''}
+              ${categoryLabel ? `<span class="history-item-category">${escapeHtml(categoryLabel)}</span>` : ''}
+              <span class="history-item-hash" title="${escapeAttr(rawHash)}">${escapeHtml(hashShort)}</span>
             </div>
           </div>
-          <button class="history-item-delete" data-hash="${item.hash}" title="Remove from history">✕</button>
+          <button class="history-item-delete" data-hash="${escapeAttr(rawHash)}" title="Remove from history">✕</button>
         </div>
       `;
     }).join('');
@@ -507,8 +600,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     list.innerHTML = sites.map((site, i) => `
       <div class="custom-site-item">
         <div class="custom-site-info">
-          <span class="custom-site-domain">${site.domain}</span>
-          <span class="custom-site-method">${site.method}: ${site.selector || site.regex}</span>
+          <span class="custom-site-domain">${escapeHtml(site.domain || '')}</span>
+          <span class="custom-site-method">${escapeHtml(site.method || '')}: ${escapeHtml(site.selector || site.regex || '')}</span>
         </div>
         <button class="shield-item-remove" data-index="${i}" title="Remove">✕</button>
       </div>
@@ -632,13 +725,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.classList.toggle('magnetar-light', theme === 'light');
   }
 
-  // Live-sync: if theme is changed from another surface (popup, banner), reflect here without a refresh.
+  // Live-sync: if preferences change from another surface (popup, banner), reflect here without a refresh.
   MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
     if (area !== 'sync' || !changes.magnetar) return;
-    const newTheme = changes.magnetar.newValue?.preferences?.theme;
-    if (!newTheme) return;
-    themeSelect.value = newTheme;
-    applyTheme(newTheme);
+    const prefs = changes.magnetar.newValue?.preferences || {};
+    const newTheme = prefs.theme;
+    if (newTheme) {
+      themeSelect.value = newTheme;
+      applyTheme(newTheme);
+    }
+    if (Object.prototype.hasOwnProperty.call(prefs, 'batchMode')) {
+      batchMode.checked = prefs.batchMode === true;
+      updateBannerInterlock();
+    }
+    renderIgnoredWebsites(changes.magnetar.newValue?.ignoredWebsites || []);
   });
 
 
@@ -686,6 +786,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function escapeAttr(str) {
+    return escapeHtml(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function formatDate(date) {

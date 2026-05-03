@@ -8,7 +8,8 @@ const ProviderRdtClient = {
 
   async validateCredentials(creds) {
     try {
-      const url = creds.url.replace(/\/+$/, '');
+      const url = String(creds?.url || '').trim().replace(/\/+$/, '');
+      if (!url) return { valid: false, error: 'Server URL is required' };
       const res = await magnetarFetch(`${url}/api/v2/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -23,7 +24,8 @@ const ProviderRdtClient = {
 
   async sendMagnet(magnetUri, creds, options = {}) {
     try {
-      const url = creds.url.replace(/\/+$/, '');
+      const url = String(creds?.url || '').trim().replace(/\/+$/, '');
+      if (!url) return { success: false, error: 'Server URL is required' };
 
       // Login first to get session
       const loginRes = await magnetarFetch(`${url}/api/v2/auth/login`, {
