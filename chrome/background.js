@@ -61,10 +61,10 @@ const DEFAULT_SETTINGS = {
   customSites: [],
   ignoredWebsites: [],
   preferences: {
-    theme: 'dark',
+    theme: 'light',
     bannerPosition: 'top',
     bannerStyle: 'full',
-    interfaceMode: 'standard',
+    interfaceMode: 'advanced',
     bannerEnabled: true,
     batchMode: false,
     batchMax: 25,
@@ -143,6 +143,32 @@ function normaliseDashboardUrl(value) {
   } catch (e) {
     return '';
   }
+}
+
+function normaliseSourceUrl(value) {
+  if (!value || typeof value !== 'string') return '';
+  try {
+    const url = new URL(value.trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function getSourceDomain(sourceUrl) {
+  if (!sourceUrl) return '';
+  try {
+    return new URL(sourceUrl).hostname.replace(/^www\./i, '');
+  } catch (e) {
+    return '';
+  }
+}
+
+function buildMagnetUriFromHistory(entry = {}) {
+  if (entry.magnetUri && typeof entry.magnetUri === 'string') return entry.magnetUri;
+  if (!entry.hash) return '';
+  const dn = entry.name ? `&dn=${encodeURIComponent(entry.name)}` : '';
+  return `magnet:?xt=urn:btih:${entry.hash}${dn}`;
 }
 
 function getProviderOpenTarget(settings, mode) {
@@ -239,6 +265,18 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
         // Open magnet in default client. Wrap in catch — the tab may be gone
         // between right-click and execution, which raises "No tab with id: N".
         MAGNETAR_API.tabs.update(tab.id, { url: info.linkUrl }).catch(() => {});
+        const hashMatch = info.linkUrl.match(/btih:([a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})/i);
+        const hash = hashMatch ? hashMatch[1].toLowerCase() : '';
+        const nameMatch = info.linkUrl.match(/[?&]dn=([^&]+)/);
+        const name = nameMatch ? decodeURIComponent(nameMatch[1].replace(/\+/g, ' ')) : '';
+        await commitPostSend({
+          hash,
+          name,
+          provider: mode,
+          category: '',
+          pageUrl: tab.url,
+          magnetUri: info.linkUrl
+        });
       } else if (provider) {
         const creds = settings.credentials?.[mode] || {};
         const result = await provider.sendMagnet(info.linkUrl, creds, { category: '' });
@@ -251,6 +289,7 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
           const cacheEntry = hash ? await MagnetarCacheStore.get(mode, hash) : null;
           await commitPostSend({
             hash, name, provider: mode, category: '', pageUrl: tab.url,
+            magnetUri: info.linkUrl,
             cacheAtSend: cacheEntry?.status
           });
           if (hash) MagnetarCacheStore.set(mode, hash, 'cached');
@@ -401,7 +440,7 @@ MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
  * level (last write wins), but each call now has a much smaller window
  * (one round-trip) and touches exactly what it needs to touch.
  */
-async function commitPostSend({ hash, name, provider, category, pageUrl, cacheAtSend }) {
+async function commitPostSend({ hash, name, provider, category, pageUrl, magnetUri, cacheAtSend }) {
   const data = await MAGNETAR_API.storage.local.get([
     'magnetar-history',
     'magnetar-send-count',
@@ -414,21 +453,51 @@ async function commitPostSend({ hash, name, provider, category, pageUrl, cacheAt
 
   const update = { 'magnetar-send-count': currentCount + 1 };
 
-  // History: dedupe by hash
-  if (hash && !history.some(h => h.hash === hash)) {
+  const sourceUrl = normaliseSourceUrl(pageUrl);
+  const sourceDomain = getSourceDomain(sourceUrl);
+  const now = Date.now();
+  const existingIndex = hash ? history.findIndex(h => h.hash === hash) : -1;
+
+  // History: dedupe by hash, but keep the existing row useful on repeat sends.
+  if (hash && existingIndex === -1) {
     const entry = {
       hash,
       name: name || 'Unknown',
       provider,
       category: category || '',
-      url: pageUrl || '',
-      timestamp: Date.now()
+      url: sourceUrl,
+      sourceUrl,
+      sourceDomain,
+      magnetUri: magnetUri || '',
+      timestamp: now,
+      lastSentAt: now,
+      sendCount: 1
     };
     if (cacheAtSend === 'cached' || cacheAtSend === 'not_cached') {
       entry.cacheAtSend = cacheAtSend;
     }
     history.unshift(entry);
     if (history.length > 500) history.length = 500;
+    update['magnetar-history'] = history;
+  } else if (existingIndex >= 0) {
+    const existing = history[existingIndex];
+    const updatedEntry = {
+      ...existing,
+      name: name || existing.name || 'Unknown',
+      provider: provider || existing.provider || '',
+      category: category || existing.category || '',
+      url: sourceUrl || existing.url || '',
+      sourceUrl: sourceUrl || existing.sourceUrl || existing.url || '',
+      sourceDomain: sourceDomain || existing.sourceDomain || getSourceDomain(existing.sourceUrl || existing.url || ''),
+      magnetUri: magnetUri || existing.magnetUri || '',
+      lastSentAt: now,
+      sendCount: (existing.sendCount || 1) + 1
+    };
+    if (cacheAtSend === 'cached' || cacheAtSend === 'not_cached') {
+      updatedEntry.cacheAtSend = cacheAtSend;
+    }
+    history.splice(existingIndex, 1);
+    history.unshift(updatedEntry);
     update['magnetar-history'] = history;
   }
 
@@ -511,6 +580,25 @@ async function handleMessage(msg, sender) {
       return { ok: true, pinned: msg.pinned === true };
     }
 
+    case 'get-batch-session': {
+      if (!tabId) return null;
+      const data = await sessionStore.get([`batch-tab-${tabId}`]);
+      return data[`batch-tab-${tabId}`] || null;
+    }
+
+    case 'save-batch-session': {
+      if (!tabId) return { ok: false };
+      const session = msg.data && typeof msg.data === 'object' ? msg.data : null;
+      await sessionStore.set({ [`batch-tab-${tabId}`]: session });
+      return { ok: true };
+    }
+
+    case 'clear-batch-session': {
+      if (!tabId) return { ok: false };
+      await sessionStore.set({ [`batch-tab-${tabId}`]: null });
+      return { ok: true };
+    }
+
     case 'get-quick-send-providers': {
       const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       return getQuickSendProviders(settings);
@@ -546,6 +634,14 @@ async function handleMessage(msg, sender) {
       const creds = settings.credentials?.[mode] || {};
 
       if (mode === 'local') {
+        await commitPostSend({
+          hash: msg.hash || '',
+          name: msg.name || '',
+          provider: mode,
+          category: msg.category || '',
+          pageUrl: msg.pageUrl || '',
+          magnetUri: msg.magnetUri || ''
+        });
         return { success: true, action: 'open-magnet', magnetUri: msg.magnetUri, provider: mode };
       }
 
@@ -562,6 +658,7 @@ async function handleMessage(msg, sender) {
           provider: mode,
           category: msg.category || '',
           pageUrl: msg.pageUrl || '',
+          magnetUri: msg.magnetUri || '',
           cacheAtSend: cacheEntry?.status
         });
         // Seed the cache store — a successful add means it's now cached
@@ -587,10 +684,13 @@ async function handleMessage(msg, sender) {
 
         if (mode === 'local') {
           results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri, provider: mode });
-          // Local mode: just bump the count (no history because nothing actually sent)
-          const sc = await MAGNETAR_API.storage.local.get(['magnetar-send-count']);
-          await MAGNETAR_API.storage.local.set({
-            'magnetar-send-count': (sc['magnetar-send-count'] || 0) + 1
+          await commitPostSend({
+            hash: item.hash,
+            name: item.name,
+            provider: mode,
+            category: item.category || '',
+            pageUrl: msg.pageUrl || '',
+            magnetUri: item.magnetUri || ''
           });
           continue;
         }
@@ -609,6 +709,7 @@ async function handleMessage(msg, sender) {
               provider: mode,
               category: item.category || '',
               pageUrl: msg.pageUrl || '',
+              magnetUri: item.magnetUri || '',
               cacheAtSend: cacheEntry?.status
             });
             MagnetarCacheStore.set(mode, item.hash, 'cached');
@@ -731,6 +832,39 @@ async function handleMessage(msg, sender) {
       return { inHistory: history.some(h => h.hash === msg.hash) };
     }
 
+    case 'resend-history-item': {
+      const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
+      const history = data['magnetar-history'] || [];
+      const entry = history.find(h => h.hash === msg.hash);
+      if (!entry) return { success: false, error: 'History item not found.' };
+
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
+      const preferredMode = entry.provider || '';
+      const mode = isQuickSendProviderAvailable(settings, preferredMode)
+        ? preferredMode
+        : (settings.mode || 'local');
+      const magnetUri = buildMagnetUriFromHistory(entry);
+      if (!providers[mode] || !magnetUri) {
+        return { success: false, error: 'This history item cannot be resent.' };
+      }
+
+      const resend = await handleMessage({
+        type: 'send-magnet',
+        hash: entry.hash || '',
+        name: entry.name || '',
+        magnetUri,
+        category: entry.category || '',
+        pageUrl: entry.sourceUrl || entry.url || '',
+        mode
+      }, sender);
+
+      return {
+        ...resend,
+        provider: resend?.provider || mode,
+        usedFallbackProvider: !!preferredMode && preferredMode !== mode
+      };
+    }
+
     // ── Saved-for-later queue ──────────────────────────────────────────
     case 'save-torrent': {
       const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
@@ -813,11 +947,13 @@ async function handleMessage(msg, sender) {
     case 'export-history-csv': {
       const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
-      const header = 'Name,Hash,Provider,Category,URL,Date';
+      const header = 'Name,Hash,Provider,Category,Source URL,Source Domain,Date';
       const rows = history.map(h => {
         const date = new Date(h.timestamp).toISOString();
         const esc = (s) => `"${(s || '').replace(/"/g, '""')}"`;
-        return `${esc(h.name)},${esc(h.hash)},${esc(h.provider)},${esc(h.category)},${esc(h.url)},${esc(date)}`;
+        const sourceUrl = h.sourceUrl || h.url || '';
+        const sourceDomain = h.sourceDomain || getSourceDomain(sourceUrl);
+        return `${esc(h.name)},${esc(h.hash)},${esc(h.provider)},${esc(h.category)},${esc(sourceUrl)},${esc(sourceDomain)},${esc(date)}`;
       });
       return { csv: header + '\n' + rows.join('\n') };
     }

@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
     document.getElementById('ob-interface-mode').value =
-      settings?.preferences?.interfaceMode === 'advanced' ? 'advanced' : 'standard';
+      settings?.preferences?.interfaceMode === 'standard' ? 'standard' : 'advanced';
   } catch (e) {}
 
 

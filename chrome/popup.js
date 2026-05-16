@@ -125,6 +125,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     statusText.classList.toggle('status-dimmed', dimmed);
   }
 
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[ch]));
+  }
+
+  function formatRelative(timestamp) {
+    const diff = Math.max(0, Date.now() - (timestamp || 0));
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
+  function safeSourceUrl(item) {
+    const raw = item?.sourceUrl || item?.url || '';
+    try {
+      const url = new URL(raw);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function sourceDomain(item) {
+    if (item?.sourceDomain) return item.sourceDomain;
+    const raw = safeSourceUrl(item);
+    try {
+      return raw ? new URL(raw).hostname.replace(/^www\./i, '') : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async function loadRecentActivity() {
+    const list = document.getElementById('popup-history-list');
+    const empty = document.getElementById('popup-history-empty');
+    if (!list || !empty) return;
+
+    const history = await MAGNETAR_API.runtime.sendMessage({ type: 'get-history' });
+    const items = (history || []).slice(0, 4);
+    list.querySelectorAll('.popup-history-item').forEach(el => el.remove());
+
+    if (items.length === 0) {
+      empty.style.display = '';
+      return;
+    }
+
+    empty.style.display = 'none';
+    const html = items.map(item => {
+      const sentAt = item.lastSentAt || item.timestamp;
+      const domain = sourceDomain(item);
+      const sourceUrl = safeSourceUrl(item);
+      const provider = item.provider || '';
+      const sentLabel = item.sendCount > 1 ? `sent ×${item.sendCount}` : 'sent';
+      return `
+        <div class="popup-history-item" data-hash="${escapeHtml(item.hash || '')}">
+          <div class="popup-history-main">
+            <span class="popup-history-name" title="${escapeHtml(item.name || 'Unknown')}">${escapeHtml(item.name || 'Unknown')}</span>
+            <div class="popup-history-meta">
+              <span>${escapeHtml(domain || 'source unknown')}</span>
+              <span>·</span>
+              <span>${escapeHtml(formatRelative(sentAt))}</span>
+              ${provider ? `<span>·</span><span>${escapeHtml(provider)}</span>` : ''}
+            </div>
+          </div>
+          <div class="popup-history-actions">
+            <button class="popup-history-button popup-history-resend" data-hash="${escapeHtml(item.hash || '')}">Resend</button>
+            ${sourceUrl ? `<button class="popup-history-button popup-history-open" data-url="${escapeHtml(sourceUrl)}" title="Open source URL" aria-label="Open source URL">URL</button>` : ''}
+            <span class="popup-history-badge">${escapeHtml(sentLabel)}</span>
+            <button class="popup-history-button popup-history-delete" data-hash="${escapeHtml(item.hash || '')}" title="Delete history entry" aria-label="Delete history entry">&times;</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    list.insertAdjacentHTML('beforeend', html);
+
+    list.querySelectorAll('.popup-history-resend').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.textContent = 'Sending…';
+        const res = await MAGNETAR_API.runtime.sendMessage({ type: 'resend-history-item', hash: btn.dataset.hash });
+        if (res?.action === 'open-magnet' && res.magnetUri) {
+          await MAGNETAR_API.tabs.create({ url: res.magnetUri });
+        }
+        btn.textContent = res?.success ? 'Sent' : 'Unavailable';
+        setTimeout(() => {
+          btn.textContent = original;
+          btn.disabled = false;
+          loadRecentActivity();
+        }, 900);
+      });
+    });
+
+    list.querySelectorAll('.popup-history-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await MAGNETAR_API.runtime.sendMessage({ type: 'delete-history-item', hash: btn.dataset.hash });
+        await loadRecentActivity();
+      });
+    });
+
+    list.querySelectorAll('.popup-history-open').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!btn.dataset.url) return;
+        await MAGNETAR_API.tabs.create({ url: btn.dataset.url });
+      });
+    });
+  }
+
   const contentScriptFiles = [
     'lib/browser-polyfill.min.js',
     'lib/api-shim.js',
@@ -227,5 +343,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const manifest = MAGNETAR_API.runtime.getManifest();
   document.getElementById('popup-version').textContent = `v${manifest.version}`;
+  await loadRecentActivity();
 
 });

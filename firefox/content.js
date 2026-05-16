@@ -62,6 +62,7 @@
     ? 'https://addons.mozilla.org/firefox/addon/magnetar/'
     : 'https://chromewebstore.google.com/detail/magnetar/cllbehlfiahgijdojkopgnnmcoenhlla';
   const COFFEE_URL = 'https://buymeacoffee.com/arrcee76';
+  const HELP_URL = 'https://arrcee.com/magnetarhelp';
 
   // ── Get settings ──
   let settings;
@@ -533,6 +534,7 @@
       current.preferences.batchMode = batchMode;
       if (batchMode) current.preferences.bannerEnabled = true;
       await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: current });
+      if (!batchMode) await safeRuntimeMessage({ type: 'clear-batch-session' }, null);
       renderCurrentMode();
     } catch (e) {
       batchMode = previous;
@@ -622,14 +624,22 @@
     const cachedCount = history.slice(0, 30).filter(h => h.cacheAtSend === 'cached').length;
     const cacheRate = history.length > 0 ? Math.round((cachedCount / Math.min(30, history.length)) * 100) : null;
 
-    const activityRows = history.slice(0, 4).map(h => {
-      const ago = formatRelative(h.timestamp);
+    const activityRows = history.slice(0, 20).map(h => {
+      const ago = formatRelative(h.lastSentAt || h.timestamp);
       const status = h.cacheAtSend === 'cached' ? 'cached' : 'sent';
+      const sourceUrl = safeSourceUrl(h);
+      const domain = sourceDomain(h);
       return `
-        <div class="magnetar-activity-row">
-          <span class="magnetar-activity-name">${escapeHtml(h.name || '—')}</span>
-          <span class="magnetar-activity-meta">${ago}</span>
-          <span class="magnetar-activity-status magnetar-activity-${status}">${status}</span>
+        <div class="magnetar-activity-row" data-hash="${escapeAttr(h.hash || '')}">
+          <div class="magnetar-activity-main">
+            <span class="magnetar-activity-name">${escapeHtml(h.name || '\u2014')}</span>
+            <span class="magnetar-activity-meta">${escapeHtml(domain || 'source unknown')} \u00b7 ${ago}${h.provider ? ` \u00b7 ${escapeHtml(h.provider)}` : ''}</span>
+          </div>
+          <div class="magnetar-activity-actions">
+            <button class="magnetar-activity-pill magnetar-activity-resend" data-hash="${escapeAttr(h.hash || '')}">Resend</button>
+            ${sourceUrl ? `<button class="magnetar-activity-pill magnetar-activity-open" data-url="${escapeAttr(sourceUrl)}" title="Open source URL" aria-label="Open source URL">URL</button>` : ''}
+            <span class="magnetar-activity-status magnetar-activity-${status}">${status}</span>
+          </div>
         </div>
       `;
     }).join('');
@@ -703,6 +713,8 @@
         </div>
       </div>
     `;
+
+    bindActivityActions(wrap);
 
     wrap.querySelector('#magnetar-view-history')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -826,6 +838,55 @@
     return Math.floor(d / 86400_000) + 'd ago';
   }
 
+  function safeSourceUrl(item) {
+    const raw = item?.sourceUrl || item?.url || '';
+    try {
+      const url = new URL(raw);
+      return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function sourceDomain(item) {
+    if (item?.sourceDomain) return item.sourceDomain;
+    const raw = safeSourceUrl(item);
+    try {
+      return raw ? new URL(raw).hostname.replace(/^www\./i, '') : '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function bindActivityActions(root) {
+    if (!root) return;
+    if (root.dataset.activityActionsBound === 'true') return;
+    root.dataset.activityActionsBound = 'true';
+    root.addEventListener('click', async (event) => {
+      const resendBtn = event.target.closest('.magnetar-activity-resend');
+      if (resendBtn && root.contains(resendBtn)) {
+        event.preventDefault();
+        resendBtn.disabled = true;
+        const original = resendBtn.textContent;
+        resendBtn.textContent = 'Sending…';
+        const res = await safeRuntimeMessage({ type: 'resend-history-item', hash: resendBtn.dataset.hash }, null);
+        if (res?.action === 'open-magnet' && res.magnetUri) window.open(res.magnetUri, '_self');
+        resendBtn.textContent = res?.success ? 'Sent' : 'Unavailable';
+        setTimeout(() => {
+          resendBtn.textContent = original;
+          resendBtn.disabled = false;
+        }, 900);
+        return;
+      }
+
+      const openBtn = event.target.closest('.magnetar-activity-open');
+      if (openBtn && root.contains(openBtn) && openBtn.dataset.url) {
+        event.preventDefault();
+        window.open(openBtn.dataset.url, '_blank', 'noopener');
+      }
+    });
+  }
+
   function formatCacheStatus(status) {
     if (status === 'cached') return 'Cached';
     if (status === 'not_cached') return 'Not cached';
@@ -889,6 +950,9 @@
         <button class="magnetar-support-action magnetar-pin-banner ${pinBanner ? 'magnetar-pin-banner-active' : ''}" id="magnetar-pin-banner" title="Pin to keep toolbar open after send" aria-label="Pin to keep toolbar open after send" aria-pressed="${pinBanner ? 'true' : 'false'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M5 17h14"/><path d="M7 3h10l-2 8 3 4H6l3-4Z"/></svg>
         </button>
+        <a class="magnetar-support-action" href="${HELP_URL}" target="_blank" rel="noopener" title="Help" aria-label="Help">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 4.83 2.39c-.95.7-1.42 1.11-1.42 2.61"/><path d="M12 17h.01"/></svg>
+        </a>
         <a class="magnetar-support-action" href="${STORE_URL}" target="_blank" rel="noopener" title="Review Magnetar" aria-label="Review Magnetar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         </a>
@@ -1054,12 +1118,41 @@
     document.getElementById('magnetar-batch')?.remove();
 
     let historyMap = {};
+    let batchSession = null;
     try {
-      historyMap = await safeRuntimeMessage({
-        type: 'check-history',
-        hashes: magnets.map(m => m.hash)
-      }, {});
+      [historyMap, batchSession] = await Promise.all([
+        safeRuntimeMessage({
+          type: 'check-history',
+          hashes: magnets.map(m => m.hash)
+        }, {}),
+        safeRuntimeMessage({ type: 'get-batch-session' }, null)
+      ]);
     } catch (e) {}
+    const currentHashes = magnets.map(m => m.hash).filter(Boolean);
+    const currentHashSet = new Set(currentHashes);
+    const sessionMatches = !!(
+      batchSession
+      && Array.isArray(batchSession.hashes)
+      && batchSession.hashes.length === currentHashes.length
+      && batchSession.hashes.every(hash => currentHashSet.has(hash))
+    );
+    const selectedHashes = new Set(sessionMatches && Array.isArray(batchSession.selectedHashes) ? batchSession.selectedHashes : []);
+    const sentHashes = new Set(sessionMatches && Array.isArray(batchSession.sentHashes) ? batchSession.sentHashes : []);
+    sentHashes.forEach(hash => { historyMap[hash] = true; });
+
+    async function persistBatchSession() {
+      await safeRuntimeMessage({
+        type: 'save-batch-session',
+        data: {
+          hashes: currentHashes,
+          selectedHashes: [...panel.querySelectorAll('.magnetar-batch-cb:checked:not(:disabled)')]
+            .map(cb => magnets[parseInt(cb.dataset.index, 10)]?.hash)
+            .filter(Boolean),
+          sentHashes: [...sentHashes],
+          updatedAt: Date.now()
+        }
+      }, null);
+    }
 
     const modeLabels = {
       local: t('batchLabelLocal'),
@@ -1109,7 +1202,7 @@
         const metaStr = [seedStr, sizeStr].filter(Boolean).join(' · ');
         return `
           <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
-            <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${inHistory ? 'disabled' : ''}>
+            <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${inHistory ? 'disabled' : ''} ${!inHistory && selectedHashes.has(m.hash) ? 'checked' : ''}>
             ${showCache ? `<span class="magnetar-batch-cache-dot magnetar-cache-loading" id="magnetar-bcd-${origIdx}"></span>` : ''}
             <span class="magnetar-batch-name" title="${name}">${truncName}</span>
             ${metaStr ? `<span class="magnetar-batch-meta">${metaStr}</span>` : ''}
@@ -1176,15 +1269,15 @@
               ${truncatedNote}
             </div>
             <div class="magnetar-batch-header-actions">
+              <button class="magnetar-btn magnetar-btn-icon magnetar-batch-drawer-toggle" id="magnetar-batch-drawer-toggle" title="Show saved &amp; history" aria-label="Show saved and history">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
               <button class="magnetar-btn magnetar-btn-icon magnetar-btn-theme" id="magnetar-batch-theme" title="Toggle theme" aria-label="Toggle theme">
                 <svg class="magnetar-theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 <svg class="magnetar-theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
               </button>
               <button class="magnetar-btn magnetar-btn-icon magnetar-btn-settings" id="magnetar-batch-settings" title="Settings" aria-label="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </button>
-              <button class="magnetar-btn magnetar-btn-icon magnetar-batch-drawer-toggle" id="magnetar-batch-drawer-toggle" title="Show saved &amp; history" aria-label="Show saved and history">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
               <button class="magnetar-batch-close" id="magnetar-batch-close" title="Dismiss">✕</button>
             </div>
@@ -1333,10 +1426,13 @@
         const checkedCbs = enabledCbs.filter(c => c.checked);
         selectAll.checked = enabledCbs.length > 0 && checkedCbs.length === enabledCbs.length;
         selectAll.indeterminate = checkedCbs.length > 0 && checkedCbs.length < enabledCbs.length;
+        persistBatchSession();
       }));
     }
 
     bindCheckboxes();
+    updateCount();
+    persistBatchSession();
 
     panel.querySelector('#magnetar-batch-send-target')?.addEventListener('click', (e) => {
       showProviderTargetMenu(e.currentTarget, getQuickSendTargetOptions(), providerMode => {
@@ -1350,6 +1446,7 @@
         if (!cb.disabled) cb.checked = selectAll.checked;
       });
       updateCount();
+      persistBatchSession();
     });
 
     // Send selected
@@ -1391,6 +1488,9 @@
           const statusEl = panel.querySelector(`#magnetar-bs-${magnets.indexOf(item)}`);
           window.open(item.magnetUri, '_blank');
           if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
+          sentHashes.add(item.hash);
+          const row = panel.querySelector(`.magnetar-batch-row[data-index="${magnets.indexOf(item)}"]`);
+          if (row) row.classList.add('magnetar-batch-done');
           totalProcessed++;
           updateProgress(totalProcessed, selected.length);
           if (i < selected.length - 1) await new Promise(r => setTimeout(r, 500));
@@ -1414,6 +1514,7 @@
               updateProgress(totalProcessed, selected.length);
               if (res.success) {
                 successCount++;
+                sentHashes.add(res.hash);
                 if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
                 const row = panel.querySelector(`.magnetar-batch-row[data-index="${idx}"]`);
                 if (row) row.classList.add('magnetar-batch-done');
@@ -1446,6 +1547,7 @@
         }
       });
       updateCount();
+      await persistBatchSession();
 
       // Review prompt check
       try {
@@ -1621,17 +1723,26 @@
         const top = histList.slice(0, 30);
         histHost.innerHTML = top.length
           ? top.map(h => {
-              const ago = formatRelative(h.timestamp);
+              const ago = formatRelative(h.lastSentAt || h.timestamp);
               const status = h.cacheAtSend === 'cached' ? 'cached' : 'sent';
+              const sourceUrl = safeSourceUrl(h);
+              const domain = sourceDomain(h);
               return `
-                <div class="magnetar-activity-row">
-                  <span class="magnetar-activity-name" title="${escapeHtml(h.name || '—')}">${escapeHtml(h.name || '—')}</span>
-                  <span class="magnetar-activity-meta">${ago}</span>
-                  <span class="magnetar-activity-status magnetar-activity-${status}">${status}</span>
+                <div class="magnetar-activity-row" data-hash="${escapeAttr(h.hash || '')}">
+                  <div class="magnetar-activity-main">
+                    <span class="magnetar-activity-name" title="${escapeHtml(h.name || '\u2014')}">${escapeHtml(h.name || '\u2014')}</span>
+                    <span class="magnetar-activity-meta">${escapeHtml(domain || 'source unknown')} \u00b7 ${ago}${h.provider ? ` \u00b7 ${escapeHtml(h.provider)}` : ''}</span>
+                  </div>
+                  <div class="magnetar-activity-actions">
+                    <button class="magnetar-activity-pill magnetar-activity-resend" data-hash="${escapeAttr(h.hash || '')}">Resend</button>
+                    ${sourceUrl ? `<button class="magnetar-activity-pill magnetar-activity-open" data-url="${escapeAttr(sourceUrl)}" title="Open source URL" aria-label="Open source URL">URL</button>` : ''}
+                    <span class="magnetar-activity-status magnetar-activity-${status}">${status}</span>
+                  </div>
                 </div>
               `;
             }).join('')
           : '<div class="magnetar-activity-empty">No activity yet</div>';
+        bindActivityActions(histHost);
       }
     }
 
@@ -1695,6 +1806,7 @@
     if (!panel) return;
     panel.classList.remove('magnetar-batch-visible');
     panel.classList.add('magnetar-batch-hiding');
+    safeRuntimeMessage({ type: 'clear-batch-session' }, null);
     setTimeout(() => panel.remove(), 300);
   }
 

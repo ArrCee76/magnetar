@@ -1550,13 +1550,29 @@
 #magnetar-banner .magnetar-activity-row,
 #magnetar-batch .magnetar-activity-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
   background: var(--mg-surface);
   font-size: 12px;
   transition: background 0.1s ease;
+}
+
+#magnetar-banner .magnetar-activity-main,
+#magnetar-batch .magnetar-activity-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+#magnetar-banner .magnetar-activity-actions,
+#magnetar-batch .magnetar-activity-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 #magnetar-banner .magnetar-activity-row:hover { background: var(--mg-surface-2); }
@@ -1589,6 +1605,26 @@
   padding: 2px 6px;
   border-radius: 4px;
   white-space: nowrap;
+}
+
+#magnetar-banner .magnetar-activity-pill,
+#magnetar-batch .magnetar-activity-pill {
+  font-family: var(--mg-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  border: 1px solid var(--mg-border);
+  background: var(--mg-surface-3);
+  color: var(--mg-ink-3);
+  cursor: pointer;
+}
+
+#magnetar-banner .magnetar-activity-pill:hover,
+#magnetar-batch .magnetar-activity-pill:hover {
+  color: var(--mg-ink);
 }
 
 #magnetar-banner .magnetar-activity-status.magnetar-activity-cached {
@@ -1906,7 +1942,7 @@
   position: absolute;
   top: 0;
   right: 440px;                /* butt against the inner card */
-  width: 380px;
+  width: min(520px, calc(100vw - 482px));
   max-height: calc(100vh - 28px);
   background: var(--mg-surface);
   border: 2px solid var(--mg-brand-outline);
@@ -2038,7 +2074,7 @@
   gap: 12px;
 }
 
-/* Header actions — theme, cog, drawer toggle, close — all in a tight row */
+/* Header actions: drawer toggle, theme, settings, close */
 #magnetar-batch .magnetar-batch-header-actions {
   display: inline-flex;
   align-items: center;

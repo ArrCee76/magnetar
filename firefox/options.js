@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Build HTML
     const html = items.map(item => {
-      const date = new Date(item.timestamp);
+      const date = new Date(item.lastSentAt || item.timestamp);
       const timeStr = formatDate(date);
       const rawName = item.name || t('cacheUnknown');
       const truncName = rawName.length > 55 ? rawName.substring(0, 52) + '…' : rawName;
@@ -475,19 +475,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const providerLabel = providerLabels[item.provider] || item.provider || '';
       const categoryLabel = item.category || '';
+      const sourceUrl = (() => {
+        try {
+          const raw = item.sourceUrl || item.url || '';
+          const url = new URL(raw);
+          return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+        } catch (e) {
+          return '';
+        }
+      })();
+      const sourceDomain = item.sourceDomain || (() => {
+        try {
+          return sourceUrl ? new URL(sourceUrl).hostname.replace(/^www\./i, '') : '';
+        } catch (e) {
+          return '';
+        }
+      })();
 
       return `
         <div class="history-item" data-hash="${escapeAttr(rawHash)}">
           <div class="history-item-main">
             <span class="history-item-name" title="${escapeAttr(rawName)}">${escapeHtml(truncName)}</span>
             <div class="history-item-meta">
+              <span class="history-item-source">${escapeHtml(sourceDomain || 'source unknown')}</span>
               <span class="history-item-time">${timeStr}</span>
               ${providerLabel ? `<span class="history-item-provider">${escapeHtml(providerLabel)}</span>` : ''}
               ${categoryLabel ? `<span class="history-item-category">${escapeHtml(categoryLabel)}</span>` : ''}
               <span class="history-item-hash" title="${escapeAttr(rawHash)}">${escapeHtml(hashShort)}</span>
             </div>
           </div>
-          <button class="history-item-delete" data-hash="${escapeAttr(rawHash)}" title="Remove from history">✕</button>
+          <div class="history-item-actions">
+            <button class="history-item-action history-item-resend" data-hash="${escapeAttr(rawHash)}">Resend</button>
+            <button class="history-item-action history-item-open" data-url="${escapeAttr(sourceUrl)}" ${sourceUrl ? '' : 'disabled'} title="Open source URL" aria-label="Open source URL">URL</button>
+            <button class="history-item-delete" data-hash="${escapeAttr(rawHash)}" title="Delete history entry" aria-label="Delete history entry">&times;</button>
+          </div>
         </div>
       `;
     }).join('');
@@ -504,6 +525,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadHistory();
       });
     });
+
+    historyList.querySelectorAll('.history-item-resend').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        const original = btn.textContent;
+        btn.textContent = 'Sending?';
+        const res = await MAGNETAR_API.runtime.sendMessage({ type: 'resend-history-item', hash: btn.dataset.hash });
+        if (res?.action === 'open-magnet' && res.magnetUri) {
+          await MAGNETAR_API.tabs.create({ url: res.magnetUri });
+        }
+        btn.textContent = res?.success ? 'Sent' : 'Unavailable';
+        setTimeout(async () => {
+          btn.textContent = original;
+          btn.disabled = false;
+          await loadHistory();
+        }, 900);
+      });
+    });
+
+    historyList.querySelectorAll('.history-item-open').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!btn.dataset.url) return;
+        await MAGNETAR_API.tabs.create({ url: btn.dataset.url });
+      });
+    });
   }
 
   // Search/filter
@@ -517,7 +563,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       (item.name || '').toLowerCase().includes(query) ||
       (item.hash || '').toLowerCase().includes(query) ||
       (item.provider || '').toLowerCase().includes(query) ||
-      (item.category || '').toLowerCase().includes(query)
+      (item.category || '').toLowerCase().includes(query) ||
+      (item.sourceDomain || '').toLowerCase().includes(query) ||
+      (item.sourceUrl || item.url || '').toLowerCase().includes(query)
     );
     renderHistory(filtered);
   });

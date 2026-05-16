@@ -13,11 +13,9 @@ Magnetar replaces and supersedes four earlier extensions:
 
 Available for Chrome, Edge, Opera, Brave, and Firefox.
 
-## Magnetar 2.0
+## Magnetar 2.1
 
-Magnetar 2.0 is the biggest update yet.
-
-The extension has a redesigned interface, Standard and Advanced modes, a new two-row toolbar, manual sending, provider target switching, improved batch mode, ignored websites, pinning, downloads access, and a more polished settings experience.
+Magnetar 2.1 keeps the redesigned 2.x interface and adds a more useful history workflow, quicker toolbar access to recent sends, a built-in help path, onboarding polish, and batch view improvements.
 
 Everything is still simple by default. The extra tools are there when you want them.
 
@@ -31,7 +29,9 @@ Everything is still simple by default. The extra tools are there when you want t
 - Manual send for pasted magnet links and hashes
 - Batch mode for pages with one torrent or many
 - Save for later queue
-- Download history with search and export
+- Download history with search, export, resend, source URL, and delete actions
+- Recent activity in the toolbar with up to the last 20 sends
+- Help button linking to https://arrcee.com/magnetarhelp
 - Open provider and Open downloads shortcuts
 - Magnetar Shield for popup and redirect blocking
 - Ignore site for false-positive detections
@@ -256,9 +256,11 @@ History can include:
 - hash
 - provider
 - category
-- source URL
+- source URL and source domain when available
 - timestamp
 - cache status at send time
+
+History rows can resend previous items, open the original source URL when available, and delete individual entries. The toolbar also shows up to the last 20 sends for quick recent activity checks without opening the full settings page.
 
 The settings page includes search, JSON export, CSV export, and clear controls.
 
@@ -286,7 +288,7 @@ Magnetar includes localisation files for:
 - Lithuanian
 - Czech
 
-Some newly added Magnetar 2.0 strings may appear in English until all translations are backfilled.
+Some newly added Magnetar 2.1 strings may appear in English until all translations are backfilled.
 
 ## Installation
 
@@ -350,7 +352,7 @@ Magnetar does not use analytics, telemetry, ads, or remote tracking.
 
 Magnetar runs locally in your browser.
 
-It does not collect personal data, track your browsing, phone home, or send anything to servers except the provider you configure.
+It does not collect personal data, track your browsing, phone home, or send anything to servers except the provider you configure when you choose to send something.
 
 See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
 
@@ -432,7 +434,7 @@ If Magnetar saves you time, you can support it by:
 
 ## Built with
 
-Vanilla JavaScript, no runtime dependencies. Magnetar 2.0 was developed with GPT-5.5 and Codex as coding, review, refactor, and design iteration tools.
+Vanilla JavaScript, no runtime dependencies. Magnetar 2.1 was developed with GPT-5.5 and Codex as coding, review, refactor, and design iteration tools.
 
 ## Credits
 
