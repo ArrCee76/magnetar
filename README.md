@@ -442,7 +442,11 @@ Thanks to Reddit user niblem for suggestions and feedback that helped shape this
 
 ## Licence
 
-MIT. See [LICENCE](LICENCE) for the full text.
+Magnetar is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE) from v2.1.1 onward.
+
+It is free for personal and non-commercial use. Commercial redistribution, paid forks, store republishing, SaaS wrapping, or use of Magnetar branding requires written permission.
+
+Older MIT releases remain under the licence they were released with.
 
 ## Author
 

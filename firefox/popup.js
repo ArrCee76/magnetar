@@ -275,17 +275,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function openToolbarOnActiveTab(tabId) {
     try {
-      return await MAGNETAR_API.tabs.sendMessage(tabId, { type: 'open-toolbar', manual: true });
+      const response = await MAGNETAR_API.tabs.sendMessage(tabId, { type: 'open-toolbar', manual: true });
+      if (response?.ok) return response;
     } catch (initialError) {
-      await injectContentScript(tabId);
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        await sleep(100);
-        try {
-          return await MAGNETAR_API.tabs.sendMessage(tabId, { type: 'open-toolbar', manual: true });
-        } catch (e) {}
-      }
-      throw initialError;
+      // Fall through to explicit injection/retry below.
     }
+
+    await injectContentScript(tabId);
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await sleep(100);
+      try {
+        const response = await MAGNETAR_API.tabs.sendMessage(tabId, { type: 'open-toolbar', manual: true });
+        if (response?.ok) return response;
+      } catch (e) {}
+    }
+
+    throw new Error('Unable to open toolbar on active tab');
   }
   if (tab?.id) {
     const detection = await MAGNETAR_API.runtime.sendMessage({ type: 'get-detection', tabId: tab.id });
