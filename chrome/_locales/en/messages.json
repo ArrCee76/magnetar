@@ -385,7 +385,7 @@
     "description": "Password field label"
   },
   "labelRdApiKeyOptional": {
-    "message": "Real-Debrid API Key",
+    "message": "Provider API Key",
     "description": "Optional RD key label for RDT Client"
   },
   "labelRdApiKeyOptionalHint": {

@@ -332,6 +332,36 @@ a:hover {
   color: var(--mg-ink);
 }
 
+.field-help {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--mg-ink-4);
+  margin: 4px 0 12px;
+}
+
+.custom-site-selector-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 10px;
+}
+
+.custom-site-test-result {
+  margin-top: 8px;
+  min-height: 18px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--mg-ink-4);
+}
+
+.custom-site-test-result.success {
+  color: var(--mg-signal);
+}
+
+.custom-site-test-result.error {
+  color: #f87171;
+}
+
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
 
@@ -551,6 +581,22 @@ a:hover {
   margin-bottom: 12px;
 }
 
+.shield-list-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 28px;
+  margin-bottom: 8px;
+  color: var(--mg-ink-3);
+  font-size: 12px;
+}
+
+.shield-list-summary .btn-text:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .shield-item {
   display: flex;
   align-items: center;
@@ -586,6 +632,57 @@ a:hover {
 .shield-actions {
   display: flex;
   gap: 12px;
+}
+
+.recommended-list-panel {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--mg-border);
+}
+
+.recommended-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mg-ink);
+  margin-bottom: 4px;
+}
+
+.recommended-list-desc,
+.recommended-list-meta {
+  color: var(--mg-ink-3);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.recommended-list-meta {
+  margin-top: 10px;
+}
+
+.recommended-list-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.recommended-list-status {
+  min-height: 18px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--mg-ink-3);
+}
+
+.recommended-list-status.success {
+  color: var(--mg-signal);
+}
+
+.recommended-list-status.error {
+  color: #f87171;
+}
+
+.recommended-domain-list {
+  margin-top: 10px;
 }
 
 
@@ -2166,4 +2263,37 @@ body.magnetar-light #shield-list .shield-item,
   justify-content: flex-start;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+/* Final toggle normalization: keep the thumb centered after theme border overrides. */
+body .toggle {
+  display: inline-flex;
+  align-items: center;
+  width: 42px;
+  height: 24px;
+  line-height: 0;
+}
+
+body .toggle-track {
+  box-sizing: border-box;
+  display: block;
+  width: 42px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  position: relative;
+}
+
+body .toggle-track::after {
+  box-sizing: border-box;
+  width: 16px !important;
+  height: 16px !important;
+  top: 50% !important;
+  left: 3px !important;
+  transform: translateY(-50%) !important;
+  border-radius: 50% !important;
+}
+
+body .toggle input:checked + .toggle-track::after {
+  left: calc(100% - 19px) !important;
+  transform: translateY(-50%) !important;
 }

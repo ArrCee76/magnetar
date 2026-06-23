@@ -86,7 +86,7 @@
         <input type="text" class="field-input" id="rdt-username" data-i18n-placeholder="placeholderUsername" placeholder="Username">
         <label class="field-label" data-i18n="labelPassword">Password</label>
         <input type="password" class="field-input" id="rdt-password" data-i18n-placeholder="placeholderPassword" placeholder="Password">
-        <label class="field-label"><span data-i18n="labelRdApiKeyOptional">Real-Debrid API Key</span> <span class="field-optional" data-i18n="labelRdApiKeyOptionalHint">(optional, for cache checking)</span></label>
+        <label class="field-label"><span data-i18n="labelRdApiKeyOptional">Provider API Key</span> <span class="field-optional" data-i18n="labelRdApiKeyOptionalHint">(optional, for cache checking)</span></label>
         <input type="password" class="field-input" id="rdt-rdkey" data-i18n-placeholder="placeholderRdtRdKey" placeholder="RD API key for cache checks">
         <label class="field-label" data-i18n="labelDashboardUrl">Dashboard URL</label>
         <input type="url" class="field-input" id="rdt-dashboard-url" data-i18n-placeholder="placeholderRdtDashboardUrl" placeholder="https://rdt.example.com">
@@ -217,13 +217,35 @@
         <button class="btn-small" id="shield-add-btn" data-i18n="shieldBlockButton">Block</button>
       </div>
 
+      <div class="shield-list-summary">
+        <span id="shield-list-count">0 blocked domains</span>
+      </div>
+
       <div class="shield-list" id="shield-list">
         <!-- Populated by JS -->
       </div>
 
       <div class="shield-actions">
+        <button class="btn-text" id="shield-list-toggle" type="button" aria-expanded="false">Show list</button>
         <button class="btn-text" id="shield-import" data-i18n="shieldImport">Import</button>
         <button class="btn-text" id="shield-export" data-i18n="shieldExport">Export</button>
+      </div>
+
+      <div class="recommended-list-panel">
+        <div class="recommended-list-header">
+          <div>
+            <h3 class="recommended-list-title">Recommended popup list</h3>
+            <p class="recommended-list-desc">Install a small curated list of known popup/ad trap domains maintained by Magnetar. This only blocks top-level popup tabs. It does not block page scripts, images, captchas, or normal site resources.</p>
+          </div>
+        </div>
+        <div class="recommended-list-meta" id="shield-recommended-meta">Not installed.</div>
+        <div class="recommended-list-actions">
+          <button class="btn-small" id="shield-recommended-install">Install recommended list</button>
+          <button class="btn-text" id="shield-recommended-remove" style="display:none">Remove list</button>
+          <button class="btn-text" id="shield-recommended-view" style="display:none">View imported domains</button>
+        </div>
+        <div class="recommended-list-status" id="shield-recommended-status" role="status" aria-live="polite"></div>
+        <div class="shield-list recommended-domain-list" id="shield-recommended-domains" style="display:none"></div>
       </div>
     </section>
 
@@ -268,13 +290,20 @@
       <div class="custom-site-form" id="custom-site-form" style="display:none">
         <label class="field-label" data-i18n="customSiteDomainLabel">Domain pattern</label>
         <input type="text" class="field-input" id="cs-domain" data-i18n-placeholder="customSiteDomainPlaceholder" placeholder="*.example.com">
+        <p class="field-help">Example: *.example.com. Use the site domain where Magnetar should apply this custom detection rule.</p>
         <label class="field-label" data-i18n="customSiteMethodLabel">Detection method</label>
         <select class="field-select" id="cs-method">
           <option value="selector" data-i18n="customSiteMethodSelector">CSS Selector</option>
           <option value="regex" data-i18n="customSiteMethodRegex">Regex</option>
         </select>
+        <p class="field-help" id="cs-method-help">CSS selector means Magnetar will look for a page element containing a magnet link or torrent hash.</p>
         <label class="field-label" id="cs-value-label" data-i18n="customSiteValueLabelSelector">CSS Selector</label>
-        <input type="text" class="field-input" id="cs-value" data-i18n-placeholder="customSiteValuePlaceholder" placeholder="#info-hash code">
+        <div class="custom-site-selector-row">
+          <input type="text" class="field-input" id="cs-value" data-i18n-placeholder="customSiteValuePlaceholder" placeholder="#info-hash, .infohash, code">
+          <button class="btn-text" id="cs-test-selector" type="button">Test selector</button>
+        </div>
+        <p class="field-help" id="cs-value-help">Example only: #info-hash, .infohash, code. The selector must point to an element on the page that contains the magnet or hash. If the site hides the hash behind JavaScript and it is not present in the DOM, a CSS selector rule may not work.</p>
+        <div class="custom-site-test-result" id="cs-test-result" role="status" aria-live="polite"></div>
         <div class="custom-site-form-actions">
           <button class="btn-small" id="cs-save" data-i18n="customSiteSave">Save</button>
           <button class="btn-text" id="cs-cancel" data-i18n="customSiteCancel">Cancel</button>
@@ -311,7 +340,7 @@
 
     <!-- Footer -->
     <footer class="settings-footer">
-      <span id="settings-version">v2.1.0</span>
+      <span id="settings-version">v2.1.2</span>
       <span class="footer-sep">·</span>
       <a href="https://github.com/ArrCee76/magnetar" target="_blank" data-i18n="footerGitHub">GitHub</a>
       <span class="footer-sep">·</span>

@@ -26,6 +26,117 @@
     }
   }
 
+  function getAllDebridOpenTaskId() {
+    if (!/(^|\.)alldebrid\.com$/i.test(window.location.hostname)) return '';
+    if (!/^\/service\/?$/i.test(window.location.pathname)) return '';
+    const hash = String(window.location.hash || '').replace(/^#/, '');
+    const params = new URLSearchParams(hash);
+    return params.get('magnetar-ad-open') || '';
+  }
+
+  function runInPageContext(source) {
+    const script = document.createElement('script');
+    script.textContent = `;(() => { try { ${source} } catch (e) { console.warn('Magnetar: AllDebrid service action failed.'); } })();`;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+
+  function updateAllDebridBridgeStatus(message, data = {}) {
+    const safeData = Object.fromEntries(Object.entries(data).filter(([key]) => !/link|url|token|key|auth/i.test(key)));
+    console.debug('Magnetar AllDebrid service bridge', { step: message, ...safeData });
+  }
+
+  function waitForAllDebridElement(selector, timeoutMs = 10000) {
+    const existing = document.querySelector(selector);
+    if (existing) return Promise.resolve(existing);
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        observer.disconnect();
+        resolve(null);
+      }, timeoutMs);
+      const observer = new MutationObserver(() => {
+        const found = document.querySelector(selector);
+        if (found) {
+          clearTimeout(timer);
+          observer.disconnect();
+          resolve(found);
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+    });
+  }
+
+  async function handleAllDebridOpenBridge() {
+    const taskId = getAllDebridOpenTaskId();
+    if (!taskId) return false;
+    updateAllDebridBridgeStatus('task id found', { taskIdFound: true });
+
+    const result = await safeRuntimeMessage(
+      { type: 'consume-alldebrid-open-task', taskId },
+      { success: false, error: 'Could not open AllDebrid item.' }
+    );
+    const task = result?.task;
+    const links = Array.isArray(task?.links) ? task.links.filter(link => /^https:\/\/(?:www\.)?alldebrid\.com\/f\//i.test(String(link || ''))) : [];
+    if (!result?.success || task?.provider !== 'alldebrid' || task?.action !== 'open' || links.length < 1) {
+      updateAllDebridBridgeStatus('task load failed', { taskLoaded: false });
+      console.warn('Magnetar: could not open AllDebrid item.');
+      return true;
+    }
+    updateAllDebridBridgeStatus('task loaded', {
+      taskLoaded: true,
+      expectedLinkCount: Number(task.expectedLinkCount) || links.length
+    });
+
+    const textarea = await waitForAllDebridElement('textarea#links, textarea[name="links"]', 10000);
+    if (!textarea) {
+      updateAllDebridBridgeStatus('textarea not found', { textareaFound: false });
+      console.warn('Magnetar: AllDebrid service links textarea was not found.');
+      return true;
+    }
+    updateAllDebridBridgeStatus('textarea found', { textareaFound: true });
+
+    textarea.value = links.join('\n');
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+    const expectedLinkCount = Math.max(Number(task.expectedLinkCount) || 0, links.length);
+    const textareaLinkCount = textarea.value.split(/\n+/).map(link => link.trim()).filter(Boolean).length;
+    updateAllDebridBridgeStatus('textarea filled', { expectedLinkCount, textareaLinkCount });
+    if (textareaLinkCount !== expectedLinkCount) {
+      updateAllDebridBridgeStatus('textarea count mismatch', { expectedLinkCount, textareaLinkCount });
+      console.warn('Magnetar: AllDebrid service did not receive every file link.');
+      return true;
+    }
+
+    runInPageContext(`
+      let started = false;
+      const available = typeof window.processLinks === 'function';
+      document.documentElement.setAttribute('data-magnetar-ad-process-available', available ? '1' : '0');
+      if (typeof window.processLinks === 'function') {
+        window.processLinks();
+        started = true;
+      } else {
+        const button = document.querySelector('#giveMeMyLinks');
+        if (button) {
+          button.click();
+          started = true;
+        }
+      }
+      if (started) document.documentElement.setAttribute('data-magnetar-ad-process-started', '1');
+    `);
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const processAvailable = document.documentElement.getAttribute('data-magnetar-ad-process-available') === '1';
+    let processCalled = document.documentElement.getAttribute('data-magnetar-ad-process-started') === '1';
+    updateAllDebridBridgeStatus('processLinks attempted', { processAvailable, processCalled });
+    if (!processCalled) {
+      document.querySelector('#giveMeMyLinks')?.click();
+      await new Promise(resolve => setTimeout(resolve, 250));
+      processCalled = document.documentElement.getAttribute('data-magnetar-ad-process-started') === '1';
+      updateAllDebridBridgeStatus('generate button fallback clicked', { processCalled });
+    }
+    updateAllDebridBridgeStatus('ready in AllDebrid', { expectedLinkCount, processCalled });
+    return true;
+  }
+
   function normaliseInterfaceMode(value) {
     return value === 'advanced' ? 'advanced' : 'standard';
   }
@@ -63,6 +174,7 @@
     : 'https://chromewebstore.google.com/detail/magnetar/cllbehlfiahgijdojkopgnnmcoenhlla';
   const COFFEE_URL = 'https://buymeacoffee.com/arrcee76';
   const HELP_URL = 'https://arrcee.com/magnetarhelp';
+  const MOBILE_URL = 'https://arrcee.com/magnetar-mobile';
 
   // ── Get settings ──
   let settings;
@@ -71,6 +183,8 @@
   } catch (e) {
     return;
   }
+
+  if (await handleAllDebridOpenBridge()) return;
 
   const customSites = settings?.customSites || [];
   const bannerEnabled = settings?.preferences?.bannerEnabled !== false;
@@ -94,7 +208,11 @@
   let bannerInteractedAfterSuccess = false;
 
   // ── Run detection ──
-  const result = siteIgnored ? null : MagnetarDetector.detect(customSites);
+  const genericResult = siteIgnored ? null : MagnetarDetector.detect(customSites);
+  const extToResult = !siteIgnored && (!genericResult?.hash || genericResult.lowConfidence || genericResult.noHash)
+    ? await detectExtToMagnet()
+    : null;
+  const result = extToResult || genericResult;
 
   const allMagnets = siteIgnored ? [] : MagnetarDetector.detectAll();
 
@@ -203,10 +321,17 @@
     banner.querySelector('#magnetar-copy-magnet')?.addEventListener('click', () => handleCopy(detection.magnetUri, t('magnetCopied')));
     banner.querySelector('#magnetar-copy-hash')?.addEventListener('click', () => handleCopy(detection.hash, t('hashCopied')));
     banner.querySelector('#magnetar-expand')?.addEventListener('click', () => toggleBannerExpand(detection, mode));
+    banner.querySelector('#magnetar-banner-client-mode')?.addEventListener('change', (e) => {
+      toggleClientPanel(detection, e.target.checked);
+    });
     banner.querySelector('#magnetar-dismiss')?.addEventListener('click', () => dismissBanner());
     banner.querySelector('#magnetar-banner-settings')?.addEventListener('click', (e) => {
       e.preventDefault();
       safeRuntimeMessage({ type: 'open-options' });
+    });
+    banner.querySelector('#magnetar-mobile-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      safeRuntimeMessage({ type: 'open-external-url', url: MOBILE_URL });
     });
     banner.querySelector('#magnetar-banner-batch-mode')?.addEventListener('change', (e) => {
       saveBatchModePreference(e.target.checked);
@@ -218,6 +343,7 @@
       if (banner.classList.contains('magnetar-success')) bannerInteractedAfterSuccess = true;
     });
     showOpenProviderAction(currentQuickSendTarget, banner);
+    updateExpandedToggleState();
 
     // Save-for-later button
     const saveBtn = banner.querySelector('#magnetar-save');
@@ -242,8 +368,8 @@
           });
           markSaveButtonSaved(saveBtn);
           showToast('Saved for later');
-          // If the expanded panel is open, refresh its saved list
-          if (expandedBuilt) {
+          // If the saved/activity panel is open, refresh its saved list.
+          if (expandedBuilt && activeExpandedPanel === 'details') {
             await populateExpanded(detection, mode);
           }
         } catch (e) {}
@@ -263,6 +389,91 @@
     if (allMagnets.length > 0) return allMagnets;
     if (result && result.hash && !result.lowConfidence) return [result];
     return [];
+  }
+
+  async function detectExtToMagnet() {
+    if (!/(^|\.)ext\.to$/i.test(window.location.hostname)) return null;
+    const detail = getExtToDetailInfo();
+    if (!detail) return null;
+
+    const display = document.querySelector('#torrent-hash-display');
+    const button = document.querySelector('#show-hash-btn[data-id]');
+    if (!display || !button) return null;
+    if (String(button.dataset.id || '') !== detail.id) return null;
+
+    const existingHash = extractExtToHash(display.textContent || '');
+    if (existingHash) return buildExtToDetection(existingHash);
+
+    const revealKey = `${detail.id}:${detail.code}`;
+    if (window._magnetarExtToRevealKey === revealKey) return null;
+    window._magnetarExtToRevealKey = revealKey;
+
+    const hash = await revealExtToHash(button, display);
+    if (hash) return buildExtToDetection(hash);
+    return null;
+  }
+
+  function getExtToTitle() {
+    const titleNode = document.querySelector('h1, .torrent-title, [itemprop="name"]');
+    const title = titleNode?.textContent?.trim() || document.title;
+    return title.replace(/\s*[-|:]\s*ext\.to.*$/i, '').trim();
+  }
+
+  function getExtToDetailInfo() {
+    const slug = window.location.pathname
+      .split('/')
+      .filter(Boolean)
+      .pop() || '';
+    const match = slug.match(/^(.+)-(\d{2,})$/);
+    if (!match) return null;
+    return { id: match[2], code: match[0] };
+  }
+
+  function buildExtToDetection(hash) {
+    const name = getExtToTitle();
+    return {
+      hash,
+      magnetUri: MagnetarDetector.buildMagnet(hash, name),
+      name,
+      source: 'ext-to-xhr',
+      confidence: 10
+    };
+  }
+
+  function revealExtToHash(button, display) {
+    return new Promise(resolve => {
+      let done = false;
+      const finish = hash => {
+        if (done) return;
+        done = true;
+        observer.disconnect();
+        clearTimeout(timer);
+        resolve(hash || '');
+      };
+
+      const readHash = () => extractExtToHash(display.textContent || '');
+      const observer = new MutationObserver(() => {
+        const hash = readHash();
+        if (hash) finish(hash);
+      });
+      const timer = setTimeout(() => finish(readHash()), 4500);
+
+      observer.observe(display, { childList: true, subtree: true, characterData: true });
+      try {
+        button.click();
+      } catch (e) {
+        finish('');
+      }
+      const immediateHash = readHash();
+      if (immediateHash) finish(immediateHash);
+    });
+  }
+
+  function extractExtToHash(value) {
+    const raw = String(value || '');
+    const labelled = raw.match(/(?:btih|info[_ -]?hash|torrent[_ -]?hash|hash)[^a-fA-F0-9A-Z2-7]{0,20}([a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})/i);
+    const broad = labelled || raw.match(/\b([a-fA-F0-9]{40}|[A-Z2-7]{32})\b/);
+    return broad ? MagnetarDetector.normaliseHash(broad[1]) : '';
   }
 
   function canShowSingleBanner() {
@@ -458,6 +669,9 @@
     });
     const banner = document.getElementById('magnetar-banner');
     if (banner) showOpenProviderAction(currentQuickSendTarget, banner);
+    if (activeExpandedPanel === 'client' && banner?.classList.contains('magnetar-expanded')) {
+      populateClientPanel(result, currentQuickSendTarget, 1);
+    }
   }
 
   async function getProviderOpenTarget(providerMode) {
@@ -523,9 +737,12 @@
     root.querySelector('.magnetar-inner-compact')?.appendChild(btn);
   }
 
-  async function saveBatchModePreference(enabled) {
+  async function saveBatchModePreference(enabled, options = {}) {
     const previous = batchMode;
     batchMode = enabled === true;
+    if (batchMode) {
+      closeClientPanel();
+    }
     updateBatchModeToggle();
 
     try {
@@ -535,7 +752,7 @@
       if (batchMode) current.preferences.bannerEnabled = true;
       await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: current });
       if (!batchMode) await safeRuntimeMessage({ type: 'clear-batch-session' }, null);
-      renderCurrentMode();
+      if (options.render !== false) renderCurrentMode();
     } catch (e) {
       batchMode = previous;
       updateBatchModeToggle();
@@ -574,23 +791,38 @@
 
   // ── Expand / collapse (lazy-loaded dashboard panel) ──
   let expandedBuilt = false;
+  let activeExpandedPanel = '';
+  let toolbarExpanded = false;
+  let clientPanelOpen = false;
+  const CLIENT_PANEL_PAGE_SIZE = 25;
+  const clientPanelCache = new Map();
+  let currentClientPanelItems = [];
+
+  function setExpandedPanel(panel) {
+    activeExpandedPanel = panel || '';
+    toolbarExpanded = activeExpandedPanel === 'details';
+    clientPanelOpen = activeExpandedPanel === 'client';
+  }
 
   async function toggleBannerExpand(detection, mode) {
     const banner = document.getElementById('magnetar-banner');
     if (!banner) return;
 
     const isOpen = banner.classList.contains('magnetar-expanded');
-    if (isOpen) {
+    if (isOpen && toolbarExpanded) {
       banner.classList.remove('magnetar-expanded');
+      setExpandedPanel('');
+      updateExpandedToggleState();
       return;
     }
 
     const wrap = document.getElementById('magnetar-expanded-section');
-    const needsExpandedContent = !expandedBuilt || !wrap?.innerHTML.trim();
+    const needsExpandedContent = !toolbarExpanded || !expandedBuilt || !wrap?.innerHTML.trim();
     if (needsExpandedContent) {
       try {
         await populateExpanded(detection, mode);
         expandedBuilt = true;
+        setExpandedPanel('details');
       } catch (e) {
         if (wrap && !wrap.innerHTML) {
           wrap.innerHTML = '<div class="magnetar-expanded-inner"><div class="magnetar-activity-empty">Unable to load expanded details.</div></div>';
@@ -598,6 +830,32 @@
       }
     }
     banner.classList.add('magnetar-expanded');
+    updateExpandedToggleState();
+  }
+
+  function updateExpandedToggleState() {
+    const banner = document.getElementById('magnetar-banner');
+    const isOpen = banner?.classList.contains('magnetar-expanded') === true;
+    const detailsOpen = isOpen && toolbarExpanded;
+    const clientOpen = isOpen && clientPanelOpen;
+    const expandBtn = document.getElementById('magnetar-expand');
+    const clientInput = document.getElementById('magnetar-banner-client-mode');
+    const clientToggle = document.querySelector('#magnetar-banner .magnetar-client-mode-toggle');
+    expandBtn?.setAttribute('aria-expanded', String(detailsOpen));
+    expandBtn?.classList.toggle('magnetar-btn-active', detailsOpen);
+    if (clientInput) {
+      clientInput.checked = clientOpen;
+      clientInput.setAttribute('aria-expanded', String(clientOpen));
+    }
+    clientToggle?.classList.toggle('magnetar-client-mode-toggle-active', clientOpen);
+  }
+
+  function closeClientPanel() {
+    if (clientPanelOpen) {
+      setExpandedPanel('');
+      document.getElementById('magnetar-banner')?.classList.remove('magnetar-expanded');
+    }
+    updateExpandedToggleState();
   }
 
   async function populateExpanded(detection, mode) {
@@ -829,6 +1087,296 @@
     });
   }
 
+  async function toggleClientPanel(detection, enabled) {
+    const banner = document.getElementById('magnetar-banner');
+    if (!banner) return;
+
+    const isOpen = banner.classList.contains('magnetar-expanded');
+    if (!enabled || (isOpen && clientPanelOpen)) {
+      banner.classList.remove('magnetar-expanded');
+      setExpandedPanel('');
+      updateExpandedToggleState();
+      return;
+    }
+
+    if (batchMode) {
+      await saveBatchModePreference(false, { render: false });
+      document.getElementById('magnetar-batch')?.remove();
+    }
+
+    setExpandedPanel('client');
+    banner.classList.add('magnetar-expanded');
+    updateExpandedToggleState();
+    await populateClientPanel(detection, currentQuickSendTarget, 1);
+  }
+
+  function getClientPanelCacheKey(providerMode, page) {
+    return `${providerMode || 'local'}:${page || 1}`;
+  }
+
+  function getClientPanelTitle(providerMode, providerLabel) {
+    const label = providerMode === 'rdtclient'
+      ? 'RDT'
+      : String(providerLabel || providerMode || 'Client').replace(/\s+client$/i, '');
+    return `${label.toUpperCase()} CLIENT`;
+  }
+
+  async function populateClientPanel(detection, providerMode, page = 1) {
+    const wrap = document.getElementById('magnetar-expanded-section');
+    if (!wrap) return;
+
+    const targetMode = providerMode || mode || 'local';
+    const targetLabel = getProviderName(targetMode);
+    const safePage = Math.max(1, Number(page) || 1);
+    const panelTitle = getClientPanelTitle(targetMode, targetLabel);
+    const cacheKey = getClientPanelCacheKey(targetMode, safePage);
+
+    setExpandedPanel('client');
+    updateExpandedToggleState();
+
+    if (clientPanelCache.has(cacheKey)) {
+      renderClientPanel(clientPanelCache.get(cacheKey), detection);
+      return;
+    }
+
+    wrap.innerHTML = `
+      <div class="magnetar-expanded-inner magnetar-client-files-panel">
+        <div class="magnetar-section-heading">
+          <span>${escapeHtml(panelTitle)}</span>
+          <span class="magnetar-provider-files-page">Loading</span>
+        </div>
+        <div class="magnetar-provider-files">
+          <div class="magnetar-activity-empty">Loading client...</div>
+        </div>
+      </div>
+    `;
+
+    const result = await safeRuntimeMessage({
+      type: 'list-client-items',
+      mode: targetMode,
+      page: safePage,
+      pageSize: CLIENT_PANEL_PAGE_SIZE
+    }, null);
+
+    const payload = {
+      ...(result || {}),
+      mode: targetMode,
+      provider: result?.provider || targetLabel,
+      page: safePage,
+      pageSize: CLIENT_PANEL_PAGE_SIZE
+    };
+
+    if (payload.success) clientPanelCache.set(cacheKey, payload);
+    renderClientPanel(payload, detection);
+  }
+
+  function renderClientPanel(result, detection) {
+    const wrap = document.getElementById('magnetar-expanded-section');
+    if (!wrap) return;
+
+    const providerMode = result?.mode || currentQuickSendTarget || mode || 'local';
+    const providerLabel = result?.provider || getProviderName(providerMode);
+    const panelTitle = getClientPanelTitle(providerMode, providerLabel);
+    const page = Math.max(1, Number(result?.page) || 1);
+    const items = Array.isArray(result?.items) ? result.items : [];
+    currentClientPanelItems = result?.success ? items : [];
+    const total = Number.isFinite(result?.total) ? result.total : null;
+    const hasPrevious = page > 1;
+    const hasNext = result?.hasMore === true || (total !== null && page * CLIENT_PANEL_PAGE_SIZE < total);
+    const totalPages = total !== null ? Math.max(1, Math.ceil(total / CLIENT_PANEL_PAGE_SIZE)) : null;
+    const pageText = totalPages ? `Page ${page} of ${totalPages}` : `Page ${page}`;
+
+    let body = '';
+    if (result?.setupRequired) {
+      body = '<div class="magnetar-activity-empty">Set up a client first.</div>';
+    } else if (result?.unsupported) {
+      body = '<div class="magnetar-activity-empty">This client does not support toolbar browsing yet.</div>';
+    } else if (!result?.success) {
+      body = `<div class="magnetar-activity-empty">${escapeHtml(result?.error || 'Could not load client items.')}</div>`;
+    } else if (!items.length) {
+      body = '<div class="magnetar-activity-empty">No client items found.</div>';
+    } else {
+      body = items.map((item, index) => renderProviderFileRow(item, providerLabel, providerMode, index)).join('');
+    }
+
+    const pagination = result?.success ? `
+      <div class="magnetar-provider-files-pagination">
+        <button type="button" class="magnetar-activity-pill magnetar-provider-files-prev" ${hasPrevious ? '' : 'disabled'}>Previous</button>
+        <span class="magnetar-provider-files-page">${escapeHtml(pageText)}</span>
+        <button type="button" class="magnetar-activity-pill magnetar-provider-files-next" ${hasNext ? '' : 'disabled'}>Next</button>
+      </div>
+    ` : '';
+
+    wrap.innerHTML = `
+      <div class="magnetar-expanded-inner magnetar-client-files-panel">
+        <div class="magnetar-section-heading">
+          <span>${escapeHtml(panelTitle)}${total !== null ? ` <span class="magnetar-saved-count">${total}</span>` : ''}</span>
+          <button class="magnetar-panel-send-target" id="magnetar-client-send-target" type="button" ${getQuickSendTargetOptions().length ? '' : 'disabled'}>
+            <span class="magnetar-panel-send-target-label">${escapeHtml(providerLabel)}</span>
+            ${getQuickSendTargetOptions().length ? '<span class="magnetar-panel-send-target-arrow">▾</span>' : ''}
+          </button>
+        </div>
+        <div class="magnetar-section-help">Client items are loaded on demand from the selected toolbar target.</div>
+        <div class="magnetar-provider-files">${body}</div>
+        ${pagination}
+        <div class="magnetar-bfoot">
+          <span>v${MAGNETAR_API.runtime.getManifest().version} · ${escapeHtml(String(providerMode).toUpperCase())}</span>
+          <span class="magnetar-bfoot-tagline">Client stays in the toolbar</span>
+        </div>
+      </div>
+    `;
+
+    wrap.querySelector('#magnetar-client-send-target')?.addEventListener('click', (e) => {
+      const options = getQuickSendTargetOptions();
+      if (!options.length) return;
+      showProviderTargetMenu(e.currentTarget, options, async selectedMode => {
+        currentQuickSendTarget = selectedMode;
+        updateQuickSendTargetButtons();
+        await populateClientPanel(detection, selectedMode, 1);
+      });
+    });
+
+    wrap.querySelector('.magnetar-provider-files-prev')?.addEventListener('click', () => {
+      if (hasPrevious) populateClientPanel(detection, providerMode, page - 1);
+    });
+    wrap.querySelector('.magnetar-provider-files-next')?.addEventListener('click', () => {
+      if (hasNext) populateClientPanel(detection, providerMode, page + 1);
+    });
+
+    wrap.querySelectorAll('.magnetar-provider-file-download').forEach(btn => {
+      btn.addEventListener('click', () => handleClientItemDownload(btn, providerMode));
+    });
+    wrap.querySelectorAll('.magnetar-provider-file-open').forEach(btn => {
+      btn.addEventListener('click', () => handleClientItemOpen(btn, providerMode));
+    });
+  }
+
+  function renderProviderFileRow(item, providerLabel, providerMode, index) {
+    const name = item?.name || 'Unnamed item';
+    const type = item?.type || 'item';
+    const size = item?.size ? formatFileSize(item.size) : '';
+    const status = item?.status || '';
+    const added = item?.added ? formatClientItemDate(item.added) : '';
+    const meta = [type, size, status, added, item?.provider || providerLabel].filter(Boolean).join(' · ');
+    const canDownload = providerMode !== 'alldebrid' && canDownloadClientItem(item, providerMode);
+    const openLabel = getClientOpenLabel(providerMode, providerLabel);
+    const canOpen = canOpenClientItem(item, providerMode);
+    const openTitle = canOpen ? `${openLabel}` : 'Open unavailable';
+    const openAction = `<button type="button" class="magnetar-provider-file-open magnetar-provider-file-open-pill" data-index="${index}" title="${escapeAttr(openTitle)}" aria-label="${escapeAttr(openTitle)}" ${canOpen ? '' : 'disabled'}>${escapeHtml(openLabel)}</button>`;
+    const downloadTitle = canDownload ? 'Download' : 'Download unavailable';
+    const downloadAction = canDownload ? `<button type="button" class="magnetar-provider-file-download" data-index="${index}" title="${downloadTitle}" aria-label="${downloadTitle}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        </button>` : '';
+    const action = `<div class="magnetar-provider-file-actions">${openAction}${downloadAction}</div>`;
+    return `
+      <div class="magnetar-provider-file-row" title="${escapeAttr(name)}">
+        <div class="magnetar-provider-file-main">
+          <span class="magnetar-provider-file-name">${escapeHtml(name)}</span>
+          <span class="magnetar-provider-file-meta">${escapeHtml(meta)}</span>
+        </div>
+        ${action}
+      </div>
+    `;
+  }
+
+  function getClientOpenLabel(providerMode, providerLabel) {
+    const labels = {
+      local: 'Open in qBittorrent',
+      realdebrid: 'Open in Real-Debrid',
+      rdtclient: 'Open in RDT',
+      torbox: 'Open in TorBox',
+      premiumize: 'Open in Premiumize',
+      alldebrid: 'Open in AllDebrid'
+    };
+    return labels[providerMode] || `Open in ${providerLabel || 'Client'}`;
+  }
+
+  function canOpenClientItem(item, providerMode) {
+    if (!item) return false;
+    if (providerMode === 'alldebrid') return canDownloadClientItem(item, providerMode);
+    return ['local', 'realdebrid', 'rdtclient', 'torbox', 'premiumize'].includes(providerMode);
+  }
+
+  function canDownloadClientItem(item, providerMode) {
+    if (!item) return false;
+    if (Object.prototype.hasOwnProperty.call(item, 'downloadable') && item.downloadable === false) return false;
+    if (providerMode === 'torbox') {
+      if (Object.prototype.hasOwnProperty.call(item, 'downloadable')) return Boolean(item.downloadable);
+      return Boolean(item.id) && String(item.type || '').toLowerCase() === 'torrent';
+    }
+    if (Object.prototype.hasOwnProperty.call(item, 'downloadable') && item.downloadable === true) return true;
+    if (String(item.link || '').trim()) return true;
+    return providerMode === 'realdebrid' && Boolean(item.id);
+  }
+
+  async function handleClientItemOpen(btn, providerMode) {
+    if (!btn || btn.disabled) return;
+    const index = Number(btn.dataset.index);
+    const item = Number.isInteger(index) ? currentClientPanelItems[index] : null;
+    if (!item) {
+      showToast('Open unavailable', true);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add('magnetar-provider-file-download-loading');
+    try {
+      const res = await safeRuntimeMessage({
+        type: 'open-client-item',
+        mode: providerMode,
+        item: {
+          id: item.id || '',
+          fileId: item.fileId || '',
+          type: item.type || '',
+          name: item.name || '',
+          provider: item.provider || '',
+          downloadable: item.downloadable === true,
+          link: item.link || ''
+        }
+      }, { success: false, error: 'Could not open client item.' });
+      if (!res?.success) {
+        showToast(res?.error || 'Could not open client item', true);
+      }
+    } finally {
+      btn.classList.remove('magnetar-provider-file-download-loading');
+      btn.disabled = !canOpenClientItem(item, providerMode);
+    }
+  }
+
+  async function handleClientItemDownload(btn, providerMode) {
+    if (!btn || btn.disabled) return;
+    const index = Number(btn.dataset.index);
+    const item = Number.isInteger(index) ? currentClientPanelItems[index] : null;
+    if (!item) {
+      showToast(providerMode === 'alldebrid' ? 'Open unavailable' : 'Download unavailable', true);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add('magnetar-provider-file-download-loading');
+    try {
+      const res = await safeRuntimeMessage({
+        type: 'download-client-item',
+        mode: providerMode,
+        item: {
+          id: item.id || '',
+          fileId: item.fileId || '',
+          type: item.type || '',
+          name: item.name || '',
+          provider: item.provider || '',
+          downloadable: item.downloadable === true,
+          link: item.link || ''
+        }
+      }, { success: false, error: providerMode === 'alldebrid' ? 'Could not open AllDebrid item.' : 'Could not get download link.' });
+      if (!res?.success) {
+        showToast(res?.error || (providerMode === 'alldebrid' ? 'Could not open AllDebrid item' : 'Could not get download link'), true);
+      }
+    } finally {
+      btn.classList.remove('magnetar-provider-file-download-loading');
+      btn.disabled = !canDownloadClientItem(item, providerMode);
+    }
+  }
+
   function formatRelative(ts) {
     if (!ts) return '';
     const d = Date.now() - ts;
@@ -836,6 +1384,21 @@
     if (d < 3600_000)   return Math.floor(d / 60_000) + 'm ago';
     if (d < 86400_000)  return Math.floor(d / 3600_000) + 'h ago';
     return Math.floor(d / 86400_000) + 'd ago';
+  }
+
+  function formatFileSize(bytes) {
+    const n = Number(bytes);
+    if (!Number.isFinite(n) || n <= 0) return '';
+    if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GB';
+    if (n >= 1048576) return (n / 1048576).toFixed(0) + ' MB';
+    if (n >= 1024) return (n / 1024).toFixed(0) + ' KB';
+    return n + ' B';
+  }
+
+  function formatClientItemDate(value) {
+    const timestamp = Date.parse(value);
+    if (!Number.isFinite(timestamp)) return '';
+    return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   function safeSourceUrl(item) {
@@ -894,13 +1457,14 @@
   }
 
   function getDetectionTypeLabel(detection) {
-    if (detection?.source === 'magnet-link') return 'Magnet link';
+    if (detection?.source === 'magnet-link' || detection?.source === 'ext-to-xhr') return 'Magnet link';
     if (detection?.hash) return 'Hash';
     return 'Unknown';
   }
 
   function getDetectionSourceLabel(source) {
     if (source === 'magnet-link') return 'magnet';
+    if (source === 'ext-to-xhr') return 'ext.to';
     if (source === 'custom-selector' || source === 'custom-regex') return 'custom site';
     if (source === 'labelled-hash' || source === 'data-attr' || source === 'hidden-input' || source === 'code-block' || source === 'broad-sweep') return 'hash match';
     return source || 'Unknown';
@@ -970,6 +1534,11 @@
     const sendLabel = getSendLabel(mode);
     const showCache = !isManualShell && mode !== 'local';
     const isFull = isManualShell || bannerStyle === 'full';
+    const mobileButton = `
+      <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-mobile" id="magnetar-mobile-link" title="Get Magnetar Mobile" aria-label="Get Magnetar Mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"/><path d="M10 18h4"/><path d="M9 6h6"/></svg>
+      </button>
+    `;
     const quickSendToggle = quickSendProviders.length ? `
       <div class="magnetar-quick-send">
         <button class="magnetar-btn magnetar-btn-secondary magnetar-quick-send-toggle" id="magnetar-quick-send-toggle" title="Send with another provider" aria-label="Send with another provider" aria-haspopup="menu" aria-expanded="false">
@@ -985,7 +1554,7 @@
       </button>
     `;
     const ignoreButton = `
-      <button class="magnetar-btn magnetar-btn-secondary magnetar-ignore-site" id="magnetar-ignore-site" title="Ignore detections on this site" aria-label="Ignore detections on this site">Ignore site</button>
+      <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-ignore-site" id="magnetar-ignore-site" title="Ignore site" aria-label="Ignore site">Ignore site</button>
     `;
     const manualButton = `
       <button class="magnetar-btn magnetar-btn-secondary magnetar-manual-send-toggle" id="magnetar-manual-send-toggle" title="Paste external torrent link, magnet, or hash" aria-label="Paste external torrent link, magnet, or hash" aria-haspopup="dialog" aria-expanded="false">
@@ -998,6 +1567,13 @@
         <input type="checkbox" class="magnetar-batch-mode-input" id="magnetar-banner-batch-mode" ${batchMode ? 'checked' : ''}>
         <span class="magnetar-batch-mode-track" aria-hidden="true"></span>
         <span class="magnetar-batch-mode-label">Batch</span>
+      </label>
+    `;
+    const clientToggle = `
+      <label class="magnetar-client-mode-toggle" title="Show client">
+        <input type="checkbox" class="magnetar-client-mode-input" id="magnetar-banner-client-mode" aria-label="Show client" aria-expanded="false">
+        <span class="magnetar-client-mode-track" aria-hidden="true"></span>
+        <span class="magnetar-client-mode-label">Client</span>
       </label>
     `;
 
@@ -1028,7 +1604,7 @@
       `;
       const utilityTools = isManualShell
         ? `${downloadsButton}${manualButton}`
-        : `${downloadsButton}${manualButton}${ignoreButton}${batchToggle}`;
+        : `${downloadsButton}${manualButton}${ignoreButton}${batchToggle}${clientToggle}`;
       const expandControl = isManualShell ? '' : `
                 <button class="magnetar-btn magnetar-btn-icon magnetar-btn-expand" id="magnetar-expand" title="Expand" aria-label="Expand">
                   <svg class="magnetar-expand-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1042,6 +1618,7 @@
               <span class="magnetar-wordmark">MAGNETAR</span>
             </span>
             <span class="magnetar-name" title="${name}" tabindex="0"><span class="magnetar-name-text">${name}</span></span>
+            ${mobileButton}
             <button class="magnetar-btn magnetar-btn-icon magnetar-btn-theme" id="magnetar-theme" title="Toggle theme" aria-label="Toggle theme">
               <svg class="magnetar-theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               <svg class="magnetar-theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -1099,7 +1676,9 @@
           </div>
           ${quickSendToggle}
           ${batchToggle}
+          ${ignoreButton}
           ${downloadsButton}
+          ${mobileButton}
           <button class="magnetar-btn magnetar-btn-icon magnetar-btn-settings" id="magnetar-banner-settings" title="Settings" aria-label="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           </button>
@@ -1173,6 +1752,11 @@
     const truncatedNote = totalCount > magnets.length
       ? `<span class="magnetar-batch-truncated">${t('batchShowingOf', String(magnets.length), String(totalCount))}</span>`
       : '';
+    const batchMobileButton = `
+      <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-mobile" id="magnetar-batch-mobile-link" title="Get Magnetar Mobile" aria-label="Get Magnetar Mobile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"/><path d="M10 18h4"/><path d="M9 6h6"/></svg>
+      </button>
+    `;
 
     // Count options for the 25/50/75 toggle. `batchMax` may not be one of these
     // (user could've picked something custom in settings), so include current if so.
@@ -1272,6 +1856,7 @@
               <button class="magnetar-btn magnetar-btn-icon magnetar-batch-drawer-toggle" id="magnetar-batch-drawer-toggle" title="Show saved &amp; history" aria-label="Show saved and history">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
+              ${batchMobileButton}
               <button class="magnetar-btn magnetar-btn-icon magnetar-btn-theme" id="magnetar-batch-theme" title="Toggle theme" aria-label="Toggle theme">
                 <svg class="magnetar-theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 <svg class="magnetar-theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -1581,6 +2166,11 @@
     // ── Settings cog ──
     panel.querySelector('#magnetar-batch-settings')?.addEventListener('click', () => {
       safeRuntimeMessage({ type: 'open-options' });
+    });
+
+    panel.querySelector('#magnetar-batch-mobile-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      safeRuntimeMessage({ type: 'open-external-url', url: MOBILE_URL });
     });
 
     // ── Drawer: slide-out saved + history ──
@@ -2461,6 +3051,8 @@
   function dismissBanner() {
     const banner = document.getElementById('magnetar-banner');
     if (!banner) return;
+    setExpandedPanel('');
+    updateExpandedToggleState();
     banner.classList.remove('magnetar-visible');
     banner.classList.add('magnetar-hiding');
     setTimeout(() => banner.remove(), 300);

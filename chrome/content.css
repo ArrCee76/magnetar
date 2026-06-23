@@ -39,6 +39,14 @@
 
   --mg-shadow-md: 0 4px 16px rgba(30, 26, 20, 0.08), 0 1px 3px rgba(30, 26, 20, 0.06);
   --mg-shadow-lg: 0 16px 48px rgba(30, 26, 20, 0.16), 0 2px 8px rgba(30, 26, 20, 0.08);
+
+  --mg-toolbar-font: 12.5px;
+  --mg-toolbar-small-font: 10.5px;
+  --mg-toolbar-control: 30px;
+  --mg-toolbar-icon-control: 28px;
+  --mg-toolbar-icon: 13px;
+  --mg-toolbar-radius: 7px;
+  --mg-toolbar-primary-width: 108px;
 }
 
 #magnetar-banner.magnetar-theme-dark,
@@ -185,8 +193,8 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 9px;
+  padding: 10px 12px;
 }
 
 #magnetar-banner.magnetar-expanded .magnetar-inner {
@@ -208,16 +216,16 @@
 
 /* Logo */
 #magnetar-banner .magnetar-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--mg-toolbar-radius);
   background: var(--mg-ink);
   color: var(--mg-bg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1;
 }
@@ -227,9 +235,9 @@
 #magnetar-batch .magnetar-brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   flex-shrink: 0;
-  padding-right: 11px;
+  padding-right: 10px;
   border-right: 1px solid var(--mg-border-mid);
   margin-right: 2px;
 }
@@ -237,7 +245,7 @@
 #magnetar-banner .magnetar-wordmark,
 #magnetar-batch .magnetar-wordmark {
   font-family: var(--mg-mono);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.16em;
   color: var(--mg-ink-2);
@@ -253,7 +261,7 @@
 #magnetar-banner .magnetar-title-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
 }
 
@@ -268,7 +276,7 @@
 #magnetar-banner .magnetar-name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--mg-toolbar-font);
   font-weight: 500;
   color: var(--mg-ink);
   line-height: 1.35;
@@ -349,10 +357,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 7px;
   margin-left: auto;
   flex: 0 0 auto;
-  min-height: 32px;
+  min-height: var(--mg-toolbar-control);
   align-self: center;
 }
 
@@ -368,12 +376,12 @@
   justify-content: center;
   flex: 0 0 auto;
   font-family: var(--mg-font);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   font-weight: 600;
   line-height: 1;
-  min-height: 30px;
-  padding: 6px 10px;
-  min-width: 112px;
+  min-height: 28px;
+  padding: 5px 9px;
+  min-width: var(--mg-toolbar-primary-width);
   white-space: nowrap;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -392,9 +400,9 @@
 #magnetar-batch .magnetar-batch-send-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin-left: auto;
-  min-height: 32px;
+  min-height: var(--mg-toolbar-control);
 }
 
 /* Cache line — on the button row now */
@@ -402,13 +410,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 5px;
   font-family: var(--mg-mono);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   color: var(--mg-ink-3);
   letter-spacing: 0.02em;
   padding: 0 4px;
-  min-width: 94px;     /* reserve space so Checking…/Cached/Not cached don't reflow the row */
+  min-width: 90px;     /* reserve space so Checking…/Cached/Not cached don't reflow the row */
   flex-shrink: 0;
 }
 
@@ -452,15 +460,15 @@
 #magnetar-banner .magnetar-button-row {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
 }
 
 #magnetar-banner .magnetar-action-row {
   display: grid;
-  grid-template-columns: minmax(196px, max-content) minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(188px, max-content) minmax(0, 1fr) max-content;
   align-items: center;
-  column-gap: 7px;
+  column-gap: 6px;
   min-width: 0;
 }
 
@@ -480,18 +488,18 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
-  column-gap: 10px;
-  row-gap: 6px;
-  min-height: 32px;
+  column-gap: 9px;
+  row-gap: 5px;
+  min-height: var(--mg-toolbar-control);
   min-width: 0;
 }
 
 #magnetar-banner .magnetar-tools-primary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
-  min-height: 32px;
+  min-height: var(--mg-toolbar-control);
   min-width: 0;
 }
 
@@ -504,8 +512,8 @@
 }
 
 #magnetar-banner .magnetar-support-action {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1px solid var(--mg-border);
   border-radius: 999px;
@@ -520,8 +528,8 @@
 }
 
 #magnetar-banner .magnetar-support-action svg {
-  width: 14px;
-  height: 14px;
+  width: var(--mg-toolbar-icon);
+  height: var(--mg-toolbar-icon);
   color: currentColor;
 }
 
@@ -538,9 +546,9 @@
 
 #magnetar-banner .magnetar-send-region {
   display: grid;
-  grid-template-columns: 112px max-content;
+  grid-template-columns: var(--mg-toolbar-primary-width) max-content;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -549,12 +557,12 @@
 }
 
 #magnetar-banner:not(.magnetar-advanced-mode) .magnetar-send-region {
-  grid-template-columns: 112px;
+  grid-template-columns: var(--mg-toolbar-primary-width);
   gap: 0;
 }
 
 #magnetar-banner .magnetar-send-region:not(:has(.magnetar-quick-send)) {
-  grid-template-columns: 112px;
+  grid-template-columns: var(--mg-toolbar-primary-width);
   gap: 0;
 }
 
@@ -562,14 +570,14 @@
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 5px;
   min-width: 0;
   overflow: hidden;
 }
 
 #magnetar-banner .magnetar-send-stack {
   display: inline-flex;
-  flex: 0 0 112px;
+  flex: 0 0 var(--mg-toolbar-primary-width);
   flex-direction: column;
   align-items: stretch;
   gap: 5px;
@@ -577,40 +585,57 @@
 
 #magnetar-banner .magnetar-send-stack #magnetar-send {
   flex: 0 0 auto;
-  width: 112px;
+  width: var(--mg-toolbar-primary-width);
 }
 
 #magnetar-banner .magnetar-btn {
   font-family: var(--mg-font);
-  font-size: 13px;
+  font-size: var(--mg-toolbar-font);
   font-weight: 500;
   letter-spacing: -0.005em;
-  border-radius: 8px;
-  padding: 8px 14px;
+  border-radius: var(--mg-toolbar-radius);
+  padding: 7px 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   line-height: 1.2;
   white-space: nowrap;
   border: 1px solid transparent;
   transition: all 0.15s ease;
   background: transparent;
-  color: inherit;
+  color: var(--mg-ink-2);
+}
+
+#magnetar-banner .magnetar-btn svg,
+#magnetar-banner .magnetar-btn span {
+  color: currentColor !important;
+}
+
+#magnetar-banner .magnetar-btn svg {
+  stroke: currentColor !important;
+}
+
+#magnetar-banner .magnetar-btn svg [stroke] {
+  stroke: currentColor !important;
+}
+
+#magnetar-banner .magnetar-btn svg [fill]:not([fill="none"]) {
+  fill: currentColor !important;
 }
 
 #magnetar-banner .magnetar-btn-primary {
   background: var(--mg-ink);
-  color: var(--mg-bg);
+  color: var(--mg-bg) !important;
   border-color: var(--mg-ink);
 }
 
 #magnetar-banner #magnetar-send {
-  width: 112px;
-  flex: 0 0 112px;
-  padding-left: 10px;
-  padding-right: 10px;
+  width: var(--mg-toolbar-primary-width);
+  flex: 0 0 var(--mg-toolbar-primary-width);
+  padding-left: 9px;
+  padding-right: 9px;
 }
 
 #magnetar-banner #magnetar-send .magnetar-btn-label {
@@ -646,20 +671,20 @@
 }
 
 #magnetar-banner .magnetar-quick-send-toggle {
-  min-width: 76px;
-  height: 32px;
-  min-height: 32px;
-  padding: 0 10px;
+  min-width: 72px;
+  height: var(--mg-toolbar-control);
+  min-height: var(--mg-toolbar-control);
+  padding: 0 9px;
   color: var(--mg-ink);
   border-color: var(--mg-border-mid);
   background: var(--mg-surface-2);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
 }
 
 #magnetar-banner .magnetar-quick-send-toggle svg {
-  width: 14px;
-  height: 14px;
+  width: var(--mg-toolbar-icon);
+  height: var(--mg-toolbar-icon);
   stroke-width: 2.5;
 }
 
@@ -914,9 +939,9 @@
 #magnetar-batch .magnetar-panel-send-target {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   justify-content: center;
-  min-width: 112px;
+  min-width: var(--mg-toolbar-primary-width);
   min-height: 28px;
   padding: 5px 9px;
   border: 1px solid var(--mg-border-mid);
@@ -924,7 +949,7 @@
   background: var(--mg-surface-2);
   color: var(--mg-ink);
   font-family: var(--mg-font);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -949,8 +974,8 @@
 }
 
 #magnetar-batch .magnetar-btn.magnetar-panel-send-target-toggle {
-  width: 32px;
-  height: 32px;
+  width: var(--mg-toolbar-control);
+  height: var(--mg-toolbar-control);
   padding: 0;
   background: var(--mg-surface-2);
   color: var(--mg-ink);
@@ -958,8 +983,8 @@
 }
 
 #magnetar-batch .magnetar-btn.magnetar-panel-send-target-toggle svg {
-  width: 14px;
-  height: 14px;
+  width: var(--mg-toolbar-icon);
+  height: var(--mg-toolbar-icon);
   color: currentColor;
   fill: none;
   stroke: currentColor;
@@ -974,15 +999,15 @@
 
 #magnetar-banner .magnetar-btn-secondary {
   background: transparent;
-  color: var(--mg-ink-2);
+  color: var(--mg-ink-2) !important;
   border-color: var(--mg-border);
-  padding: 7px 11px;
-  font-size: 12px;
+  padding: 6px 10px;
+  font-size: 11.5px;
 }
 
 #magnetar-banner .magnetar-btn-secondary:hover {
   background: var(--mg-surface-2);
-  color: var(--mg-ink);
+  color: var(--mg-ink) !important;
   border-color: var(--mg-border-mid);
 }
 
@@ -991,17 +1016,17 @@
   color: var(--mg-ink-2);
   border-color: var(--mg-border);
   background: transparent;
-  min-width: 98px;
-  min-height: 30px;
-  padding: 6px 10px;
+  min-width: 94px;
+  min-height: 28px;
+  padding: 5px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   font-weight: 600;
 }
 
 #magnetar-banner .magnetar-open-downloads svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 #magnetar-banner .magnetar-open-downloads:hover {
@@ -1011,24 +1036,24 @@
 }
 
 #magnetar-banner .magnetar-ignore-site {
-  display: none;
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-#magnetar-banner.magnetar-advanced-mode .magnetar-ignore-site {
   display: inline-flex;
+  width: auto !important;
+  max-width: max-content;
+  flex: 0 0 auto !important;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: var(--mg-toolbar-small-font);
+  font-weight: 600;
+  align-self: center;
 }
 
 #magnetar-banner .magnetar-manual-send-toggle {
   display: none;
-  min-height: 30px;
-  padding: 6px 10px;
+  min-height: 28px;
+  padding: 5px 9px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   font-weight: 600;
 }
 
@@ -1061,38 +1086,51 @@
   fill: currentColor;
 }
 
-#magnetar-banner .magnetar-batch-mode-toggle {
+#magnetar-banner .magnetar-batch-mode-toggle,
+#magnetar-banner .magnetar-client-mode-toggle {
   position: relative;
   display: none;
   align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 3px 8px 3px 6px;
+  justify-content: center;
+  gap: 5px;
+  width: auto !important;
+  max-width: max-content;
+  min-height: 28px;
+  padding: 3px 7px 3px 6px;
   border: 1px solid var(--mg-border);
   border-radius: 999px;
   color: var(--mg-ink-2);
   background: transparent;
   cursor: pointer;
   user-select: none;
+  align-self: center;
+  flex: 0 0 auto !important;
+  flex-basis: auto !important;
+  box-sizing: border-box;
 }
 
-#magnetar-banner.magnetar-advanced-mode .magnetar-batch-mode-toggle {
-  display: inline-flex;
+#magnetar-banner.magnetar-advanced-mode .magnetar-batch-mode-toggle,
+#magnetar-banner.magnetar-advanced-mode .magnetar-client-mode-toggle {
+  display: inline-flex !important;
 }
 
-#magnetar-banner .magnetar-batch-mode-toggle:hover {
+#magnetar-banner .magnetar-batch-mode-toggle:hover,
+#magnetar-banner .magnetar-client-mode-toggle:hover,
+#magnetar-banner .magnetar-client-mode-toggle.magnetar-client-mode-toggle-active {
   background: var(--mg-surface-2);
   color: var(--mg-ink);
   border-color: var(--mg-border-mid);
 }
 
-#magnetar-banner .magnetar-batch-mode-input {
+#magnetar-banner .magnetar-batch-mode-input,
+#magnetar-banner .magnetar-client-mode-input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-#magnetar-banner .magnetar-batch-mode-track {
+#magnetar-banner .magnetar-batch-mode-track,
+#magnetar-banner .magnetar-client-mode-track {
   position: relative;
   width: 28px;
   height: 16px;
@@ -1103,7 +1141,8 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-#magnetar-banner .magnetar-batch-mode-track::after {
+#magnetar-banner .magnetar-batch-mode-track::after,
+#magnetar-banner .magnetar-client-mode-track::after {
   content: "";
   position: absolute;
   top: 2px;
@@ -1115,30 +1154,34 @@
   transition: transform 0.15s ease, background 0.15s ease;
 }
 
-#magnetar-banner .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track {
+#magnetar-banner .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track,
+#magnetar-banner .magnetar-client-mode-input:checked + .magnetar-client-mode-track {
   background: var(--mg-signal-bg);
   border-color: var(--mg-signal-line);
 }
 
-#magnetar-banner .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track::after {
+#magnetar-banner .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track::after,
+#magnetar-banner .magnetar-client-mode-input:checked + .magnetar-client-mode-track::after {
   transform: translateX(12px);
   background: var(--mg-signal);
 }
 
-#magnetar-banner .magnetar-batch-mode-label {
-  font-size: 12px;
+#magnetar-banner .magnetar-batch-mode-label,
+#magnetar-banner .magnetar-client-mode-label {
+  font-size: 11.5px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
+  color: currentColor;
 }
 
 #magnetar-batch .magnetar-batch-mode-toggle {
   position: relative;
   display: none;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-height: 28px;
-  padding: 3px 8px 3px 6px;
+  padding: 3px 7px 3px 6px;
   border: 1px solid var(--mg-border);
   border-radius: 999px;
   color: var(--mg-ink-2);
@@ -1197,7 +1240,7 @@
 }
 
 #magnetar-batch .magnetar-batch-mode-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -1205,8 +1248,8 @@
 
 #magnetar-banner .magnetar-btn-cancel,
 #magnetar-banner .magnetar-btn-icon {
-  width: 32px;
-  height: 32px;
+  width: var(--mg-toolbar-control);
+  height: var(--mg-toolbar-control);
   padding: 0;
   background: transparent;
   color: var(--mg-ink-3);
@@ -1220,8 +1263,8 @@
 }
 
 #magnetar-banner .magnetar-btn-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--mg-toolbar-icon);
+  height: var(--mg-toolbar-icon);
   color: currentColor;
   stroke: currentColor;
 }
@@ -1239,14 +1282,14 @@
 /* Title-row icons are tighter than button-row icons */
 #magnetar-banner .magnetar-title-row .magnetar-btn-cancel,
 #magnetar-banner .magnetar-title-row .magnetar-btn-icon {
-  width: 28px;
-  height: 28px;
+  width: var(--mg-toolbar-icon-control);
+  height: var(--mg-toolbar-icon-control);
   flex-shrink: 0;
 }
 
 #magnetar-banner .magnetar-btn-settings svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1258,6 +1301,36 @@
   width: 14px;
   height: 14px;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#magnetar-banner .magnetar-btn-mobile svg {
+  width: 14px;
+  height: 14px;
+}
+
+#magnetar-banner .magnetar-btn-mobile {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.16) !important;
+  border-color: var(--mg-ink) !important;
+}
+
+#magnetar-banner .magnetar-btn-mobile:hover {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.24) !important;
+  border-color: var(--mg-ink) !important;
+}
+
+#magnetar-banner .magnetar-btn-mobile:focus-visible {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.24) !important;
+  border-color: var(--mg-ink) !important;
+  box-shadow: 0 0 0 2px rgba(30, 26, 20, 0.18);
+}
+
+#magnetar-banner .magnetar-btn-mobile svg,
+#magnetar-banner .magnetar-btn-mobile svg * {
+  color: currentColor !important;
+  stroke: currentColor !important;
 }
 
 #magnetar-banner .magnetar-btn-theme:hover svg {
@@ -1273,7 +1346,7 @@
   margin-left: 0;
 }
 
-#magnetar-banner.magnetar-expanded .magnetar-expand-chevron {
+#magnetar-banner .magnetar-btn-expand.magnetar-btn-active .magnetar-expand-chevron {
   transform: rotate(180deg);
 }
 
@@ -1282,8 +1355,8 @@
 }
 
 #magnetar-banner .magnetar-btn-spinner {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border: 2px solid rgba(245, 241, 232, 0.3);
   border-top-color: currentColor;
   border-radius: 50%;
@@ -1303,21 +1376,21 @@
 }
 
 #magnetar-banner.magnetar-expanded .magnetar-expanded-section {
-  max-height: 560px;
+  max-height: min(560px, calc(100vh - 170px));
   overflow-y: auto;
   overflow-x: hidden;
   border-top-color: var(--mg-border);
 }
 
 #magnetar-banner .magnetar-expanded-inner {
-  padding: 18px 18px 20px;
+  padding: 15px 16px 17px;
 }
 
 #magnetar-banner .magnetar-detection-details {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   padding: 0;
   border: 1px solid var(--mg-border);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--mg-surface-2);
   overflow: hidden;
 }
@@ -1326,10 +1399,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 9px;
+  padding: 9px 11px;
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   cursor: pointer;
   list-style: none;
@@ -1367,19 +1440,19 @@
 #magnetar-banner .magnetar-detection-details-grid {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
-  gap: 6px 10px;
+  gap: 5px 9px;
   align-items: center;
-  padding: 0 12px 10px;
+  padding: 0 11px 9px;
 }
 
 #magnetar-banner .magnetar-detection-secondary {
-  padding-top: 8px;
+  padding-top: 7px;
   border-top: 1px solid var(--mg-border);
 }
 
 #magnetar-banner .magnetar-detection-detail-label {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   white-space: nowrap;
   text-align: left;
@@ -1407,10 +1480,10 @@
   color: var(--mg-ink-2);
   cursor: pointer;
   font-family: var(--mg-font);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   line-height: 1;
-  padding: 4px 8px;
+  padding: 3px 7px;
 }
 
 #magnetar-banner .magnetar-detection-copy:hover {
@@ -1423,25 +1496,25 @@
 #magnetar-batch .magnetar-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 15px;
 }
 
 #magnetar-banner .magnetar-stat,
 #magnetar-batch .magnetar-stat {
   background: var(--mg-surface-2);
   border: 1px solid var(--mg-border);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 9px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 #magnetar-banner .magnetar-stat-label,
 #magnetar-batch .magnetar-stat-label {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   letter-spacing: 0.04em;
   text-transform: lowercase;
@@ -1449,7 +1522,7 @@
 
 #magnetar-banner .magnetar-stat-value,
 #magnetar-batch .magnetar-stat-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--mg-ink);
   letter-spacing: -0.02em;
@@ -1459,25 +1532,25 @@
 #magnetar-banner .magnetar-stat-delta,
 #magnetar-batch .magnetar-stat-delta {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-signal);
   letter-spacing: 0.02em;
 }
 
 /* Drawer is narrower than the banner, so tighten the stats a bit */
-#magnetar-batch .magnetar-stats { gap: 8px; margin-bottom: 14px; }
-#magnetar-batch .magnetar-stat { padding: 10px; }
-#magnetar-batch .magnetar-stat-value { font-size: 17px; }
-#magnetar-batch .magnetar-stat-label { font-size: 9.5px; }
-#magnetar-batch .magnetar-stat-delta { font-size: 9.5px; }
+#magnetar-batch .magnetar-stats { gap: 7px; margin-bottom: 12px; }
+#magnetar-batch .magnetar-stat { padding: 9px; }
+#magnetar-batch .magnetar-stat-value { font-size: 16px; }
+#magnetar-batch .magnetar-stat-label { font-size: 9px; }
+#magnetar-batch .magnetar-stat-delta { font-size: 9px; }
 
 #magnetar-batch .magnetar-batch-info-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 7px;
+  margin-bottom: 8px;
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   text-transform: lowercase;
 }
@@ -1500,11 +1573,11 @@
 #magnetar-banner .magnetar-section-heading,
 #magnetar-batch .magnetar-section-heading {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1516,7 +1589,7 @@
   color: var(--mg-ink-3);
   text-decoration: none;
   font-family: var(--mg-font);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   transition: color 0.15s ease;
   cursor: pointer;
 }
@@ -1552,10 +1625,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 10px;
+  padding: 9px 11px;
   background: var(--mg-surface);
-  font-size: 12px;
+  font-size: 11.5px;
   transition: background 0.1s ease;
 }
 
@@ -1570,7 +1643,7 @@
 #magnetar-batch .magnetar-activity-actions {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -1591,7 +1664,7 @@
 #magnetar-banner .magnetar-activity-meta,
 #magnetar-batch .magnetar-activity-meta {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1600,9 +1673,9 @@
 #magnetar-banner .magnetar-activity-status,
 #magnetar-batch .magnetar-activity-status {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.05em;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   white-space: nowrap;
 }
@@ -1610,10 +1683,10 @@
 #magnetar-banner .magnetar-activity-pill,
 #magnetar-batch .magnetar-activity-pill {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   letter-spacing: 0.02em;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   white-space: nowrap;
   border: 1px solid var(--mg-border);
@@ -1641,11 +1714,185 @@
 
 #magnetar-banner .magnetar-activity-empty,
 #magnetar-batch .magnetar-activity-empty {
-  padding: 14px 12px;
-  font-size: 12px;
+  padding: 12px 11px;
+  font-size: 11.5px;
   color: var(--mg-ink-3);
   text-align: center;
   background: var(--mg-surface);
+}
+
+#magnetar-banner .magnetar-provider-files {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--mg-border);
+  border: 1px solid var(--mg-border);
+  border-radius: 9px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  max-height: 248px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--mg-ink-5) transparent;
+}
+
+#magnetar-banner .magnetar-provider-files::-webkit-scrollbar { width: 8px; }
+#magnetar-banner .magnetar-provider-files::-webkit-scrollbar-track { background: transparent; }
+#magnetar-banner .magnetar-provider-files::-webkit-scrollbar-thumb {
+  background: var(--mg-ink-5);
+  border-radius: 4px;
+  border: 2px solid var(--mg-surface);
+}
+
+#magnetar-banner .magnetar-provider-file-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 10px;
+  background: var(--mg-surface);
+  font-size: 11.5px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#magnetar-banner .magnetar-provider-file-row:nth-child(even) {
+  background: rgba(30, 26, 20, 0.025);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-provider-file-row:nth-child(even) {
+  background: rgba(245, 241, 232, 0.035);
+}
+
+#magnetar-banner .magnetar-provider-file-row:hover {
+  background: var(--mg-surface-2);
+}
+
+#magnetar-banner .magnetar-provider-file-main {
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 3px;
+}
+
+#magnetar-banner .magnetar-provider-file-name {
+  color: var(--mg-ink);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  text-align: left;
+}
+
+#magnetar-banner .magnetar-provider-file-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+  max-width: 148px;
+}
+
+#magnetar-banner .magnetar-provider-file-open,
+#magnetar-banner .magnetar-provider-file-download {
+  height: 26px;
+  border: 1px solid var(--mg-border-mid) !important;
+  border-radius: 6px;
+  background: var(--mg-surface);
+  color: var(--mg-ink-2);
+  box-shadow: inset 0 0 0 1px rgba(30, 26, 20, 0.06);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+#magnetar-banner .magnetar-provider-file-download {
+  width: 26px;
+  padding: 0;
+}
+
+#magnetar-banner .magnetar-provider-file-download svg {
+  width: 15px;
+  height: 15px;
+  color: currentColor !important;
+  stroke: currentColor !important;
+  stroke-width: 2.4 !important;
+  fill: none !important;
+}
+
+#magnetar-banner .magnetar-provider-file-open-pill {
+  width: auto;
+  min-width: 0;
+  max-width: 117px;
+  height: 26px;
+  padding: 0 8px;
+  color: var(--mg-ink-2) !important;
+  font-family: var(--mg-font);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-provider-file-open:hover,
+#magnetar-banner .magnetar-provider-file-open:focus-visible,
+#magnetar-banner .magnetar-provider-file-download:hover,
+#magnetar-banner .magnetar-provider-file-download:focus-visible {
+  background: var(--mg-surface-2);
+  border-color: var(--mg-ink-3) !important;
+  color: var(--mg-ink);
+  outline: none;
+  box-shadow: inset 0 0 0 1px rgba(30, 26, 20, 0.1);
+}
+
+#magnetar-banner .magnetar-provider-file-open:disabled,
+#magnetar-banner .magnetar-provider-file-download:disabled {
+  opacity: 0.58;
+  cursor: default;
+  background: transparent;
+  border-color: var(--mg-border) !important;
+  color: var(--mg-ink-4);
+  box-shadow: inset 0 0 0 1px rgba(30, 26, 20, 0.02);
+}
+
+#magnetar-banner .magnetar-provider-file-download-loading svg {
+  animation: magnetar-spin 0.7s linear infinite;
+}
+
+#magnetar-banner .magnetar-provider-file-meta,
+#magnetar-banner .magnetar-provider-files-page {
+  font-family: var(--mg-mono);
+  font-size: 9.5px;
+  color: var(--mg-ink-3);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+#magnetar-banner .magnetar-provider-file-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-provider-files-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+#magnetar-banner .magnetar-provider-files-pagination .magnetar-activity-pill:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 /* ── Save button (banner button row) ──────────────────────────────────── */
@@ -1682,23 +1929,23 @@
 #magnetar-banner .magnetar-saved-count,
 #magnetar-batch .magnetar-saved-count {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink);
   background: var(--mg-surface-3);
   border: 1px solid var(--mg-border-mid);
   border-radius: 999px;
-  padding: 1px 7px;
-  margin-left: 6px;
+  padding: 1px 6px;
+  margin-left: 5px;
   letter-spacing: 0.02em;
   text-transform: none;
 }
 
 #magnetar-banner .magnetar-section-help,
 #magnetar-batch .magnetar-section-help {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--mg-ink-3);
   line-height: 1.5;
-  margin: -4px 0 10px;
+  margin: -3px 0 8px;
   letter-spacing: -0.005em;
 }
 
@@ -1732,10 +1979,10 @@
   display: grid;
   grid-template-columns: 1fr auto auto auto auto auto;
   align-items: center;
-  gap: 6px;
-  padding: 9px 12px;
+  gap: 5px;
+  padding: 8px 11px;
   background: var(--mg-surface);
-  font-size: 12px;
+  font-size: 11.5px;
   transition: background 0.1s ease;
 }
 
@@ -1760,7 +2007,7 @@
 #magnetar-banner .magnetar-saved-meta,
 #magnetar-batch .magnetar-saved-meta {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1769,14 +2016,14 @@
 #magnetar-banner .magnetar-saved-send,
 #magnetar-batch .magnetar-saved-send {
   font-family: var(--mg-font);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--mg-bg);
   background: var(--mg-ink);
   border: 1px solid var(--mg-ink);
   border-radius: 999px;
-  padding: 3px 12px;
+  padding: 3px 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -1798,8 +2045,8 @@
   border: none;
   color: var(--mg-ink-4);
   cursor: pointer;
-  font-size: 11px;
-  padding: 4px 6px;
+  font-size: var(--mg-toolbar-small-font);
+  padding: 3px 5px;
   border-radius: 4px;
   transition: all 0.1s ease;
 }
@@ -1816,13 +2063,13 @@
   border: none;
   color: var(--mg-ink-4);
   cursor: pointer;
-  padding: 5px;
+  padding: 4px;
   border-radius: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   transition: all 0.1s ease;
 }
 
@@ -1838,14 +2085,14 @@
 }
 
 #magnetar-banner .magnetar-bfoot {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 13px;
+  padding-top: 12px;
   border-top: 1px solid var(--mg-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   letter-spacing: 0.04em;
 }
@@ -1913,7 +2160,7 @@
   flex-shrink: 0;
   background: var(--mg-surface);
   border: 2px solid var(--mg-brand-outline);
-  border-radius: 14px;
+  border-radius: 13px;
   box-shadow: var(--mg-shadow-md);
   display: flex;
   flex-direction: column;
@@ -1966,7 +2213,7 @@
 }
 
 #magnetar-batch .magnetar-batch-drawer-inner {
-  padding: 16px 18px;
+  padding: 14px 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1988,20 +2235,20 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--mg-border);
   flex-shrink: 0;
-  gap: 10px;
+  gap: 9px;
 }
 
 #magnetar-batch .magnetar-batch-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
   flex: 1;
   flex-wrap: wrap;
-  row-gap: 6px;
+  row-gap: 5px;
 }
 
 #magnetar-batch .magnetar-batch-header-actions {
@@ -2011,7 +2258,7 @@
 #magnetar-batch .magnetar-logo {
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: var(--mg-toolbar-radius);
   background: var(--mg-ink);
   color: var(--mg-bg);
   display: inline-flex;
@@ -2024,7 +2271,7 @@
 }
 
 #magnetar-batch .magnetar-batch-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--mg-ink);
   letter-spacing: -0.005em;
@@ -2033,29 +2280,29 @@
 
 #magnetar-batch .magnetar-batch-truncated {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   background: var(--mg-surface-2);
   border: 1px solid var(--mg-border);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   white-space: nowrap;
   margin-left: 0;
 }
 
 #magnetar-batch .magnetar-batch-close {
-  width: 28px;
-  height: 28px;
+  width: var(--mg-toolbar-icon-control);
+  height: var(--mg-toolbar-icon-control);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   color: var(--mg-ink-3);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--mg-toolbar-radius);
   cursor: pointer;
   transition: all 0.15s ease;
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
@@ -2065,13 +2312,13 @@
 }
 
 #magnetar-batch .magnetar-batch-toolbar {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--mg-border);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* Header actions: drawer toggle, theme, settings, close */
@@ -2083,13 +2330,13 @@
 }
 
 #magnetar-batch .magnetar-batch-header-actions .magnetar-btn-icon {
-  width: 28px;
-  height: 28px;
+  width: var(--mg-toolbar-icon-control);
+  height: var(--mg-toolbar-icon-control);
   padding: 0;
   background: transparent;
   color: var(--mg-ink-3);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--mg-toolbar-radius);
   cursor: pointer;
   transition: all 0.15s ease;
   display: inline-flex;
@@ -2104,8 +2351,8 @@
 }
 
 #magnetar-batch .magnetar-batch-header-actions .magnetar-btn-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--mg-toolbar-icon);
+  height: var(--mg-toolbar-icon);
   color: currentColor;
   stroke: currentColor;
 }
@@ -2121,8 +2368,8 @@
 }
 
 #magnetar-batch .magnetar-batch-header-actions .magnetar-btn-settings svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2132,6 +2379,31 @@
 
 #magnetar-batch .magnetar-batch-header-actions .magnetar-btn-theme svg {
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#magnetar-batch .magnetar-batch-header-actions .magnetar-btn-mobile {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.16) !important;
+  border-color: var(--mg-ink) !important;
+}
+
+#magnetar-batch .magnetar-batch-header-actions .magnetar-btn-mobile:hover {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.24) !important;
+  border-color: var(--mg-ink) !important;
+}
+
+#magnetar-batch .magnetar-batch-header-actions .magnetar-btn-mobile:focus-visible {
+  color: var(--mg-ink) !important;
+  background: rgba(118, 158, 118, 0.24) !important;
+  border-color: var(--mg-ink) !important;
+  box-shadow: 0 0 0 2px rgba(30, 26, 20, 0.18);
+}
+
+#magnetar-batch .magnetar-batch-header-actions .magnetar-btn-mobile svg,
+#magnetar-batch .magnetar-batch-header-actions .magnetar-btn-mobile svg * {
+  color: currentColor !important;
+  stroke: currentColor !important;
 }
 
 #magnetar-batch .magnetar-batch-header-actions .magnetar-btn-theme:hover svg {
@@ -2151,17 +2423,17 @@
 
 #magnetar-batch .magnetar-batch-count-opt {
   font-family: var(--mg-mono);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--mg-ink-3);
   background: transparent;
   border: none;
   border-radius: 4px;
-  padding: 4px 9px;
+  padding: 3px 8px;
   cursor: pointer;
   transition: all 0.15s ease;
-  min-width: 28px;
+  min-width: 26px;
 }
 
 #magnetar-batch .magnetar-batch-count-opt:hover {
@@ -2186,13 +2458,13 @@
   border: 1px solid transparent;
   color: var(--mg-ink-4);
   cursor: pointer;
-  padding: 4px;
+  padding: 3px;
   border-radius: 5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 21px;
+  height: 21px;
   transition: all 0.12s ease;
   flex-shrink: 0;
 }
@@ -2221,9 +2493,9 @@
   color: var(--mg-ink);
   border: 1px solid var(--mg-border);
   border-radius: 6px;
-  padding: 7px 28px 7px 10px;
+  padding: 6px 26px 6px 9px;
   font-family: var(--mg-mono);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   cursor: pointer;
   outline: none;
   letter-spacing: 0.02em;
@@ -2251,7 +2523,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-bottom: 1px solid var(--mg-border);
   flex-shrink: 0;
   background: var(--mg-surface-2);
@@ -2260,23 +2532,23 @@
 #magnetar-batch .magnetar-batch-select-all {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 7px;
+  font-size: 11.5px;
   color: var(--mg-ink-3);
   cursor: pointer;
   user-select: none;
 }
 
 #magnetar-batch .magnetar-batch-select-all input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   accent-color: var(--mg-ink);
   cursor: pointer;
 }
 
 #magnetar-batch .magnetar-batch-count {
   font-family: var(--mg-mono);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   color: var(--mg-ink-3);
   letter-spacing: 0.04em;
 }
@@ -2302,12 +2574,12 @@
   display: grid;
   grid-template-columns: 18px 10px minmax(0, 1fr) max-content max-content 24px;
   align-items: center;
-  gap: 10px;
-  padding: 9px 16px;
+  gap: 8px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--mg-border);
   cursor: pointer;
   transition: background 0.1s ease;
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 #magnetar-batch .magnetar-batch-row:hover {
@@ -2320,8 +2592,8 @@
 
 #magnetar-batch .magnetar-batch-row input[type="checkbox"] {
   grid-column: 1;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   accent-color: var(--mg-ink);
   cursor: pointer;
 }
@@ -2370,7 +2642,7 @@
   grid-column: 4;
   justify-self: end;
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   white-space: nowrap;
   letter-spacing: 0.02em;
@@ -2380,10 +2652,10 @@
   grid-column: 5;
   justify-self: end;
   font-family: var(--mg-mono);
-  font-size: 9px;
+  font-size: 8.5px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
   flex-shrink: 0;
 }
@@ -2406,17 +2678,17 @@
   grid-column: 5;
   justify-self: end;
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   white-space: nowrap;
 }
 
 #magnetar-batch .magnetar-batch-progress {
-  padding: 10px 16px;
+  padding: 9px 14px;
   border-top: 1px solid var(--mg-border);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -2443,7 +2715,7 @@
 
 #magnetar-batch .magnetar-batch-progress-text {
   font-family: var(--mg-mono);
-  font-size: 10px;
+  font-size: 9.5px;
   color: var(--mg-ink-3);
   white-space: nowrap;
   letter-spacing: 0.04em;
@@ -2451,23 +2723,23 @@
 
 #magnetar-batch .magnetar-batch-footer {
   display: flex;
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 7px;
+  padding: 10px 14px;
   border-top: 1px solid var(--mg-border);
   flex-shrink: 0;
 }
 
 #magnetar-batch .magnetar-btn {
   font-family: var(--mg-font);
-  font-size: 13px;
+  font-size: var(--mg-toolbar-font);
   font-weight: 500;
-  border-radius: 8px;
-  padding: 8px 14px;
+  border-radius: var(--mg-toolbar-radius);
+  padding: 7px 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   border: 1px solid transparent;
   line-height: 1.2;
   letter-spacing: -0.005em;
@@ -2484,10 +2756,10 @@
 }
 
 #magnetar-batch .magnetar-batch-send {
-  width: 112px;
-  flex: 0 0 112px;
-  padding-left: 10px;
-  padding-right: 10px;
+  width: var(--mg-toolbar-primary-width);
+  flex: 0 0 var(--mg-toolbar-primary-width);
+  padding-left: 9px;
+  padding-right: 9px;
 }
 
 #magnetar-batch .magnetar-batch-send .magnetar-btn-label {
@@ -2532,6 +2804,7 @@
 #magnetar-batch .magnetar-panel-send-target-toggle,
 #magnetar-banner .magnetar-support-action,
 #magnetar-banner .magnetar-batch-mode-toggle,
+#magnetar-banner .magnetar-client-mode-toggle,
 #magnetar-batch .magnetar-batch-mode-toggle,
 #magnetar-batch .magnetar-batch-sort,
 #magnetar-banner .magnetar-btn-cancel,
@@ -2579,6 +2852,8 @@
 #magnetar-batch .magnetar-panel-send-target-toggle:hover,
 #magnetar-banner .magnetar-support-action:hover,
 #magnetar-banner .magnetar-batch-mode-toggle:hover,
+#magnetar-banner .magnetar-client-mode-toggle:hover,
+#magnetar-banner .magnetar-client-mode-toggle.magnetar-client-mode-toggle-active,
 #magnetar-batch .magnetar-batch-mode-toggle:hover,
 #magnetar-batch .magnetar-batch-sort:hover,
 #magnetar-banner .magnetar-btn-cancel:hover,
@@ -2601,8 +2876,8 @@
 }
 
 #magnetar-batch .magnetar-btn-spinner {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border: 2px solid rgba(245, 241, 232, 0.3);
   border-top-color: currentColor;
   border-radius: 50%;
@@ -2773,7 +3048,7 @@
     max-width: none;
   }
   #magnetar-banner .magnetar-action-row {
-    grid-template-columns: minmax(196px, max-content) minmax(0, 1fr);
+    grid-template-columns: minmax(188px, max-content) minmax(0, 1fr);
     row-gap: 6px;
   }
   #magnetar-banner .magnetar-status-group {
@@ -2799,7 +3074,7 @@
   color: var(--mg-ink-3);
   text-decoration: none;
   font-family: var(--mg-font);
-  font-size: 11px;
+  font-size: var(--mg-toolbar-small-font);
   transition: color 0.15s ease;
   cursor: pointer;
 }

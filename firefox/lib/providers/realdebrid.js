@@ -119,6 +119,130 @@ const ProviderRealDebrid = {
     } catch (e) {
       return 'unknown';
     }
+  },
+
+  _debugClientList(data = {}) {
+    console.debug('Magnetar client panel', {
+      provider: 'Real-Debrid',
+      ...data
+    });
+  },
+
+  _parseClientListJson(text) {
+    try {
+      return { data: JSON.parse(text) };
+    } catch (e) {
+      return { error: true };
+    }
+  },
+
+  async listClientItems(creds, options = {}) {
+    const apiKey = String(creds?.apiKey || '').trim();
+    if (!apiKey) return { success: false, setupRequired: true, items: [] };
+
+    const page = Math.max(1, Number(options.page) || 1);
+    const pageSize = Math.min(25, Math.max(1, Number(options.pageSize) || 8));
+    const offset = (page - 1) * pageSize;
+
+    try {
+      const res = await magnetarFetch(`${this.baseUrl}/torrents`, {
+        headers: this._headers(apiKey)
+      });
+      const text = await res.text();
+      const emptyBody = !text.trim();
+      this._debugClientList({ helper: 'GET /torrents', status: res.status, emptyBody });
+      if (!res.ok) {
+        return { success: false, provider: 'Real-Debrid', items: [], error: 'Could not load client items.' };
+      }
+      if (emptyBody) {
+        return { success: false, provider: 'Real-Debrid', items: [], error: 'Client returned an empty response.' };
+      }
+
+      const parsed = this._parseClientListJson(text);
+      if (parsed.error) {
+        this._debugClientList({ helper: 'GET /torrents', status: res.status, emptyBody, parseError: true });
+        return { success: false, provider: 'Real-Debrid', items: [], error: 'Could not load client items.' };
+      }
+      const data = parsed.data;
+      const list = Array.isArray(data) ? data : [];
+      const paged = list.slice(offset, offset + pageSize);
+      this._debugClientList({
+        helper: 'GET /torrents',
+        status: res.status,
+        emptyBody,
+        itemCount: list.length,
+        normalisedCount: paged.length
+      });
+      return {
+        success: true,
+        provider: 'Real-Debrid',
+        page,
+        pageSize,
+        total: list.length,
+        items: paged.map(item => ({
+          id: item.id,
+          name: item.filename || item.name || `Torrent ${item.id || ''}`.trim(),
+          type: 'torrent',
+          size: item.bytes || item.size || 0,
+          status: item.status || '',
+          provider: 'Real-Debrid',
+          added: item.added || item.created || '',
+          link: Array.isArray(item.links) ? item.links[0] : ''
+        })),
+        hasMore: offset + pageSize < list.length
+      };
+    } catch (e) {
+      this._debugClientList({ helper: 'GET /torrents', error: true });
+      return { success: false, provider: 'Real-Debrid', items: [], error: 'Could not load client items.' };
+    }
+  },
+
+  async resolveClientDownload(creds, item = {}) {
+    const apiKey = String(creds?.apiKey || '').trim();
+    if (!apiKey) return { success: false, error: 'Set up a client first.' };
+
+    try {
+      let link = String(item.link || '').trim();
+      if (!link && item.id) {
+        const infoRes = await magnetarFetch(`${this.baseUrl}/torrents/info/${encodeURIComponent(item.id)}`, {
+          headers: this._headers(apiKey)
+        });
+        const text = await infoRes.text();
+        if (!infoRes.ok || !text.trim()) {
+          return { success: false, error: 'Could not get download link.' };
+        }
+        let info;
+        try {
+          info = JSON.parse(text);
+        } catch (e) {
+          return { success: false, error: 'Could not get download link.' };
+        }
+        link = Array.isArray(info.links) ? String(info.links[0] || '').trim() : '';
+      }
+
+      if (!link) return { success: false, error: 'Download unavailable.' };
+
+      const res = await magnetarFetch(`${this.baseUrl}/unrestrict/link`, {
+        method: 'POST',
+        headers: this._headers(apiKey),
+        body: `link=${encodeURIComponent(link)}`
+      });
+      const text = await res.text();
+      if (!res.ok || !text.trim()) {
+        return { success: false, error: 'Could not get download link.' };
+      }
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        return { success: false, error: 'Could not get download link.' };
+      }
+      const downloadUrl = String(data.download || '').trim();
+      if (!downloadUrl) return { success: false, error: 'Download unavailable.' };
+      return { success: true, url: downloadUrl };
+    } catch (e) {
+      return { success: false, error: 'Could not get download link.' };
+    }
   }
 };
 

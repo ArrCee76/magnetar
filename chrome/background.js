@@ -45,6 +45,8 @@ const providerLabels = {
   alldebrid: 'AllDebrid'
 };
 
+const SUPPRESS_WHATSNEW_VERSIONS = new Set(['2.1.2']);
+
 const providerOrder = ['local', 'realdebrid', 'rdtclient', 'torbox', 'premiumize', 'alldebrid'];
 
 const providerDashboardUrls = {
@@ -53,6 +55,12 @@ const providerDashboardUrls = {
   premiumize: 'https://www.premiumize.me/transfers',
   alldebrid: 'https://alldebrid.com/magnets/'
 };
+
+const EXTENSION_OPENED_TAB_TTL = 45 * 1000;
+const extensionOpenedTabs = new Map();
+const extensionOpenedUrlGuards = new Map();
+let shieldStateCache = { enabled: true, blockedDomains: [] };
+let configuredProtectedDomains = [];
 
 const DEFAULT_SETTINGS = {
   mode: 'local',
@@ -164,6 +172,35 @@ function getSourceDomain(sourceUrl) {
   }
 }
 
+function domainPatternMatches(hostname, pattern) {
+  const host = String(hostname || '').toLowerCase();
+  const escaped = String(pattern || '').toLowerCase()
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*');
+  return new RegExp(`^${escaped}$`, 'i').test(host);
+}
+
+function testMagnetarCustomSelectorInPage(selector) {
+  const hashPattern = /\b(?:[a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})\b/;
+  const magnetPattern = /magnet:\?xt=urn:btih:([a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})/i;
+  try {
+    const elements = Array.from(document.querySelectorAll(selector));
+    const texts = elements.map(el => {
+      const nodes = [el, ...Array.from(el.querySelectorAll?.('[href], [value], [title], [data-magnet], [data-hash], [data-infohash], [data-info-hash]') || [])];
+      const attrs = nodes.flatMap(node => ['href', 'value', 'title', 'data-magnet', 'data-hash', 'data-infohash', 'data-info-hash']
+        .map(attr => node.getAttribute?.(attr))
+        .filter(Boolean));
+      return [el.textContent || '', ...attrs].join(' ').replace(/\s+/g, ' ').trim();
+    }).filter(Boolean);
+    const joined = texts.join(' ').slice(0, 5000);
+    const valid = magnetPattern.test(joined) || hashPattern.test(joined);
+    const preview = (texts[0] || '').slice(0, 160);
+    return { count: elements.length, preview, valid };
+  } catch (e) {
+    return { count: 0, preview: '', valid: false };
+  }
+}
+
 function buildMagnetUriFromHistory(entry = {}) {
   if (entry.magnetUri && typeof entry.magnetUri === 'string') return entry.magnetUri;
   if (!entry.hash) return '';
@@ -188,6 +225,155 @@ function getProviderOpenTarget(settings, mode) {
   };
 }
 
+function normaliseHostname(hostname) {
+  return String(hostname || '').trim().toLowerCase().replace(/^www\./, '');
+}
+
+function getHostnameFromUrl(value) {
+  try {
+    return normaliseHostname(new URL(value).hostname);
+  } catch (e) {
+    return '';
+  }
+}
+
+function domainMatchesRule(domain, rule) {
+  domain = normaliseHostname(domain);
+  rule = MagnetarShield.normaliseDomain(rule);
+  return Boolean(domain && rule && (domain === rule || domain.endsWith('.' + rule)));
+}
+
+function isShieldProtectedDomain(domain) {
+  domain = normaliseHostname(domain);
+  if (configuredProtectedDomains.includes(domain)) return true;
+  return Boolean(MagnetarShield.isProtectedDomain?.(domain));
+}
+
+function isBlockedByShieldCache(domain) {
+  domain = normaliseHostname(domain);
+  if (!domain || shieldStateCache.enabled === false || isShieldProtectedDomain(domain)) return false;
+  return (shieldStateCache.blockedDomains || []).some(rule => domainMatchesRule(domain, rule));
+}
+
+function setShieldStateCache(shield) {
+  const next = shield || MagnetarShield.getDefaultShield?.() || { enabled: true, blockedDomains: [] };
+  shieldStateCache = {
+    enabled: next.enabled !== false,
+    blockedDomains: MagnetarShield.getEffectiveDomains
+      ? MagnetarShield.getEffectiveDomains(next)
+      : (Array.isArray(next.blockedDomains) ? next.blockedDomains : [])
+  };
+  return shieldStateCache;
+}
+
+async function refreshShieldStateCache() {
+  const [shieldData, settingsData] = await Promise.all([
+    MAGNETAR_API.storage.local.get(['shield']),
+    MAGNETAR_API.storage.sync.get(['magnetar'])
+  ]);
+  const data = shieldData;
+  const shield = data.shield || MagnetarShield.getDefaultShield();
+  setShieldStateCache(shield);
+  await refreshConfiguredShieldProtection(settingsData.magnetar, { reapplyRules: shieldStateCache.enabled !== false });
+  return shieldStateCache;
+}
+
+function collectConfiguredProtectedDomains(settings = {}) {
+  const merged = mergeSettingsDefaults(settings || {});
+  const domains = new Set();
+  const addUrl = value => {
+    const safeUrl = normaliseDashboardUrl(value);
+    if (!safeUrl) return;
+    const host = getHostnameFromUrl(safeUrl);
+    if (host) domains.add(host);
+  };
+
+  Object.values(merged.credentials || {}).forEach(creds => {
+    if (!creds || typeof creds !== 'object') return;
+    addUrl(creds.dashboardUrl);
+  });
+  addUrl(merged.credentials?.local?.dashboardUrl);
+  addUrl(merged.credentials?.rdtclient?.url);
+  addUrl(merged.credentials?.rdtclient?.dashboardUrl);
+
+  return [...domains];
+}
+
+async function refreshConfiguredShieldProtection(settings, { reapplyRules = true } = {}) {
+  configuredProtectedDomains = collectConfiguredProtectedDomains(settings || {});
+  MagnetarShield.setExtraProtectedDomains(configuredProtectedDomains);
+
+  if (reapplyRules && shieldStateCache.enabled !== false) {
+    await MagnetarShield.applyRules(shieldStateCache.blockedDomains || []);
+  }
+  return configuredProtectedDomains;
+}
+
+async function fetchRecommendedShieldList() {
+  let response;
+  try {
+    response = await fetch(MagnetarShield.RECOMMENDED_LIST_URL, {
+      cache: 'no-store',
+      credentials: 'omit'
+    });
+  } catch (e) {
+    throw new Error('Could not fetch recommended list.');
+  }
+  if (!response?.ok) {
+    throw new Error('Could not fetch recommended list.');
+  }
+  try {
+    return await response.json();
+  } catch (e) {
+    throw new Error('Recommended list is not valid.');
+  }
+}
+
+function pruneExtensionOpenedTabs(now = Date.now()) {
+  for (const [tabId, entry] of extensionOpenedTabs.entries()) {
+    if (!entry || now - Number(entry.createdAt || 0) > EXTENSION_OPENED_TAB_TTL) {
+      extensionOpenedTabs.delete(tabId);
+    }
+  }
+  for (const [url, entry] of extensionOpenedUrlGuards.entries()) {
+    if (!entry || now - Number(entry.createdAt || 0) > 5000) {
+      extensionOpenedUrlGuards.delete(url);
+    }
+  }
+}
+
+function isExtensionOpenedTab(tabId, url = '') {
+  pruneExtensionOpenedTabs();
+  const guarded = extensionOpenedUrlGuards.get(String(url || ''));
+  if (guarded) return true;
+  const entry = extensionOpenedTabs.get(tabId);
+  if (!entry) return false;
+  const expectedDomain = entry.expectedDomain || '';
+  const actualDomain = getHostnameFromUrl(url);
+  return !expectedDomain || !actualDomain || actualDomain === expectedDomain || actualDomain.endsWith('.' + expectedDomain);
+}
+
+async function openExtensionTab(createProps, purpose = 'extension') {
+  const props = { ...(createProps || {}) };
+  const expectedDomain = getHostnameFromUrl(props.url);
+  if (props.url) {
+    extensionOpenedUrlGuards.set(String(props.url), {
+      createdAt: Date.now(),
+      purpose
+    });
+  }
+  const tab = await MAGNETAR_API.tabs.create(props);
+  if (props.url) extensionOpenedUrlGuards.delete(String(props.url));
+  if (tab?.id != null) {
+    extensionOpenedTabs.set(tab.id, {
+      createdAt: Date.now(),
+      expectedDomain,
+      purpose
+    });
+  }
+  return tab;
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────
 
 MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
@@ -200,7 +386,7 @@ MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'update') {
     const prev = details.previousVersion;
     const curr = MAGNETAR_API.runtime.getManifest().version;
-    if (prev !== curr) {
+    if (prev !== curr && !SUPPRESS_WHATSNEW_VERSIONS.has(curr)) {
       await MAGNETAR_API.storage.local.set({ 'magnetar-whatsnew': { from: prev, to: curr, seen: false } });
       MAGNETAR_API.tabs.create({ url: MAGNETAR_API.runtime.getURL('whatsnew.html') });
     }
@@ -230,6 +416,7 @@ MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
 
   // Initialise Shield
   await MagnetarShield.init();
+  await refreshShieldStateCache();
 
   // Set default settings if needed
   const data = await MAGNETAR_API.storage.sync.get(['magnetar']);
@@ -247,7 +434,9 @@ MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
 
 // Also init Shield on service worker startup (not just install)
 // Use catch to handle the race condition if onInstalled also fires
-MagnetarShield.init().catch(() => {});
+MagnetarShield.init()
+  .then(() => refreshShieldStateCache())
+  .catch(() => {});
 
 
 // ── Context Menu Handling ────────────────────────────────────────────────
@@ -318,24 +507,34 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
 
 // ── Tab Navigation — close tabs heading to blocked domains ───────────────
 
-MAGNETAR_API.webNavigation.onBeforeNavigate.addListener(async (details) => {
-  if (details.frameId !== 0) return;
+async function closeShieldBlockedTab(tabId, url, source = 'navigation') {
+  if (!tabId || isExtensionOpenedTab(tabId, url)) return false;
+  const domain = getHostnameFromUrl(url);
+  if (!domain) return false;
+  if (shieldStateCache.enabled === false) return false;
+
+  let blocked = isBlockedByShieldCache(domain);
+  if (!blocked) {
+    blocked = await MagnetarShield.isBlocked(domain);
+  }
+  if (!blocked) return false;
 
   try {
-    const url = new URL(details.url);
-    const domain = url.hostname.replace(/^www\./, '');
-    const blocked = await MagnetarShield.isBlocked(domain);
-
-    if (blocked) {
-      try {
-        await MAGNETAR_API.tabs.remove(details.tabId);
-      } catch (e) {
-        // Tab may already be closed — ignore
-      }
-    }
+    await MAGNETAR_API.tabs.remove(tabId);
+    return true;
   } catch (e) {
-    // Invalid URL, ignore
+    // Tab may already be closed by DNR or another Shield path.
+    return false;
   }
+}
+
+MAGNETAR_API.tabs.onCreated.addListener(tab => {
+  if (tab?.url) closeShieldBlockedTab(tab.id, tab.url, 'created').catch(() => {});
+});
+
+MAGNETAR_API.webNavigation.onBeforeNavigate.addListener(details => {
+  if (details.frameId !== 0) return;
+  closeShieldBlockedTab(details.tabId, details.url, 'beforeNavigate').catch(() => {});
 });
 
 
@@ -387,6 +586,107 @@ const sessionStore = (() => {
   };
 })();
 
+const ALLDEBRID_OPEN_TASK_PREFIX = 'magnetar-ad-open-';
+const ALLDEBRID_OPEN_TASK_INDEX = 'magnetar-ad-open-index';
+const ALLDEBRID_OPEN_TASK_TTL = 10 * 60 * 1000;
+
+function createTaskId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normaliseAllDebridFileLinks(links) {
+  const seen = new Set();
+  return (Array.isArray(links) ? links : [])
+    .map(link => String(link || '').trim())
+    .filter(link => {
+      if (!/^https:\/\/(?:www\.)?alldebrid\.com\/f\//i.test(link)) return false;
+      if (seen.has(link)) return false;
+      seen.add(link);
+      return true;
+    });
+}
+
+async function cleanupAllDebridOpenTasks(now = Date.now()) {
+  const data = await sessionStore.get([ALLDEBRID_OPEN_TASK_INDEX]);
+  const ids = Array.isArray(data[ALLDEBRID_OPEN_TASK_INDEX]) ? data[ALLDEBRID_OPEN_TASK_INDEX] : [];
+  if (!ids.length) return;
+
+  const keys = ids.map(id => `${ALLDEBRID_OPEN_TASK_PREFIX}${id}`);
+  const tasks = await sessionStore.get(keys);
+  const nextIds = [];
+  const cleanup = {};
+  ids.forEach((id, index) => {
+    const key = keys[index];
+    const task = tasks[key];
+    if (task && now - Number(task.createdAt || 0) <= ALLDEBRID_OPEN_TASK_TTL) {
+      nextIds.push(id);
+    } else {
+      cleanup[key] = null;
+    }
+  });
+  cleanup[ALLDEBRID_OPEN_TASK_INDEX] = nextIds;
+  await sessionStore.set(cleanup);
+}
+
+async function createAllDebridOpenTask(resolved = {}) {
+  await cleanupAllDebridOpenTasks();
+  const links = normaliseAllDebridFileLinks(resolved.links);
+  if (!links.length) return null;
+
+  const id = createTaskId();
+  const key = `${ALLDEBRID_OPEN_TASK_PREFIX}${id}`;
+  const data = await sessionStore.get([ALLDEBRID_OPEN_TASK_INDEX]);
+  const ids = Array.isArray(data[ALLDEBRID_OPEN_TASK_INDEX]) ? data[ALLDEBRID_OPEN_TASK_INDEX] : [];
+  const task = {
+    id,
+    provider: 'alldebrid',
+    action: 'open',
+    title: String(resolved.title || '').slice(0, 180),
+    links,
+    expectedLinkCount: links.length,
+    createdAt: Date.now()
+  };
+  await sessionStore.set({
+    [key]: task,
+    [ALLDEBRID_OPEN_TASK_INDEX]: [...ids.filter(existing => existing !== id), id].slice(-20)
+  });
+  return id;
+}
+
+async function consumeAllDebridOpenTask(id) {
+  const taskId = String(id || '').trim();
+  if (!taskId) return null;
+  await cleanupAllDebridOpenTasks();
+
+  const key = `${ALLDEBRID_OPEN_TASK_PREFIX}${taskId}`;
+  const data = await sessionStore.get([key, ALLDEBRID_OPEN_TASK_INDEX]);
+  const task = data[key];
+  const valid = task
+    && task.provider === 'alldebrid'
+    && task.action === 'open'
+    && Date.now() - Number(task.createdAt || 0) <= ALLDEBRID_OPEN_TASK_TTL
+    && normaliseAllDebridFileLinks(task.links).length >= 1;
+
+  const ids = Array.isArray(data[ALLDEBRID_OPEN_TASK_INDEX]) ? data[ALLDEBRID_OPEN_TASK_INDEX] : [];
+  await sessionStore.set({
+    [key]: null,
+    [ALLDEBRID_OPEN_TASK_INDEX]: ids.filter(existing => existing !== taskId)
+  });
+
+  if (!valid) return null;
+  return {
+    id: task.id,
+    provider: 'alldebrid',
+    action: 'open',
+    title: task.title || '',
+    links: normaliseAllDebridFileLinks(task.links),
+    expectedLinkCount: normaliseAllDebridFileLinks(task.links).length
+  };
+}
+
 function setIconState(tabId, state) {
   const icons = iconStates[state] || iconStates.default;
   if (!browserAction) return;
@@ -399,6 +699,9 @@ function setIconState(tabId, state) {
 }
 
 MAGNETAR_API.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.url) {
+    closeShieldBlockedTab(tabId, changeInfo.url, 'updated').catch(() => {});
+  }
   if (changeInfo.status === 'loading') {
     setIconState(tabId, 'default');
   }
@@ -415,9 +718,14 @@ MAGNETAR_API.tabs.onUpdated.addListener((tabId, changeInfo) => {
 // cache to be safe. Cheap operation, worst case it warms back up in a session.
 
 MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.shield) {
+    setShieldStateCache(changes.shield.newValue);
+    return;
+  }
   if (area !== 'sync' || !changes.magnetar) return;
   const oldS = changes.magnetar.oldValue || {};
   const newS = changes.magnetar.newValue || {};
+  refreshConfiguredShieldProtection(newS).catch(() => {});
   const modeChanged = oldS.mode !== newS.mode;
   const newMode = newS.mode;
   const oldCreds = newMode ? oldS.credentials?.[newMode] : null;
@@ -610,6 +918,152 @@ async function handleMessage(msg, sender) {
       return getProviderOpenTarget(settings, mode);
     }
 
+    case 'list-client-items': {
+      const settings = mergeSettingsDefaults((await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {});
+      const mode = msg.mode || settings.mode || 'local';
+      const provider = providers[mode];
+      const providerLabel = providerLabels[mode] || mode;
+      const debugClientList = (data = {}) => console.debug('Magnetar client panel', {
+        provider: providerLabel,
+        mode,
+        ...data
+      });
+
+      debugClientList({ helper: 'background:list-client-items' });
+
+      if (!mode || !provider) {
+        return { success: false, setupRequired: true, provider: providerLabel, items: [] };
+      }
+      if (!hasUsableProviderCredentials(settings, mode)) {
+        return { success: false, setupRequired: true, provider: providerLabel, items: [] };
+      }
+      if (typeof provider.listClientItems !== 'function') {
+        debugClientList({ supported: false });
+        return {
+          success: false,
+          unsupported: true,
+          provider: providerLabel,
+          items: [],
+          error: 'This client does not support toolbar browsing yet.'
+        };
+      }
+
+      const page = Math.max(1, Number(msg.page) || 1);
+      const pageSize = Math.min(25, Math.max(1, Number(msg.pageSize) || 8));
+      const creds = settings.credentials?.[mode] || {};
+      return await withTimeout(
+        provider.listClientItems(creds, { page, pageSize, provider: providerLabel }),
+        15000,
+        { success: false, provider: providerLabel, items: [], error: 'Could not load client items.' }
+      );
+    }
+
+    case 'open-client-item': {
+      const settings = mergeSettingsDefaults((await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {});
+      const mode = msg.mode || settings.mode || 'local';
+      const provider = providers[mode];
+      if (!provider) return { success: false, error: 'Open unavailable.' };
+      if (!hasUsableProviderCredentials(settings, mode)) {
+        return { success: false, error: 'Set up a client first.' };
+      }
+
+      if (mode === 'alldebrid') {
+        if (typeof provider.resolveClientDownload !== 'function') {
+          return { success: false, error: 'Open unavailable.' };
+        }
+        const resolved = await withTimeout(
+          provider.resolveClientDownload(settings.credentials?.[mode] || {}, msg.item || {}),
+          15000,
+          { success: false, error: 'Could not open AllDebrid item.' }
+        );
+        if (resolved?.success && resolved.action === 'alldebrid-service-open') {
+          const taskId = await createAllDebridOpenTask(resolved);
+          if (!taskId) return { success: false, error: 'Could not get download links.' };
+          const createProps = {
+            url: `https://alldebrid.com/service/#magnetar-ad-open=${encodeURIComponent(taskId)}`,
+            active: true
+          };
+          if (tabId) createProps.openerTabId = tabId;
+          await openExtensionTab(createProps, 'alldebrid-open');
+          return { success: true };
+        }
+        return { success: false, error: resolved?.error || 'Open unavailable.' };
+      }
+
+      const target = getProviderOpenTarget(settings, mode);
+      if (!target?.url) return { success: false, error: 'Open unavailable.' };
+      let url;
+      try {
+        url = new URL(target.url);
+      } catch (e) {
+        return { success: false, error: 'Open unavailable.' };
+      }
+      if (!/^https?:$/.test(url.protocol)) return { success: false, error: 'Open unavailable.' };
+      const createProps = { url: url.href };
+      if (tabId) createProps.openerTabId = tabId;
+      await openExtensionTab(createProps, `client-open:${mode}`);
+      return { success: true };
+    }
+
+    case 'download-client-item': {
+      const settings = mergeSettingsDefaults((await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {});
+      const mode = msg.mode || settings.mode || 'local';
+      const provider = providers[mode];
+      if (!provider) return { success: false, error: 'Download unavailable.' };
+      if (!hasUsableProviderCredentials(settings, mode)) {
+        return { success: false, error: 'Set up a client first.' };
+      }
+
+      const creds = settings.credentials?.[mode] || {};
+      const item = msg.item || {};
+      let resolved = null;
+      if (typeof provider.resolveClientDownload === 'function') {
+        resolved = await withTimeout(
+          provider.resolveClientDownload(creds, item),
+          15000,
+          { success: false, error: 'Could not get download link.' }
+        );
+      } else if (item.link) {
+        resolved = { success: true, url: String(item.link || '').trim() };
+      } else {
+        resolved = { success: false, error: 'Download unavailable.' };
+      }
+
+      if (!resolved?.success || !resolved.url) {
+        if (resolved?.success && resolved.action === 'alldebrid-service-open') {
+          const taskId = await createAllDebridOpenTask(resolved);
+          if (!taskId) return { success: false, error: 'Could not get download links.' };
+          const createProps = {
+            url: `https://alldebrid.com/service/#magnetar-ad-open=${encodeURIComponent(taskId)}`,
+            active: true
+          };
+          if (tabId) createProps.openerTabId = tabId;
+          await openExtensionTab(createProps, 'alldebrid-download-open');
+          return { success: true };
+        }
+        return { success: false, error: resolved?.error || 'Download unavailable.' };
+      }
+
+      let url;
+      try {
+        url = new URL(resolved.url);
+      } catch (e) {
+        return { success: false, error: 'Download unavailable.' };
+      }
+      if (!/^https?:$/.test(url.protocol)) {
+        return { success: false, error: 'Download unavailable.' };
+      }
+
+      await openExtensionTab({ url: url.href }, `client-download:${mode}`);
+      return { success: true };
+    }
+
+    case 'consume-alldebrid-open-task': {
+      const task = await consumeAllDebridOpenTask(msg.taskId);
+      if (!task) return { success: false, error: 'Could not open AllDebrid item.' };
+      return { success: true, task };
+    }
+
     case 'open-downloads-folder': {
       const downloadsApi = MAGNETAR_API.downloads;
       if (!downloadsApi || typeof downloadsApi.showDefaultFolder !== 'function') {
@@ -774,19 +1228,49 @@ async function handleMessage(msg, sender) {
 
     case 'shield-get': {
       const data = await MAGNETAR_API.storage.local.get(['shield']);
-      return data.shield || { enabled: true, blockedDomains: [] };
+      return data.shield || MagnetarShield.getDefaultShield();
     }
 
     case 'shield-toggle': {
-      return await MagnetarShield.toggle(msg.enabled);
+      const shield = await MagnetarShield.toggle(msg.enabled);
+      setShieldStateCache(shield);
+      return shield;
     }
 
     case 'shield-block': {
-      return await MagnetarShield.blockDomain(msg.domain);
+      const shield = await MagnetarShield.blockDomain(msg.domain);
+      setShieldStateCache(shield);
+      return shield;
     }
 
     case 'shield-unblock': {
-      return await MagnetarShield.unblockDomain(msg.domain);
+      const shield = await MagnetarShield.unblockDomain(msg.domain);
+      setShieldStateCache(shield);
+      return shield;
+    }
+
+    case 'shield-recommended-install':
+    case 'shield-recommended-update': {
+      try {
+        const payload = await fetchRecommendedShieldList();
+        const shield = await MagnetarShield.installRecommendedList(payload, MagnetarShield.RECOMMENDED_LIST_URL);
+        setShieldStateCache(shield);
+        return { ok: true, shield, message: 'Recommended list updated.' };
+      } catch (e) {
+        return { ok: false, error: e?.message || 'Could not fetch recommended list.' };
+      }
+    }
+
+    case 'shield-recommended-remove': {
+      const shield = await MagnetarShield.removeRecommendedList();
+      setShieldStateCache(shield);
+      return { ok: true, shield, message: 'Recommended list removed.' };
+    }
+
+    case 'shield-recommended-remove-domain': {
+      const shield = await MagnetarShield.removeRecommendedDomain(msg.domain);
+      setShieldStateCache(shield);
+      return { ok: true, shield, message: 'Domain removed from recommended list.' };
     }
 
     case 'get-detection': {
@@ -795,6 +1279,31 @@ async function handleMessage(msg, sender) {
         return data[`tab-${msg.tabId}`] || null;
       }
       return null;
+    }
+
+    case 'test-custom-selector': {
+      const domain = String(msg.domain || '').trim();
+      const selector = String(msg.selector || '').trim();
+      if (!domain || !selector) return { ok: false, error: 'Enter a domain pattern and selector first.' };
+      const tabs = await MAGNETAR_API.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs?.[0];
+      if (!tab?.id || !tab.url || !/^https?:/i.test(tab.url)) {
+        return { ok: false, error: 'Open a website tab to test this selector.' };
+      }
+      const host = new URL(tab.url).hostname;
+      if (!domainPatternMatches(host, domain)) {
+        return { ok: false, error: `Current tab (${host}) does not match ${domain}.` };
+      }
+      try {
+        const [result] = await MAGNETAR_API.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: testMagnetarCustomSelectorInPage,
+          args: [selector]
+        });
+        return { ok: true, ...(result?.result || { count: 0, preview: '', valid: false }) };
+      } catch (e) {
+        return { ok: false, error: 'Could not run selector on the current tab.' };
+      }
     }
 
     case 'get-history': {
@@ -973,6 +1482,17 @@ async function handleMessage(msg, sender) {
 
     case 'open-options': {
       MAGNETAR_API.runtime.openOptionsPage();
+      return { ok: true };
+    }
+
+    case 'open-external-url': {
+      const allowedUrls = new Set([
+        'https://arrcee.com/magnetar-mobile'
+      ]);
+      if (!allowedUrls.has(msg.url)) {
+        return { ok: false, error: 'URL not allowed' };
+      }
+      await openExtensionTab({ url: msg.url }, 'external-link');
       return { ok: true };
     }
 

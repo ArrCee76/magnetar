@@ -354,21 +354,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Section 4: Magnetar Shield
   const shieldEnabled = document.getElementById('shield-enabled');
-  shieldEnabled.checked = shield?.enabled !== false;
+  let currentShield = shield || { enabled: true, blockedDomains: [], recommendedList: { installed: false, domains: [] } };
+  let shieldListExpanded = false;
+  shieldEnabled.checked = currentShield.enabled !== false;
 
   shieldEnabled.addEventListener('change', async () => {
-    await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled.checked });
+    currentShield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: shieldEnabled.checked });
+    renderRecommendedList(currentShield);
   });
 
-  renderShieldList(shield?.blockedDomains || []);
+  renderShieldList(currentShield.blockedDomains || []);
+  renderRecommendedList(currentShield);
 
   document.getElementById('shield-add-btn').addEventListener('click', async () => {
     const input = document.getElementById('shield-domain-input');
     const domain = input.value.trim().toLowerCase();
     if (!domain) return;
 
-    const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-block', domain });
-    renderShieldList(updated.blockedDomains);
+    currentShield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-block', domain });
+    renderShieldList(currentShield.blockedDomains);
+    renderRecommendedList(currentShield);
     input.value = '';
   });
 
@@ -376,8 +381,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter') document.getElementById('shield-add-btn').click();
   });
 
+  document.getElementById('shield-list-toggle').addEventListener('click', () => {
+    shieldListExpanded = !shieldListExpanded;
+    renderShieldList(currentShield.blockedDomains || []);
+  });
+
   function renderShieldList(domains) {
     const list = document.getElementById('shield-list');
+    const count = document.getElementById('shield-list-count');
+    const toggle = document.getElementById('shield-list-toggle');
+    const total = Array.isArray(domains) ? domains.length : 0;
+    count.textContent = total === 1 ? '1 blocked domain' : `${total} blocked domains`;
+    toggle.textContent = shieldListExpanded ? 'Hide list' : 'Show list';
+    toggle.setAttribute('aria-expanded', shieldListExpanded ? 'true' : 'false');
+    toggle.disabled = total === 0;
+    list.style.display = shieldListExpanded && total > 0 ? '' : 'none';
+
     list.innerHTML = domains.map(d => {
       const domain = String(d || '');
       return `
@@ -390,11 +409,112 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     list.querySelectorAll('.shield-item-remove').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-unblock', domain: btn.dataset.domain });
-        renderShieldList(updated.blockedDomains);
+        currentShield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-unblock', domain: btn.dataset.domain });
+        renderShieldList(currentShield.blockedDomains);
+        renderRecommendedList(currentShield);
       });
     });
   }
+
+  function formatRecommendedDate(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function setRecommendedStatus(message = '', type = '') {
+    const status = document.getElementById('shield-recommended-status');
+    status.textContent = message;
+    status.className = `recommended-list-status ${type}`.trim();
+  }
+
+  function renderRecommendedList(shieldData = {}) {
+    const list = shieldData.recommendedList || {};
+    const installed = list.installed === true;
+    const domains = Array.isArray(list.domains) ? list.domains : [];
+    const installBtn = document.getElementById('shield-recommended-install');
+    const removeBtn = document.getElementById('shield-recommended-remove');
+    const viewBtn = document.getElementById('shield-recommended-view');
+    const meta = document.getElementById('shield-recommended-meta');
+    const domainList = document.getElementById('shield-recommended-domains');
+
+    installBtn.textContent = installed ? 'Update list' : 'Install recommended list';
+    removeBtn.style.display = installed ? '' : 'none';
+    viewBtn.style.display = installed ? '' : 'none';
+    meta.innerHTML = installed
+      ? [
+          '<div><strong>Installed</strong></div>',
+          `<div>List name: ${escapeHtml(list.name || 'Magnetar recommended popup list')}</div>`,
+          `<div>Version: ${escapeHtml(list.version || 'unknown')}</div>`,
+          `<div>Domain count: ${domains.length}</div>`,
+          `<div>Last updated: ${escapeHtml(formatRecommendedDate(list.updatedAt || list.version))}</div>`
+        ].join('')
+      : 'Not installed.';
+
+    domainList.innerHTML = domains.map(domain => `
+      <div class="shield-item">
+        <span>${escapeHtml(domain)}</span>
+        <button class="shield-item-remove" data-domain="${escapeAttr(domain)}" title="Remove from recommended list">&times;</button>
+      </div>
+    `).join('');
+    domainList.querySelectorAll('.shield-item-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const res = await MAGNETAR_API.runtime.sendMessage({
+          type: 'shield-recommended-remove-domain',
+          domain: btn.dataset.domain
+        });
+        if (res?.ok) {
+          currentShield = res.shield;
+          renderRecommendedList(currentShield);
+          setRecommendedStatus(res.message || 'Domain removed from recommended list.', 'success');
+        } else {
+          setRecommendedStatus(res?.error || 'Recommended list is not valid.', 'error');
+        }
+      });
+    });
+    if (!installed) {
+      domainList.style.display = 'none';
+      viewBtn.textContent = 'View imported domains';
+    }
+  }
+
+  document.getElementById('shield-recommended-install').addEventListener('click', async () => {
+    const btn = document.getElementById('shield-recommended-install');
+    const installed = currentShield?.recommendedList?.installed === true;
+    btn.disabled = true;
+    setRecommendedStatus(installed ? 'Updating recommended list...' : 'Installing recommended list...');
+    try {
+      const res = await MAGNETAR_API.runtime.sendMessage({ type: installed ? 'shield-recommended-update' : 'shield-recommended-install' });
+      if (!res?.ok) throw new Error(res?.error || 'Could not fetch recommended list.');
+      currentShield = res.shield;
+      renderRecommendedList(currentShield);
+      setRecommendedStatus(res.message || 'Recommended list updated.', 'success');
+    } catch (e) {
+      setRecommendedStatus(e?.message || 'Could not fetch recommended list.', 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  document.getElementById('shield-recommended-remove').addEventListener('click', async () => {
+    const res = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-recommended-remove' });
+    if (res?.ok) {
+      currentShield = res.shield;
+      renderRecommendedList(currentShield);
+      setRecommendedStatus(res.message || 'Recommended list removed.', 'success');
+    } else {
+      setRecommendedStatus(res?.error || 'Recommended list is not valid.', 'error');
+    }
+  });
+
+  document.getElementById('shield-recommended-view').addEventListener('click', () => {
+    const domainList = document.getElementById('shield-recommended-domains');
+    const viewBtn = document.getElementById('shield-recommended-view');
+    const show = domainList.style.display === 'none';
+    domainList.style.display = show ? '' : 'none';
+    viewBtn.textContent = show ? 'Hide imported domains' : 'View imported domains';
+  });
 
   document.getElementById('shield-export').addEventListener('click', async () => {
     const s = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
@@ -416,8 +536,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const domain of data.blockedDomains) {
           await MAGNETAR_API.runtime.sendMessage({ type: 'shield-block', domain });
         }
-        const updated = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
-        renderShieldList(updated.blockedDomains);
+        currentShield = await MAGNETAR_API.runtime.sendMessage({ type: 'shield-get' });
+        renderShieldList(currentShield.blockedDomains);
+        renderRecommendedList(currentShield);
       }
     } catch (err) {
       alert(t('invalidJsonFile'));
@@ -605,7 +726,44 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('cs-method').addEventListener('change', () => {
     const method = document.getElementById('cs-method').value;
     document.getElementById('cs-value-label').textContent = method === 'selector' ? t('customSiteValueLabelSelector') : t('customSiteValueLabelRegex');
-    document.getElementById('cs-value').placeholder = method === 'selector' ? '#info-hash code' : '([a-fA-F0-9]{40})';
+    document.getElementById('cs-value').placeholder = method === 'selector' ? '#info-hash, .infohash, code' : '([a-fA-F0-9]{40})';
+    document.getElementById('cs-test-selector').style.display = method === 'selector' ? 'inline-flex' : 'none';
+    document.getElementById('cs-method-help').textContent = method === 'selector'
+      ? 'CSS selector means Magnetar will look for a page element containing a magnet link or torrent hash.'
+      : 'Regex means Magnetar will search the page text and use the first captured torrent hash.';
+    document.getElementById('cs-test-result').textContent = '';
+  });
+
+  document.getElementById('cs-test-selector').addEventListener('click', async () => {
+    const domain = document.getElementById('cs-domain').value.trim();
+    const selector = document.getElementById('cs-value').value.trim();
+    const resultEl = document.getElementById('cs-test-result');
+    resultEl.className = 'custom-site-test-result';
+    if (!domain || !selector) {
+      resultEl.classList.add('error');
+      resultEl.textContent = 'Enter a domain pattern and CSS selector first.';
+      return;
+    }
+    resultEl.textContent = 'Testing current tab...';
+    try {
+      const result = await MAGNETAR_API.runtime.sendMessage({
+        type: 'test-custom-selector',
+        domain,
+        selector
+      });
+      if (!result?.ok) {
+        resultEl.classList.add('error');
+        resultEl.textContent = result?.error || 'Could not test selector on the current tab.';
+        return;
+      }
+      resultEl.classList.add(result.valid ? 'success' : 'error');
+      const preview = result.preview ? ` Preview: "${result.preview}"` : '';
+      const valid = result.valid ? 'Valid magnet/hash detected.' : 'No valid magnet/hash detected.';
+      resultEl.textContent = `${result.count} matching element${result.count === 1 ? '' : 's'} found. ${valid}${preview}`;
+    } catch (e) {
+      resultEl.classList.add('error');
+      resultEl.textContent = 'Could not test selector on the current tab.';
+    }
   });
 
   document.getElementById('cs-save').addEventListener('click', async () => {
@@ -636,6 +794,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('cs-domain').value = '';
     document.getElementById('cs-value').value = '';
     document.getElementById('cs-method').value = 'selector';
+    document.getElementById('cs-value').placeholder = '#info-hash, .infohash, code';
+    document.getElementById('cs-test-selector').style.display = 'inline-flex';
+    document.getElementById('cs-test-result').textContent = '';
   }
 
   function renderCustomSites(sites) {
