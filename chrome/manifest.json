@@ -1,59 +1,61 @@
 {
-  "manifest_version": 3,
-  "name": "__MSG_extensionName__",
-  "version": "2.1.2",
-  "description": "__MSG_extensionDescription__",
-  "default_locale": "en",
-  "permissions": [
-    "storage",
-    "contextMenus",
-    "webNavigation",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback",
-    "downloads",
-    "clipboardWrite",
-    "activeTab",
-    "scripting"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "lib/browser-polyfill.min.js",
-        "lib/api-shim.js",
-        "lib/detector.js",
-        "lib/categories.js",
-        "content.js"
-      ],
-      "css": [
-        "content.css"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": true
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  }
+    "manifest_version":  3,
+    "name":  "__MSG_extensionName__",
+    "version":  "2.2",
+    "description":  "__MSG_extensionDescription__",
+    "default_locale":  "en",
+    "permissions":  [
+                        "storage",
+                        "contextMenus",
+                        "webNavigation",
+                        "declarativeNetRequest",
+                        "declarativeNetRequestFeedback",
+                        "downloads",
+                        "clipboardWrite",
+                        "activeTab",
+                        "scripting"
+                    ],
+    "host_permissions":  [
+                             "<all_urls>"
+                         ],
+    "background":  {
+                       "service_worker":  "background.js"
+                   },
+    "content_scripts":  [
+                            {
+                                "matches":  [
+                                                "<all_urls>"
+                                            ],
+                                "js":  [
+                                           "lib/browser-polyfill.min.js",
+                                           "lib/api-shim.js",
+                                           "lib/vendor/qrcode-generator.js",
+                                           "lib/sync-qr.js",
+                                           "lib/detector.js",
+                                           "lib/categories.js",
+                                           "content.js"
+                                       ],
+                                "css":  [
+                                            "content.css"
+                                        ],
+                                "run_at":  "document_idle"
+                            }
+                        ],
+    "action":  {
+                   "default_popup":  "popup.html",
+                   "default_icon":  {
+                                        "16":  "icons/icon16.png",
+                                        "48":  "icons/icon48.png",
+                                        "128":  "icons/icon128.png"
+                                    }
+               },
+    "options_ui":  {
+                       "page":  "options.html",
+                       "open_in_tab":  true
+                   },
+    "icons":  {
+                  "16":  "icons/icon16.png",
+                  "48":  "icons/icon48.png",
+                  "128":  "icons/icon128.png"
+              }
 }

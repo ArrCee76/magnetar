@@ -1,10 +1,11 @@
 /**
- * Magnetar What's New
+ * Magnetar 2.2 What's New
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const form = document.getElementById('whatsnew-form');
-  const goButton = document.getElementById('whatsnew-go');
+  const startButton = document.getElementById('whatsnew-start');
+  const syncButton = document.getElementById('whatsnew-sync');
+  const closeButton = document.getElementById('whatsnew-close');
   const status = document.getElementById('whatsnew-status');
 
   try {
@@ -19,50 +20,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.documentElement.classList.toggle('mg-dark', newTheme === 'dark');
   });
 
-  function setChecked(name, value, fallback) {
-    const safeValue = value || fallback;
-    const control = document.querySelector(`input[name="${name}"][value="${safeValue}"]`);
-    if (control) control.checked = true;
-  }
-
-  try {
-    const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
-    const preferences = settings.preferences || {};
-    setChecked('interface-mode', preferences.interfaceMode === 'advanced' ? 'advanced' : 'standard', 'standard');
-    setChecked('toolbar-style', preferences.bannerStyle === 'compact' ? 'compact' : 'full', 'full');
-  } catch (e) {
-    setChecked('interface-mode', 'standard', 'standard');
-    setChecked('toolbar-style', 'full', 'full');
-  }
-
   async function dismissWhatsNew() {
-    await MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
+    await MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew', version: '2.2' }).catch(() => {});
   }
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    goButton.disabled = true;
-    status.textContent = 'Saving...';
+  async function closePage() {
+    await dismissWhatsNew();
+    window.close();
+  }
 
-    try {
-      const settings = (await MAGNETAR_API.runtime.sendMessage({ type: 'get-settings' })) || {};
-      settings.preferences = settings.preferences || {};
+  startButton?.addEventListener('click', closePage);
+  closeButton?.addEventListener('click', closePage);
 
-      const interfaceMode = document.querySelector('input[name="interface-mode"]:checked')?.value;
-      const toolbarStyle = document.querySelector('input[name="toolbar-style"]:checked')?.value;
-
-      settings.preferences.interfaceMode = interfaceMode === 'advanced' ? 'advanced' : 'standard';
-      settings.preferences.bannerStyle = toolbarStyle === 'compact' ? 'compact' : 'full';
-
-      await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: settings });
-      await dismissWhatsNew();
+  syncButton?.addEventListener('click', async () => {
+    syncButton.disabled = true;
+    status.textContent = 'Opening Sync...';
+    await dismissWhatsNew();
+    const result = await MAGNETAR_API.runtime.sendMessage({ type: 'open-sync-panel' }).catch(() => null);
+    if (result?.ok) {
       window.close();
-      status.textContent = 'Saved.';
-    } catch (e) {
-      status.textContent = 'Could not save. Try again.';
-      goButton.disabled = false;
+      return;
     }
+    status.textContent = result?.error || 'Open a page with Magnetar active, then try again.';
+    syncButton.disabled = false;
   });
-
-  MAGNETAR_API.runtime.sendMessage({ type: 'dismiss-whatsnew' }).catch(() => {});
 });

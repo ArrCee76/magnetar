@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "version": "2.1.2",
+  "version": "2.2",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "browser_specific_settings": {
@@ -24,6 +24,11 @@
     "scripts": [
       "lib/browser-polyfill.min.js",
       "lib/api-shim.js",
+      "lib/sync-contract.js",
+      "lib/sync-crypto.js",
+      "lib/sync-api.js",
+      "lib/sync-storage.js",
+      "lib/sync-data.js",
       "lib/fetch-helper.js",
       "lib/shield.js",
       "lib/cache-store.js",
@@ -44,6 +49,8 @@
       "js": [
         "lib/browser-polyfill.min.js",
         "lib/api-shim.js",
+        "lib/vendor/qrcode-generator.js",
+        "lib/sync-qr.js",
         "lib/detector.js",
         "lib/categories.js",
         "content.js"

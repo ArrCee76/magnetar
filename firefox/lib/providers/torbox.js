@@ -156,6 +156,53 @@ const ProviderTorBox = {
     return firstFile?.id || firstFile?.file_id || firstFile?.fileId || '';
   },
 
+  _normaliseTorrentIdValue(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const providerMatch = raw.match(/^provider:[^:]+:(.+)$/i);
+    return (providerMatch ? providerMatch[1] : raw).trim();
+  },
+
+  _getTorBoxTorrentId(item = {}) {
+    const raw = item.raw && typeof item.raw === 'object' ? item.raw : {};
+    const torrent = item.torrent && typeof item.torrent === 'object' ? item.torrent : {};
+    const data = item.data && typeof item.data === 'object' ? item.data : {};
+    const candidates = [
+      item.torrent_id,
+      item.torrentId,
+      item.torrentID,
+      item.torrentid,
+      item.torboxTorrentId,
+      item.providerItemId,
+      item.providerItemKey,
+      item.transfer_id,
+      item.transferId,
+      item.id,
+      raw.torrent_id,
+      raw.torrentId,
+      raw.torrentID,
+      raw.torrentid,
+      raw.id,
+      torrent.torrent_id,
+      torrent.torrentId,
+      torrent.torrentID,
+      torrent.id,
+      data.torrent_id,
+      data.torrentId,
+      data.torrentID,
+      data.id
+    ];
+    for (const candidate of candidates) {
+      const id = this._normaliseTorrentIdValue(candidate);
+      if (id) return id;
+    }
+    return '';
+  },
+
+  _pickTorrentId(item = {}) {
+    return this._getTorBoxTorrentId(item);
+  },
+
   _isDownloadReadyStatus(status) {
     const value = String(status || '').toLowerCase().trim();
     if (!value) return true;
@@ -178,7 +225,8 @@ const ProviderTorBox = {
 
     return source.map(item => {
       const link = this._pickDownloadLink(item);
-      const id = item.id || item.torrent_id || item.torrentId || item.hash || item.name;
+      const torrentId = this._getTorBoxTorrentId(item);
+      const id = torrentId || item.hash || item.name;
       const fileId = this._pickFileId(item);
       const type = String(item.type || item.kind || item.item_type || item.download_type || 'torrent').toLowerCase();
       const status = item.status || item.download_state || item.state || '';
@@ -196,11 +244,35 @@ const ProviderTorBox = {
         hasDirectDownloadField: Boolean(link),
         normalisedCanDownload: downloadable,
         hasId: Boolean(id),
+        hasTorrentId: Boolean(torrentId),
+        rawIdFields: {
+          id: Boolean(item.id),
+          torrent_id: Boolean(item.torrent_id),
+          torrentId: Boolean(item.torrentId),
+          providerItemId: Boolean(item.providerItemId),
+          rawId: Boolean(item.raw && item.raw.id),
+          rawTorrentId: Boolean(item.raw && (item.raw.torrent_id || item.raw.torrentId))
+        },
         hasHash: Boolean(item.hash || item.info_hash),
         hasFileId: Boolean(fileId)
       });
       return {
         id,
+        torrent_id: torrentId,
+        torrentId,
+        torboxTorrentId: torrentId,
+        providerItemId: torrentId,
+        providerItemKey: torrentId,
+        transfer_id: item.transfer_id || item.transferId || '',
+        transferId: item.transfer_id || item.transferId || '',
+        raw: {
+          id: String(item.id || '').trim(),
+          torrent_id: String(item.torrent_id || '').trim(),
+          torrentId: String(item.torrentId || item.torrentID || item.torrentid || '').trim(),
+          providerItemId: String(item.providerItemId || '').trim(),
+          transfer_id: String(item.transfer_id || '').trim(),
+          transferId: String(item.transferId || '').trim()
+        },
         hash: item.hash || item.info_hash || '',
         fileId,
         name: item.name || item.torrent_name || item.filename || `Torrent ${item.id || item.torrent_id || ''}`.trim(),
@@ -210,7 +282,11 @@ const ProviderTorBox = {
         provider: 'TorBox',
         added: item.created_at || item.added_at || item.created || item.date || '',
         downloadable,
-        link
+        airlocked: item.airlocked === true,
+        link,
+        files: Array.isArray(item.files) ? item.files : [],
+        children: Array.isArray(item.children) ? item.children : [],
+        links: Array.isArray(item.links) ? item.links : []
       };
     });
   },
@@ -328,6 +404,39 @@ const ProviderTorBox = {
       return { success: true, url: link };
     } catch (e) {
       return { success: false, error: 'Could not get download link.' };
+    }
+  },
+
+  async airlockClientItem(creds, item = {}, airlocked = true) {
+    const apiKey = String(creds?.apiKey || '').trim();
+    if (!apiKey) return { success: false, error: 'Set up TorBox first.' };
+
+    const torrentId = this._pickTorrentId(item);
+    if (!torrentId) return { success: false, error: 'Airlock needs a TorBox item id.' };
+
+    try {
+      const res = await magnetarFetch(`${this.baseUrl}/torrents/edittorrent`, {
+        method: 'PUT',
+        headers: this._headers(apiKey),
+        body: JSON.stringify({
+          torrent_id: torrentId,
+          airlocked: airlocked === true
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        return {
+          success: false,
+          error: data.detail || data.error || 'Could not airlock this TorBox item.'
+        };
+      }
+      return {
+        success: true,
+        airlocked: airlocked === true,
+        detail: data.detail || 'Torrent edited successfully.'
+      };
+    } catch (e) {
+      return { success: false, error: 'Could not airlock this TorBox item.' };
     }
   },
 };

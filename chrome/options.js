@@ -919,7 +919,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const themeSelect = document.getElementById('theme-select');
   const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
-  const currentTheme = themeRes?.theme || 'dark';
+  const currentTheme = themeRes?.theme === 'dark' ? 'dark' : 'light';
   themeSelect.value = currentTheme;
   applyTheme(currentTheme);
 
