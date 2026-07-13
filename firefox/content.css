@@ -333,7 +333,6 @@
   }
 }
 
-#magnetar-banner .magnetar-already-sent {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1178,9 +1177,14 @@
 #magnetar-batch .magnetar-batch-mode-toggle {
   position: relative;
   display: none;
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
   min-height: 28px;
+  box-sizing: border-box;
   padding: 3px 7px 3px 6px;
   border: 1px solid var(--mg-border);
   border-radius: 999px;
@@ -2318,12 +2322,17 @@
 }
 
 #magnetar-batch .magnetar-batch-toolbar {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   padding: 8px 14px;
   border-bottom: 1px solid var(--mg-border);
   flex-shrink: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 10px;
 }
 
@@ -2419,7 +2428,11 @@
 /* 25/50/75 segmented control */
 #magnetar-batch .magnetar-batch-count-toggle {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--mg-surface-2);
   border: 1px solid var(--mg-border);
   border-radius: 6px;
@@ -2495,6 +2508,11 @@
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--mg-surface-2);
   color: var(--mg-ink);
   border: 1px solid var(--mg-border);
@@ -3290,6 +3308,10 @@
   #magnetar-banner .magnetar-sync-meta {
     grid-template-columns: 1fr;
   }
+}
+
+#magnetar-banner .magnetar-sync-panel-qr-visible .magnetar-sync-data-section {
+  display: none;
 }
 #magnetar-banner .magnetar-btn-sync {
   border-color: rgba(74, 222, 128, 0.48);
@@ -6184,6 +6206,776 @@
   margin-right: auto;
   text-align: left !important;
 }
+
+/* Magnetar 2.2 interactive feature stories. */
+#magnetar-banner .magnetar-whats-new-panel {
+  padding: 12px;
+  overflow-x: hidden;
+}
+
+#magnetar-banner .magnetar-whats-new-panel-head {
+  margin-bottom: 11px;
+}
+
+#magnetar-banner .magnetar-whats-new-header h2 {
+  margin-top: 7px;
+  font-size: 19px;
+}
+
+#magnetar-banner .magnetar-whats-new-header p {
+  max-width: 360px;
+  font-size: 11.8px;
+}
+
+#magnetar-banner .magnetar-whats-new-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: none;
+  align-items: start;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-whats-new-card {
+  --whats-new-card-bg: rgba(118, 158, 118, 0.12);
+  --whats-new-card-border: rgba(91, 122, 91, 0.25);
+  display: grid;
+  grid-template-rows: auto 0fr;
+  gap: 0;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--whats-new-card-border);
+  border-radius: 8px;
+  background: var(--whats-new-card-bg);
+  box-shadow: none;
+  transition: border-color 320ms ease, background-color 320ms ease, box-shadow 320ms ease;
+}
+
+#magnetar-banner .magnetar-whats-new-card:nth-child(even) {
+  --whats-new-card-bg: rgba(118, 146, 178, 0.10);
+  --whats-new-card-border: rgba(79, 105, 139, 0.22);
+}
+
+#magnetar-banner .magnetar-whats-new-card-folder,
+#magnetar-banner .magnetar-whats-new-card-qr {
+  --whats-new-card-bg: rgba(157, 133, 184, 0.10);
+  --whats-new-card-border: rgba(126, 101, 153, 0.22);
+}
+
+#magnetar-banner .magnetar-whats-new-card-lock {
+  --whats-new-card-bg: rgba(194, 148, 128, 0.10);
+  --whats-new-card-border: rgba(143, 101, 83, 0.20);
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded {
+  grid-column: 1 / -1;
+  grid-template-rows: auto 1fr;
+  border-color: var(--mg-control-outline, #211b15);
+  background: var(--mg-surface-2, #fff8ea);
+  box-shadow: 0 5px 15px rgba(74, 60, 45, 0.07);
+}
+
+#magnetar-banner .magnetar-whats-new-tile {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 68px;
+  margin: 0;
+  padding: 9px 8px 9px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mg-ink, #211b15);
+  font-family: var(--mg-font);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 280ms ease, color 280ms ease;
+}
+
+#magnetar-banner .magnetar-whats-new-tile:hover {
+  background: rgba(255, 250, 238, 0.42);
+}
+
+#magnetar-banner .magnetar-whats-new-tile:focus-visible {
+  outline: 2px solid var(--mg-control-outline, #211b15);
+  outline-offset: -3px;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-tile {
+  background: rgba(118, 158, 118, 0.10);
+  border-radius: 7px 7px 0 0;
+}
+
+#magnetar-banner .magnetar-whats-new-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+}
+
+#magnetar-banner .magnetar-whats-new-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+#magnetar-banner .magnetar-whats-new-tile-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-whats-new-card-title {
+  display: block;
+  min-width: 0;
+  overflow: visible;
+  color: var(--mg-ink, #211b15);
+  font-size: 11.8px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+#magnetar-banner .magnetar-whats-new-copy {
+  display: block;
+  min-width: 0;
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 10.2px;
+  line-height: 1.3;
+}
+
+#magnetar-banner .magnetar-whats-new-indicator {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  justify-self: end;
+  border: 1px solid rgba(74, 60, 45, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 250, 238, 0.36);
+  color: var(--mg-ink-2, #5f5348);
+}
+
+#magnetar-banner .magnetar-whats-new-indicator svg {
+  width: 12px;
+  height: 12px;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-indicator svg {
+  transform: rotate(180deg);
+}
+
+#magnetar-banner .magnetar-whats-new-story {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  transition: grid-template-rows 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 340ms ease-out, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 480ms;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+#magnetar-banner .magnetar-whats-new-story-inner {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#magnetar-banner .magnetar-whats-new-story-surface {
+  position: relative;
+  min-width: 0;
+  padding: 12px 38px 11px 11px;
+  border-top: 1px solid var(--whats-new-card-border);
+  background: rgba(255, 250, 238, 0.33);
+}
+
+#magnetar-banner .magnetar-whats-new-story-collapse {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 25px;
+  height: 25px;
+  display: inline-grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(74, 60, 45, 0.20);
+  border-radius: 6px;
+  background: var(--mg-surface, #f4ead8);
+  color: var(--mg-ink, #211b15);
+  cursor: pointer;
+}
+
+#magnetar-banner .magnetar-whats-new-story-collapse:hover,
+#magnetar-banner .magnetar-whats-new-story-collapse:focus-visible {
+  border-color: var(--mg-control-outline, #211b15);
+  outline: none;
+}
+
+#magnetar-banner .magnetar-whats-new-story-collapse svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(180deg);
+}
+
+#magnetar-banner .magnetar-whats-new-story-flow {
+  display: grid;
+  grid-template-columns: minmax(64px, 1fr) 26px minmax(64px, 1fr) 26px minmax(64px, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-whats-new-story-step {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 67px;
+  padding: 7px 5px;
+  border: 1px solid rgba(74, 60, 45, 0.16);
+  border-radius: 7px;
+  background: var(--mg-surface, #f4ead8);
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 9.8px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-whats-new-story-step-icon {
+  width: 27px;
+  height: 27px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(118, 158, 118, 0.14);
+  color: var(--mg-ink, #211b15);
+}
+
+#magnetar-banner .magnetar-whats-new-story-step-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+#magnetar-banner .magnetar-whats-new-story-connector {
+  position: relative;
+  display: block;
+  height: 12px;
+}
+
+#magnetar-banner .magnetar-whats-new-story-connector span {
+  position: absolute;
+  top: 5px;
+  left: 1px;
+  right: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mg-signal, #4a7c5c);
+  transform-origin: left center;
+}
+
+#magnetar-banner .magnetar-whats-new-story-connector span::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid var(--mg-signal, #4a7c5c);
+  border-right: 2px solid var(--mg-signal, #4a7c5c);
+  transform: rotate(45deg);
+}
+
+#magnetar-banner .magnetar-whats-new-story-tags,
+#magnetar-banner .magnetar-whats-new-story-assurances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+#magnetar-banner .magnetar-whats-new-story-tags span,
+#magnetar-banner .magnetar-whats-new-story-assurances span {
+  padding: 3px 7px;
+  border: 1px solid rgba(74, 60, 45, 0.16);
+  border-radius: 999px;
+  background: rgba(118, 158, 118, 0.11);
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 9.7px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-whats-new-story-note,
+#magnetar-banner .magnetar-whats-new-story-subnote {
+  margin: 8px 0 0;
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 10.2px;
+  font-weight: 550;
+  line-height: 1.3;
+}
+
+#magnetar-banner .magnetar-whats-new-story-subnote {
+  margin-top: 3px;
+  color: var(--mg-ink-3, #766b60);
+  font-size: 9.8px;
+  font-weight: 450;
+}
+
+#magnetar-banner .magnetar-whats-new-folder-swatches {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+#magnetar-banner .magnetar-whats-new-folder-swatches span {
+  width: 34px;
+  height: 8px;
+  border-radius: 3px;
+  background: rgba(118, 158, 118, 0.55);
+}
+
+#magnetar-banner .magnetar-whats-new-folder-swatches span:nth-child(2) {
+  background: rgba(118, 146, 178, 0.55);
+}
+
+#magnetar-banner .magnetar-whats-new-folder-swatches span:nth-child(3) {
+  background: rgba(157, 133, 184, 0.55);
+}
+
+#magnetar-banner .magnetar-whats-new-green-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#magnetar-banner .magnetar-whats-new-green-controls span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 8px;
+  border: 1px solid rgba(91, 122, 91, 0.30);
+  border-radius: 7px;
+  background: rgba(118, 158, 118, 0.17);
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+#magnetar-banner .magnetar-whats-new-green-controls svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--mg-signal, #4a7c5c);
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-step {
+  animation: magnetarWhatsNewStepIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-step:nth-of-type(3) {
+  animation-delay: 80ms;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-step:nth-of-type(5) {
+  animation-delay: 160ms;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-connector span {
+  animation: magnetarWhatsNewLineIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-travel-flow .magnetar-whats-new-story-step:nth-of-type(3) {
+  animation: magnetarWhatsNewTravel 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes magnetarWhatsNewStepIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes magnetarWhatsNewLineIn {
+  from { opacity: 0; transform: scaleX(0); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+@keyframes magnetarWhatsNewTravel {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+#magnetar-banner .magnetar-whats-new-actions {
+  margin-top: 11px;
+  gap: 7px;
+}
+
+#magnetar-banner .magnetar-whats-new-actions .magnetar-btn,
+#magnetar-banner .magnetar-whats-new-actions .magnetar-whats-new-later {
+  min-height: 44px;
+}
+
+#magnetar-banner .magnetar-whats-new-actions .magnetar-whats-new-later {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#magnetar-banner .magnetar-whats-new-primary {
+  min-width: 132px;
+  border-width: 2px;
+  border-color: var(--mg-control-outline, #211b15);
+  background: rgba(118, 158, 118, 0.28);
+}
+
+#magnetar-banner .magnetar-whats-new-secondary {
+  border-color: var(--mg-control-outline, #211b15);
+  background: transparent;
+}
+
+#magnetar-banner .magnetar-whats-new-later:hover,
+#magnetar-banner .magnetar-whats-new-later:focus-visible {
+  color: var(--mg-ink, #211b15);
+  text-decoration: underline;
+  outline: none;
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-card-expanded,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-surface {
+  background: #2d2922;
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-tile:hover,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-card-expanded .magnetar-whats-new-tile {
+  background: rgba(118, 158, 118, 0.13);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-step,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-collapse {
+  background: #211d18;
+  border-color: rgba(229, 218, 196, 0.18);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-step,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-note,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-subnote,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-tags span,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-story-assurances span,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-green-controls span {
+  color: #d8ceb9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #magnetar-banner .magnetar-whats-new-card,
+  #magnetar-banner .magnetar-whats-new-tile,
+  #magnetar-banner .magnetar-whats-new-indicator svg,
+  #magnetar-banner .magnetar-whats-new-story {
+    transition: none !important;
+  }
+
+  #magnetar-banner .magnetar-whats-new-story,
+  #magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-step,
+  #magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-story-connector span,
+  #magnetar-banner .magnetar-whats-new-card-expanded .magnetar-whats-new-travel-flow .magnetar-whats-new-story-step:nth-of-type(3) {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  #magnetar-banner .magnetar-whats-new-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #magnetar-banner .magnetar-whats-new-card-expanded {
+    grid-column: auto;
+  }
+
+  #magnetar-banner .magnetar-whats-new-story-flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  #magnetar-banner .magnetar-whats-new-story-step {
+    grid-template-columns: 28px minmax(0, 1fr);
+    justify-items: start;
+    min-height: 44px;
+    text-align: left;
+  }
+
+  #magnetar-banner .magnetar-whats-new-story-connector {
+    width: 2px;
+    height: 14px;
+    margin-left: 20px;
+    background: var(--mg-signal, #4a7c5c);
+  }
+
+  #magnetar-banner .magnetar-whats-new-story-connector span {
+    display: none;
+  }
+
+  #magnetar-banner .magnetar-whats-new-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #magnetar-banner .magnetar-whats-new-actions .magnetar-btn {
+    width: 100%;
+  }
+
+  #magnetar-banner .magnetar-whats-new-later {
+    justify-self: center;
+  }
+}
+
+/* Stable feature grid with one shared story viewer. */
+#magnetar-banner .magnetar-whats-new-card {
+  display: block;
+  min-height: 0;
+}
+
+#magnetar-banner .magnetar-whats-new-tile {
+  min-height: 58px;
+  padding-block: 7px;
+}
+
+#magnetar-banner .magnetar-whats-new-card-active {
+  border-color: var(--mg-control-outline, #211b15);
+  background: rgba(118, 158, 118, 0.18);
+  box-shadow: 0 0 0 1px var(--mg-control-outline, #211b15);
+}
+
+#magnetar-banner .magnetar-whats-new-card-active .magnetar-whats-new-tile {
+  background: rgba(118, 158, 118, 0.10);
+}
+
+#magnetar-banner .magnetar-whats-new-card-active .magnetar-whats-new-indicator svg {
+  transform: rotate(180deg);
+}
+
+#magnetar-banner .magnetar-whats-new-viewer {
+  --whats-new-card-border: rgba(91, 122, 91, 0.30);
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  min-height: 0;
+  margin-top: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: grid-template-rows 460ms cubic-bezier(0.22, 1, 0.36, 1), margin-top 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease-out, transform 420ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 460ms;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-active {
+  grid-template-rows: 1fr;
+  margin-top: 9px;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-clip {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  transition: height 440ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--whats-new-card-border);
+  border-radius: 8px;
+  background: var(--mg-surface-2, #fff8ea);
+  box-shadow: 0 4px 12px rgba(74, 60, 45, 0.06);
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage:focus-visible {
+  outline: 2px solid var(--mg-control-outline, #211b15);
+  outline-offset: 2px;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-head {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 25px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 9px 9px 8px;
+  border-bottom: 1px solid var(--whats-new-card-border);
+  background: rgba(118, 158, 118, 0.10);
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-copy strong {
+  color: var(--mg-ink, #211b15);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-copy span {
+  color: var(--mg-ink-2, #5f5348);
+  font-size: 10.2px;
+  line-height: 1.25;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer .magnetar-whats-new-story-surface {
+  position: static;
+  min-width: 0;
+  padding: 10px;
+  border-top: 0;
+  background: rgba(255, 250, 238, 0.33);
+}
+
+#magnetar-banner .magnetar-whats-new-viewer .magnetar-whats-new-story-collapse {
+  position: static;
+  inset: auto;
+  width: 25px;
+  height: 25px;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-step {
+  animation: magnetarWhatsNewStepIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-step:nth-of-type(3) {
+  animation-delay: 80ms;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-step:nth-of-type(5) {
+  animation-delay: 160ms;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-connector span {
+  animation: magnetarWhatsNewLineIn 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-travel-flow .magnetar-whats-new-story-step:nth-of-type(3) {
+  animation: magnetarWhatsNewTravel 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#magnetar-banner .magnetar-whats-new-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  margin-top: 9px;
+  gap: 7px;
+}
+
+#magnetar-banner .magnetar-whats-new-actions .magnetar-whats-new-action {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--mg-control-outline, #211b15);
+  border-radius: 8px;
+  color: var(--mg-ink, #211b15);
+  font-family: var(--mg-font);
+  font-size: 10.8px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+}
+
+#magnetar-banner .magnetar-whats-new-primary {
+  min-width: 0;
+  border-width: 1px;
+  background: rgba(118, 158, 118, 0.28);
+}
+
+#magnetar-banner .magnetar-whats-new-secondary {
+  background: var(--mg-surface-2, #fff8ea);
+}
+
+#magnetar-banner .magnetar-whats-new-tertiary {
+  background: transparent;
+  color: var(--mg-ink-2, #5f5348);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-viewer-stage,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-viewer .magnetar-whats-new-story-surface {
+  background: #2d2922;
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-card-active .magnetar-whats-new-tile,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-viewer-head {
+  background: rgba(118, 158, 118, 0.13);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-viewer-copy strong {
+  color: #f3ead8;
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-viewer-copy span,
+#magnetar-banner.magnetar-theme-dark .magnetar-whats-new-tertiary {
+  color: #d8ceb9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #magnetar-banner .magnetar-whats-new-viewer,
+  #magnetar-banner .magnetar-whats-new-viewer-clip {
+    transition: none !important;
+  }
+
+  #magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-step,
+  #magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-story-connector span,
+  #magnetar-banner .magnetar-whats-new-viewer-stage-entering .magnetar-whats-new-travel-flow .magnetar-whats-new-story-step:nth-of-type(3) {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 600px) {
+  #magnetar-banner .magnetar-whats-new-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #magnetar-banner .magnetar-whats-new-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  #magnetar-banner .magnetar-whats-new-grid,
+  #magnetar-banner .magnetar-whats-new-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 /* Organised opened-folder item cards: title/meta first, actions second. */
 #magnetar-banner .magnetar-organised-open-wrap .magnetar-organised-open-item,
 #magnetar-banner .magnetar-organised-open-item {
@@ -6237,4 +7029,1102 @@
 #magnetar-banner .magnetar-organised-folder-card,
 #magnetar-banner .magnetar-organised-open-item {
   border-color: rgba(33, 27, 21, 0.58) !important;
+}
+
+/* Magnetar Sync: mutually exclusive overview, QR, and connected states. */
+#magnetar-banner .magnetar-sync-panel {
+  --mg-sync-accent-bg: rgba(118, 158, 118, 0.13);
+  --mg-sync-accent-bg-strong: rgba(118, 158, 118, 0.22);
+  --mg-sync-accent-border: rgba(74, 112, 74, 0.38);
+  --mg-sync-blue-field: rgba(112, 146, 160, 0.15);
+  --mg-sync-beige-field: rgba(177, 153, 113, 0.11);
+  --mg-sync-danger: #7e4742;
+  --mg-sync-danger-bg: rgba(126, 71, 66, 0.07);
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 8px 12px 10px;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-sync-panel {
+  --mg-sync-accent-bg: rgba(123, 166, 140, 0.14);
+  --mg-sync-accent-bg-strong: rgba(123, 166, 140, 0.22);
+  --mg-sync-accent-border: rgba(123, 166, 140, 0.42);
+  --mg-sync-blue-field: rgba(105, 142, 158, 0.18);
+  --mg-sync-beige-field: rgba(178, 154, 112, 0.09);
+  --mg-sync-danger: #d19891;
+  --mg-sync-danger-bg: rgba(209, 152, 145, 0.09);
+}
+
+#magnetar-banner .magnetar-sync-app-review-note {
+  width: min(100%, 600px);
+  margin: 0 auto 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--mg-sync-accent-border);
+  border-radius: 7px;
+  background: var(--mg-sync-accent-bg);
+  color: var(--mg-ink-2);
+  font-size: 10.5px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-sync-state {
+  width: min(100%, 620px);
+  min-width: 0;
+  min-height: 311px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--mg-ink);
+}
+
+#magnetar-banner .magnetar-sync-state h2,
+#magnetar-banner .magnetar-sync-state p {
+  margin: 0;
+}
+
+#magnetar-banner .magnetar-sync-state h2 {
+  max-width: 100%;
+  color: var(--mg-ink);
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-sync-state-copy {
+  width: min(100%, 490px);
+  color: var(--mg-ink-2);
+  font-size: 11.5px;
+  line-height: 1.42;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-sync-state-overview {
+  width: 100%;
+  max-width: none;
+  gap: 9px;
+}
+
+#magnetar-banner .magnetar-sync-overview-stage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 18px 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+  background: var(--mg-sync-beige-field);
+  overflow: hidden;
+}
+
+#magnetar-banner .magnetar-sync-overview-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -42px;
+  right: 19%;
+  left: -8%;
+  height: 118px;
+  border-radius: 0 0 58% 0;
+  background: var(--mg-sync-blue-field);
+  transform: rotate(-2deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+#magnetar-banner .magnetar-sync-overview-hero {
+  position: relative;
+  width: min(100%, 540px);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+#magnetar-banner .magnetar-sync-overview-hero .magnetar-sync-hero-icon {
+  width: 48px;
+  height: 48px;
+}
+
+#magnetar-banner .magnetar-sync-overview-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+#magnetar-banner .magnetar-sync-overview-copy h2,
+#magnetar-banner .magnetar-sync-overview-copy .magnetar-sync-state-copy {
+  width: 100%;
+  max-width: none;
+  text-align: left;
+}
+
+#magnetar-banner .magnetar-sync-overview-copy h2 {
+  font-size: 19px;
+}
+
+#magnetar-banner .magnetar-sync-overview-copy .magnetar-sync-state-copy {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+#magnetar-banner .magnetar-sync-overview-actions {
+  position: relative;
+  width: min(100%, 560px);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#magnetar-banner .magnetar-sync-hero-icon {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 1.5px solid var(--mg-control-outline);
+  border-radius: 12px;
+  background: var(--mg-sync-accent-bg-strong);
+  color: var(--mg-ink);
+}
+
+#magnetar-banner .magnetar-sync-hero-icon > svg {
+  width: 22px;
+  height: 22px;
+}
+
+#magnetar-banner .magnetar-sync-hero-icon > i {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 19px;
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--mg-control-outline);
+  border-radius: 50%;
+  background: var(--mg-surface);
+  color: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-hero-icon > i svg {
+  width: 11px;
+  height: 11px;
+}
+
+#magnetar-banner .magnetar-sync-state-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 20px;
+  padding: 2px 8px;
+  border: 1px solid var(--mg-border-mid);
+  border-radius: 999px;
+  background: var(--mg-surface-2);
+  color: var(--mg-ink-2);
+  font-size: 9.75px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-sync-state-status > i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: var(--mg-surface);
+}
+
+#magnetar-banner .magnetar-sync-state-status-waiting,
+#magnetar-banner .magnetar-sync-state-status-connected {
+  border-color: var(--mg-sync-accent-border);
+  background: var(--mg-sync-accent-bg);
+  color: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-state-status-connected > i {
+  background: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-primary-actions,
+#magnetar-banner .magnetar-sync-qr-actions,
+#magnetar-banner .magnetar-sync-dashboard-actions {
+  width: min(100%, 390px);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  height: auto;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1.5px solid var(--mg-control-outline) !important;
+  border-radius: 8px !important;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: none;
+  white-space: normal;
+  box-shadow: none !important;
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action::before,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action::after,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-mobile-link::before,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-mobile-link::after,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-back::before,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-back::after,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-disconnect-link::before,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-disconnect-link::after {
+  content: none !important;
+  display: none !important;
+}
+
+#magnetar-banner .magnetar-sync-action-primary {
+  background: var(--mg-sync-accent-bg-strong) !important;
+  color: var(--mg-ink) !important;
+}
+
+#magnetar-banner .magnetar-sync-action-secondary {
+  background: var(--mg-surface) !important;
+  color: var(--mg-ink) !important;
+}
+
+#magnetar-banner .magnetar-sync-action:hover:not(:disabled),
+#magnetar-banner .magnetar-sync-action:active:not(:disabled) {
+  background: var(--mg-surface-2) !important;
+}
+
+#magnetar-banner .magnetar-sync-action-primary:hover:not(:disabled),
+#magnetar-banner .magnetar-sync-action-primary:active:not(:disabled) {
+  background: var(--mg-sync-accent-bg) !important;
+}
+
+#magnetar-banner .magnetar-sync-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#magnetar-banner .magnetar-sync-button-icon,
+#magnetar-banner .magnetar-sync-button-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  flex: 0 0 auto;
+}
+
+#magnetar-banner .magnetar-sync-action-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#magnetar-banner .magnetar-sync-back,
+#magnetar-banner .magnetar-sync-disconnect-link {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--mg-ink-3);
+  font: inherit;
+  font-size: 10.25px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+#magnetar-banner .magnetar-sync-back:hover,
+#magnetar-banner .magnetar-sync-disconnect-link:hover {
+  color: var(--mg-ink);
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action-tertiary,
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-mobile-link {
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--mg-control-outline) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--mg-surface) 76%, var(--mg-surface-2)) !important;
+  color: var(--mg-ink-2) !important;
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.2;
+  text-decoration: none !important;
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-mobile-link:hover:not(:disabled) {
+  background: var(--mg-surface-2) !important;
+  color: var(--mg-ink) !important;
+}
+
+#magnetar-banner .magnetar-sync-categories {
+  width: min(100%, 480px);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+#magnetar-banner .magnetar-sync-categories span {
+  min-width: 0;
+  min-height: 27px;
+  padding: 4px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mg-border-mid);
+  border-radius: 7px;
+  background: var(--mg-surface-2);
+  color: var(--mg-ink-2);
+  font-size: 9.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+#magnetar-banner .magnetar-sync-overview-support {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+#magnetar-banner .magnetar-sync-overview-included {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--mg-border-mid);
+  border-bottom: 1px solid var(--mg-border-mid);
+  background: color-mix(in srgb, var(--mg-surface-2) 42%, transparent);
+}
+
+#magnetar-banner .magnetar-sync-overview-included-label {
+  color: var(--mg-ink-3);
+  font-size: 9.5px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories {
+  width: 100%;
+  gap: 10px;
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories span {
+  min-height: 22px;
+  padding: 2px 0;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--mg-ink-2);
+  font-weight: 620;
+  text-align: left;
+  cursor: default;
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories span::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(30, 26, 20, 0.2);
+  border-radius: 2px;
+  background: rgba(118, 158, 118, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories span:nth-child(2)::before {
+  background: rgba(112, 146, 160, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories span:nth-child(3)::before {
+  background: rgba(198, 166, 123, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories span:nth-child(4)::before {
+  background: rgba(151, 137, 168, 0.38);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-sync-state-overview .magnetar-sync-categories span::before {
+  border-color: rgba(245, 241, 232, 0.22);
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-privacy-strip {
+  width: 100%;
+  max-width: none;
+  min-height: 36px;
+  padding: 7px 10px;
+  justify-content: flex-start;
+  background: color-mix(in srgb, var(--mg-surface-2) 68%, transparent);
+}
+
+#magnetar-banner .magnetar-sync-state-overview .magnetar-sync-privacy-strip > div {
+  justify-content: flex-start;
+}
+
+#magnetar-banner .magnetar-sync-privacy-strip {
+  width: min(100%, 560px);
+  min-width: 0;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--mg-border-mid);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--mg-surface-2) 62%, transparent);
+  color: var(--mg-ink-3);
+  text-align: left;
+}
+
+#magnetar-banner .magnetar-sync-privacy-strip > svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-privacy-strip > div {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1px 5px;
+}
+
+#magnetar-banner .magnetar-sync-privacy-strip strong,
+#magnetar-banner .magnetar-sync-privacy-strip span {
+  color: inherit;
+  font-size: 9.5px;
+  line-height: 1.25;
+}
+
+#magnetar-banner .magnetar-sync-privacy-strip strong {
+  color: var(--mg-ink-2);
+}
+
+#magnetar-banner .magnetar-sync-feedback,
+#magnetar-banner .magnetar-sync-push-status {
+  min-height: 0;
+  color: var(--mg-signal);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-sync-feedback:empty,
+#magnetar-banner .magnetar-sync-push-status:empty {
+  display: none;
+}
+
+/* QR state replaces the overview rather than extending it. */
+#magnetar-banner .magnetar-sync-state-qr {
+  justify-content: flex-start;
+}
+
+#magnetar-banner .magnetar-sync-qr-topbar {
+  width: 100%;
+  min-width: 0;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#magnetar-banner .magnetar-sync-back {
+  min-height: 28px;
+  padding: 4px 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+#magnetar-banner .magnetar-sync-back svg {
+  width: 13px;
+  height: 13px;
+  transform: rotate(180deg);
+}
+
+#magnetar-banner .magnetar-sync-qr-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+#magnetar-banner .magnetar-sync-route {
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  color: var(--mg-ink-3);
+  font-size: 9.75px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-sync-route span {
+  padding: 2px 5px;
+  border: 1px solid var(--mg-border-mid);
+  border-radius: 5px;
+  background: var(--mg-surface-2);
+}
+
+#magnetar-banner .magnetar-sync-route i,
+#magnetar-banner .magnetar-sync-route i svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+#magnetar-banner .magnetar-sync-qr-wrap {
+  width: 126px;
+  height: 126px;
+  min-width: 126px;
+  min-height: 126px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--mg-control-outline);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#magnetar-banner .magnetar-sync-qr-wrap svg {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  background: #fff;
+}
+
+#magnetar-banner .magnetar-sync-qr-error {
+  color: #6f2e2e;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#magnetar-banner .magnetar-sync-private-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mg-ink-3);
+  font-size: 9.5px;
+  font-weight: 650;
+}
+
+#magnetar-banner .magnetar-sync-private-label svg {
+  width: 12px;
+  height: 12px;
+  color: var(--mg-signal);
+}
+
+/* Connected state is a dashboard; no pairing controls are retained. */
+#magnetar-banner .magnetar-sync-state-connected {
+  width: 100%;
+  max-width: none;
+  gap: 9px;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--mg-sync-accent-bg) 76%, var(--mg-sync-beige-field));
+  overflow: hidden;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -42px;
+  right: -7%;
+  width: 43%;
+  height: 124px;
+  border-radius: 0 0 0 62%;
+  background: var(--mg-sync-blue-field);
+  transform: rotate(2deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+#magnetar-banner .magnetar-sync-hero-icon-connected {
+  border-radius: 50%;
+  background: var(--mg-surface);
+  color: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-connected-copy {
+  min-width: 0;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading h2,
+#magnetar-banner .magnetar-sync-connected-heading p {
+  text-align: left;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading h2 {
+  font-size: 16px;
+}
+
+#magnetar-banner .magnetar-sync-connected-heading p {
+  margin-top: 2px;
+  color: var(--mg-ink-2);
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+#magnetar-banner .magnetar-sync-connected-device {
+  max-width: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  color: var(--mg-ink-3);
+  font-size: 9.5px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+#magnetar-banner .magnetar-sync-connected-device strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--mg-ink-2);
+  font-size: 10px;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--mg-border-mid);
+  border-bottom: 1px solid var(--mg-border-mid);
+  background: color-mix(in srgb, var(--mg-surface-2) 42%, transparent);
+  overflow: hidden;
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts > div {
+  min-width: 0;
+  min-height: 48px;
+  padding: 7px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts > div + div {
+  border-left: 1px solid var(--mg-border-mid);
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts dt {
+  margin: 0;
+  color: var(--mg-ink-3);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts dd {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  color: var(--mg-ink-2);
+  font-size: 10px;
+  font-weight: 720;
+  line-height: 1.2;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+#magnetar-banner .magnetar-sync-dashboard-facts dd i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--mg-signal);
+}
+
+#magnetar-banner .magnetar-sync-connected-included {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 10px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--mg-border-mid);
+  border-bottom: 1px solid var(--mg-border-mid);
+  background: color-mix(in srgb, var(--mg-surface-2) 42%, transparent);
+}
+
+#magnetar-banner .magnetar-sync-connected-included-label {
+  color: var(--mg-ink-3);
+  font-size: 9.5px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories {
+  width: 100%;
+  gap: 10px;
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories span {
+  min-height: 22px;
+  padding: 2px 0;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--mg-ink-2);
+  font-weight: 620;
+  text-align: left;
+  cursor: default;
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories span::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(30, 26, 20, 0.2);
+  border-radius: 2px;
+  background: rgba(118, 158, 118, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories span:nth-child(2)::before {
+  background: rgba(112, 146, 160, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories span:nth-child(3)::before {
+  background: rgba(198, 166, 123, 0.42);
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories span:nth-child(4)::before {
+  background: rgba(151, 137, 168, 0.38);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-sync-state-connected .magnetar-sync-categories span::before {
+  border-color: rgba(245, 241, 232, 0.22);
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-dashboard-actions {
+  width: 100%;
+  max-width: none;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action-disconnect {
+  border-color: color-mix(in srgb, var(--mg-sync-danger) 72%, var(--mg-control-outline)) !important;
+  background: var(--mg-sync-danger-bg) !important;
+  color: var(--mg-sync-danger) !important;
+}
+
+#magnetar-banner .magnetar-sync-panel .magnetar-sync-action-disconnect:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mg-sync-danger-bg) 70%, var(--mg-surface-2)) !important;
+  color: var(--mg-sync-danger) !important;
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-privacy-strip {
+  width: 100%;
+  max-width: none;
+  min-height: 36px;
+  padding: 7px 10px;
+  justify-content: flex-start;
+  background: color-mix(in srgb, var(--mg-surface-2) 68%, transparent);
+}
+
+#magnetar-banner .magnetar-sync-state-connected .magnetar-sync-privacy-strip > div {
+  justify-content: flex-start;
+}
+
+#magnetar-banner .magnetar-sync-disconnect-link {
+  min-height: 24px;
+  padding: 3px 6px;
+  color: var(--mg-ink-3);
+  text-decoration: none;
+}
+
+#magnetar-banner .magnetar-sync-pull-active .magnetar-sync-button-icon svg {
+  animation: mgSyncWorking 0.9s linear infinite;
+}
+
+@keyframes mgSyncWorking {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mgSyncForward {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mgSyncBack {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mgSyncSuccess {
+  from { opacity: 0; transform: scale(0.992); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+#magnetar-banner .magnetar-sync-transition-forward .magnetar-sync-state {
+  animation: mgSyncForward 220ms ease-out both;
+}
+
+#magnetar-banner .magnetar-sync-transition-back .magnetar-sync-state {
+  animation: mgSyncBack 200ms ease-out both;
+}
+
+#magnetar-banner .magnetar-sync-transition-success .magnetar-sync-state {
+  animation: mgSyncSuccess 260ms ease-out both;
+}
+
+#magnetar-banner .magnetar-sync-panel button:focus-visible,
+#magnetar-banner .magnetar-sync-panel [tabindex="-1"]:focus-visible {
+  outline: 2px solid var(--mg-signal) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 520px) {
+  #magnetar-banner .magnetar-sync-panel {
+    padding-inline: 8px;
+  }
+
+  #magnetar-banner .magnetar-sync-state {
+    min-height: 0;
+  }
+
+  #magnetar-banner .magnetar-sync-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #magnetar-banner .magnetar-sync-overview-stage {
+    padding: 12px;
+  }
+
+  #magnetar-banner .magnetar-sync-overview-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #magnetar-banner .magnetar-sync-overview-actions .magnetar-sync-mobile-link {
+    grid-column: 1 / -1;
+    width: calc(50% - 4px);
+    justify-self: center;
+  }
+
+  #magnetar-banner .magnetar-sync-overview-included {
+    grid-template-columns: 92px minmax(0, 1fr);
+    padding-inline: 8px;
+  }
+
+  #magnetar-banner .magnetar-sync-state-overview .magnetar-sync-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 10px;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-heading {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 11px 12px;
+    gap: 8px;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-heading-main {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-heading .magnetar-sync-hero-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-heading-meta {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-device {
+    align-items: flex-end;
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts > div:first-child {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--mg-border-mid);
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts > div:nth-child(2) {
+    border-left: 0;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-included {
+    grid-template-columns: 92px minmax(0, 1fr);
+    padding-inline: 8px;
+  }
+
+  #magnetar-banner .magnetar-sync-state-connected .magnetar-sync-categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 10px;
+  }
+
+  #magnetar-banner .magnetar-sync-state-connected .magnetar-sync-dashboard-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #magnetar-banner .magnetar-sync-state-connected .magnetar-sync-action-disconnect {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  #magnetar-banner .magnetar-sync-overview-hero {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  #magnetar-banner .magnetar-sync-overview-hero .magnetar-sync-hero-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  #magnetar-banner .magnetar-sync-overview-included {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  #magnetar-banner .magnetar-sync-connected-included,
+  #magnetar-banner .magnetar-sync-dashboard-facts,
+  #magnetar-banner .magnetar-sync-state-connected .magnetar-sync-dashboard-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts > div {
+    grid-column: 1;
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts > div + div {
+    border-top: 1px solid var(--mg-border-mid);
+    border-left: 0;
+  }
+
+  #magnetar-banner .magnetar-sync-primary-actions,
+  #magnetar-banner .magnetar-sync-qr-actions,
+  #magnetar-banner .magnetar-sync-dashboard-actions,
+  #magnetar-banner .magnetar-sync-dashboard-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #magnetar-banner .magnetar-sync-dashboard-facts > div + div {
+    border-top: 1px solid var(--mg-border-mid);
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #magnetar-banner .magnetar-sync-transition-forward .magnetar-sync-state,
+  #magnetar-banner .magnetar-sync-transition-back .magnetar-sync-state,
+  #magnetar-banner .magnetar-sync-transition-success .magnetar-sync-state,
+  #magnetar-banner .magnetar-sync-pull-active .magnetar-sync-button-icon svg {
+    animation: none !important;
+    transform: none !important;
+  }
 }

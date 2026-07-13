@@ -835,6 +835,9 @@
   let toolbarExpanded = false;
   let clientPanelOpen = false;
   let syncPanelOpen = false;
+  let syncQrVisible = false;
+  let syncPanelTransition = 'neutral';
+  let syncMobileWasAcknowledged = false;
   let whatsNewPreviousPanel = '';
   let syncPanelNotice = "";
   const AUTO_PULL_MIN_INTERVAL_MS = 30000;
@@ -1066,7 +1069,7 @@
   async function handleAppReview(detection) {
     const settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
     if (!isUsableSyncSettings(settings)) {
-      await openSyncPanelWithNotice('Pair Magnetar Mobile to use Send to mobile. Send items from your browser straight to your phone\'s Review queue.');
+      await openSyncPanelWithNotice(t('syncNoticePairForReview'));
       return;
     }
     const result = await safeRuntimeMessage({ type: 'sync-send-app-review', item: buildAppReviewItem(detection) }, null);
@@ -1086,10 +1089,12 @@
     if (isOpen && syncPanelOpen) {
       banner.classList.remove('magnetar-expanded');
       setExpandedPanel('');
+      syncQrVisible = false;
       updateExpandedToggleState();
       return;
     }
     closeClientPanel();
+    syncQrVisible = false;
     await populateSyncPanel();
     setExpandedPanel('sync');
     banner.classList.add('magnetar-expanded');
@@ -1109,6 +1114,146 @@
     };
   }
 
+  function syncPanelIconSvg(name) {
+    const icons = {
+      app: whatsNewIconSvg('phone'),
+      qr: whatsNewIconSvg('qr'),
+      connected: whatsNewIconSvg('check'),
+      sync: whatsNewIconSvg('sync'),
+      lock: whatsNewIconSvg('lock'),
+      copy: folderActionIconSvg('copy'),
+      get: folderActionIconSvg('download'),
+      send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/><path d="M5 21h14"/></svg>',
+      disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>',
+      arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>'
+    };
+    return icons[name] || icons.sync;
+  }
+
+  function buildSyncQrMarkup(pairingQr, compact = false) {
+    const qrContent = pairingQr || `<div class="magnetar-sync-qr-error">${escapeHtml(t('syncQrUnavailable'))}</div>`;
+    return `
+      <div class="magnetar-sync-qr-wrap${compact ? ' magnetar-sync-qr-wrap-compact' : ''}" role="img" aria-label="${escapeAttr(t('syncQrDescription'))}">
+        ${qrContent}
+      </div>`;
+  }
+
+  function buildSyncPrivacyStrip() {
+    return `<div class="magnetar-sync-privacy-strip">${syncPanelIconSvg('lock')}<div><strong>${escapeHtml(t('syncPrivacyTitle'))}</strong><span>${escapeHtml(t('syncPrivacyBody'))}</span></div></div>`;
+  }
+
+  function buildSyncCategoryIndicators() {
+    return `
+      <div class="magnetar-sync-categories" aria-label="${escapeAttr(t('syncIncludedLabel'))}">
+        <span>${escapeHtml(t('syncDataSaved'))}</span>
+        <span>${escapeHtml(t('syncDataHistory'))}</span>
+        <span>${escapeHtml(t('syncDataReview'))}</span>
+        <span>${escapeHtml(t('syncDataOrganised'))}</span>
+      </div>`;
+  }
+
+  function buildSyncPairingOverview({ paired }) {
+    const showQrId = paired ? 'magnetar-sync-show-qr' : 'magnetar-sync-create-pairing';
+    return `
+      <section class="magnetar-sync-state magnetar-sync-state-overview" data-sync-state="overview" aria-labelledby="magnetar-sync-overview-title">
+        <div class="magnetar-sync-overview-stage">
+          <div class="magnetar-sync-overview-hero">
+            <div class="magnetar-sync-hero-icon" aria-hidden="true">${syncPanelIconSvg('app')}<i>${syncPanelIconSvg('sync')}</i></div>
+            <div class="magnetar-sync-overview-copy">
+              <div class="magnetar-sync-state-status magnetar-sync-state-status-ready" role="status"><i aria-hidden="true"></i>${escapeHtml(t('syncStatusReady'))}</div>
+              <h2 id="magnetar-sync-overview-title" tabindex="-1">${escapeHtml(t('syncPairMobileTitle'))}</h2>
+              <p class="magnetar-sync-state-copy">${escapeHtml(t('syncPairIntro'))}</p>
+            </div>
+          </div>
+          <div class="magnetar-sync-overview-actions">
+            <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-primary" id="${showQrId}" aria-controls="magnetar-sync-state-root" aria-expanded="false">
+              <span class="magnetar-sync-button-icon">${syncPanelIconSvg('qr')}</span>
+              <span class="magnetar-sync-action-label">${escapeHtml(t('syncCreateQrAction'))}</span>
+            </button>
+            <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-secondary" id="magnetar-sync-copy-pairing">
+              <span class="magnetar-sync-button-icon">${syncPanelIconSvg('copy')}</span>
+              <span class="magnetar-sync-action-label">${escapeHtml(t('syncCopyPairingCode'))}</span>
+            </button>
+            <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-tertiary magnetar-sync-mobile-link" id="magnetar-sync-mobile-link">
+              <span class="magnetar-sync-button-icon">${syncPanelIconSvg('app')}</span>
+              <span class="magnetar-sync-action-label">${escapeHtml(t('syncGetMobileAction'))}</span>
+            </button>
+          </div>
+          <div class="magnetar-sync-feedback" role="status" aria-live="polite"></div>
+        </div>
+        <div class="magnetar-sync-overview-support">
+          <div class="magnetar-sync-overview-included">
+            <span class="magnetar-sync-overview-included-label">${escapeHtml(t('syncIncludedLabel'))}</span>
+            ${buildSyncCategoryIndicators()}
+          </div>
+          ${buildSyncPrivacyStrip()}
+        </div>
+      </section>`;
+  }
+
+  function buildSyncQrView({ pairingQr }) {
+    return `
+      <section class="magnetar-sync-state magnetar-sync-state-qr" data-sync-state="qr" aria-labelledby="magnetar-sync-qr-title">
+        <div class="magnetar-sync-qr-topbar">
+          <button type="button" class="magnetar-sync-back" id="magnetar-sync-back-from-qr" aria-label="${escapeAttr(t('syncBackToPairing'))}">${syncPanelIconSvg('arrow')}<span>${escapeHtml(t('syncBack'))}</span></button>
+          <span class="magnetar-sync-state-status magnetar-sync-state-status-waiting" role="status"><i aria-hidden="true"></i>${escapeHtml(t('syncStatusWaiting'))}</span>
+        </div>
+        <div class="magnetar-sync-qr-content">
+          <h2 id="magnetar-sync-qr-title" tabindex="-1">${escapeHtml(t('syncScanMobileTitle'))}</h2>
+          <div class="magnetar-sync-route" aria-label="${escapeAttr(t('syncOpenAppRoute'))}">
+            <span>${escapeHtml(t('syncRouteSettings'))}</span><i aria-hidden="true">${syncPanelIconSvg('arrow')}</i>
+            <span>${escapeHtml(t('syncRouteSync'))}</span><i aria-hidden="true">${syncPanelIconSvg('arrow')}</i>
+            <span>${escapeHtml(t('syncRouteScanQr'))}</span>
+          </div>
+          ${buildSyncQrMarkup(pairingQr, true)}
+          <div class="magnetar-sync-private-label">${syncPanelIconSvg('lock')}<span>${escapeHtml(t('syncCodePrivate'))}</span></div>
+        </div>
+        <div class="magnetar-sync-qr-actions">
+          <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-secondary" id="magnetar-sync-copy-pairing"><span class="magnetar-sync-button-icon">${syncPanelIconSvg('copy')}</span><span>${escapeHtml(t('syncCopyPairingCode'))}</span></button>
+          <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-secondary" id="magnetar-sync-hide-qr" aria-controls="magnetar-sync-state-root" aria-expanded="true">${escapeHtml(t('syncHideQrAction'))}</button>
+        </div>
+        <div class="magnetar-sync-feedback" role="status" aria-live="polite"></div>
+        ${buildSyncPrivacyStrip()}
+      </section>`;
+  }
+
+  function buildSyncConnectedDashboard({ lastSyncAt, mobileAck }) {
+    const lastSynced = lastSyncAt ? new Date(lastSyncAt).toLocaleString() : t('syncNotYet');
+    const deviceName = String(mobileAck?.name || '').trim();
+    return `
+      <section class="magnetar-sync-state magnetar-sync-state-connected" data-sync-state="connected" aria-labelledby="magnetar-sync-connected-title">
+        <div class="magnetar-sync-connected-heading">
+          <div class="magnetar-sync-connected-heading-main">
+            <span class="magnetar-sync-hero-icon magnetar-sync-hero-icon-connected" aria-hidden="true">${syncPanelIconSvg('connected')}</span>
+            <div class="magnetar-sync-connected-copy">
+              <h2 id="magnetar-sync-connected-title" tabindex="-1">${escapeHtml(t('syncConnectedTitle'))}</h2>
+              <p>${escapeHtml(t('syncConnectedAutoBody'))}</p>
+            </div>
+          </div>
+          <div class="magnetar-sync-connected-heading-meta">
+            <div class="magnetar-sync-state-status magnetar-sync-state-status-connected" role="status"><i aria-hidden="true"></i>${escapeHtml(t('syncStatusConnected'))}</div>
+            ${deviceName ? `<div class="magnetar-sync-connected-device"><span>${escapeHtml(t('syncDeviceLabel'))}</span><strong>${escapeHtml(deviceName)}</strong></div>` : ''}
+          </div>
+        </div>
+        <dl class="magnetar-sync-dashboard-facts" aria-label="${escapeAttr(t('syncStatusFactsLabel'))}">
+          <div><dt>${escapeHtml(t('syncDeviceLabel'))}</dt><dd>${escapeHtml(deviceName || t('syncNotYet'))}</dd></div>
+          <div><dt>${escapeHtml(t('syncAutoSyncLabel'))}</dt><dd class="magnetar-sync-fact-on"><i aria-hidden="true"></i>${escapeHtml(t('syncOn'))}</dd></div>
+          <div><dt>${escapeHtml(t('syncLastSyncedLabel'))}</dt><dd>${escapeHtml(lastSynced)}</dd></div>
+        </dl>
+        <div class="magnetar-sync-connected-included">
+          <span class="magnetar-sync-connected-included-label">${escapeHtml(t('syncIncludedLabel'))}</span>
+          ${buildSyncCategoryIndicators()}
+        </div>
+        <div class="magnetar-sync-dashboard-actions" aria-label="${escapeAttr(t('syncManualActionsLabel'))}">
+          <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-primary magnetar-sync-pull" id="magnetar-sync-pull-panel" title="${escapeAttr(t('syncGetLatestHelp'))}"><span class="magnetar-sync-button-icon">${syncPanelIconSvg('get')}</span><span class="magnetar-sync-action-label">${escapeHtml(t('syncGetLatestAction'))}</span></button>
+          <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-secondary magnetar-sync-push" id="magnetar-sync-push-saved-history" title="${escapeAttr(t('syncSendLatestHelp'))}"><span class="magnetar-sync-button-icon">${syncPanelIconSvg('send')}</span><span class="magnetar-sync-action-label">${escapeHtml(t('syncSendLatestAction'))}</span></button>
+          <button type="button" class="magnetar-btn magnetar-sync-action magnetar-sync-action-disconnect" id="magnetar-sync-reset-pairing" data-connected="true"><span class="magnetar-sync-button-icon">${syncPanelIconSvg('disconnect')}</span><span class="magnetar-sync-action-label">${escapeHtml(t('syncDisconnect'))}</span></button>
+        </div>
+        <div class="magnetar-sync-push-status" role="status" aria-live="polite"></div>
+        ${buildSyncPrivacyStrip()}
+      </section>`;
+  }
+
   async function populateSyncPanel() {
     const wrap = document.getElementById('magnetar-expanded-section');
     if (!wrap) return;
@@ -1117,7 +1262,12 @@
     const mobileAck = await safeRuntimeMessage({ type: 'get-sync-mobile-ack' }, null);
     const paired = isUsableSyncSettings(settings);
     const mobileAcknowledged = paired && !!mobileAck?.paired;
-    const syncStatusLabel = mobileAcknowledged ? 'Magnetar Mobile paired' : (paired ? 'Waiting for Magnetar Mobile' : 'Not paired');
+    const becameConnected = mobileAcknowledged && !syncMobileWasAcknowledged;
+    if (mobileAcknowledged) {
+      syncQrVisible = false;
+      if (becameConnected) syncPanelTransition = 'success';
+    }
+    syncMobileWasAcknowledged = mobileAcknowledged;
     const pairingPayload = buildSyncPairingPayloadFromSettings(settings);
     let pairingQr = '';
     if (pairingPayload && globalThis.MagnetarSyncQr?.renderPairingSvg) {
@@ -1128,76 +1278,18 @@
       }
     }
     const lastSyncAt = settings?.lastSyncAt || autoStatus?.lastSuccessAt;
-    const pairingContent = paired ? `
-        <div class="magnetar-sync-card magnetar-sync-how-card">
-          <div class="magnetar-sync-card-label">how to pair</div>
-          <div class="magnetar-sync-copy"><strong>Open Magnetar Mobile</strong></div>
-          <div class="magnetar-sync-copy">Settings &gt; Sync &gt; Scan QR</div>
-          <div class="magnetar-sync-copy">Then scan this code.</div>
-          <div class="magnetar-sync-scope">Syncs saved, sent and customised folder details. Provider API keys are never synced.</div>
-        </div>
-        <div class="magnetar-sync-card magnetar-sync-qr-card">
-          <div class="magnetar-sync-card-label">qr code</div>
-          <div class="magnetar-sync-qr-wrap">${pairingQr || '<div class="magnetar-sync-qr-error">QR unavailable. Use the pairing code fallback.</div>'}</div>
-        </div>
-        <div class="magnetar-sync-card magnetar-sync-pairing-card">
-          <div class="magnetar-sync-card-label">pairing</div>
-          <div class="magnetar-sync-actions magnetar-sync-pairing-actions">
-            <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-sync-copy-code" id="magnetar-sync-copy-pairing">Copy pairing code</button>
-            <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-sync-reset" id="magnetar-sync-reset-pairing">Reset pairing</button>
-          </div>
-          <div class="magnetar-sync-warning">This code can pair another device. Only show it to your own phone.</div>
-        </div>` : `
-        <div class="magnetar-sync-card magnetar-sync-how-card">
-          <div class="magnetar-sync-card-label">how to pair</div>
-          <div class="magnetar-sync-copy"><strong>Open Magnetar Mobile</strong></div>
-          <div class="magnetar-sync-copy">Settings &gt; Sync &gt; Scan QR</div>
-          <div class="magnetar-sync-copy">Create a private pairing code here, then scan it.</div>
-          <div class="magnetar-sync-scope">Syncs saved, sent and customised folder details. Provider API keys are never synced.</div>
-        </div>
-        <div class="magnetar-sync-card magnetar-sync-qr-card magnetar-sync-qr-placeholder">
-          <div class="magnetar-sync-card-label">qr code</div>
-          <div class="magnetar-sync-empty-qr">Pairing code not created yet.</div>
-        </div>
-        <div class="magnetar-sync-card magnetar-sync-pairing-card">
-          <div class="magnetar-sync-card-label">pairing</div>
-          <div class="magnetar-sync-copy">Create a pairing QR for the Android app.</div>
-          <div class="magnetar-sync-copy">Saved items and history sync encrypted. Provider API keys are never synced.</div>
-          <div class="magnetar-sync-actions magnetar-sync-pairing-actions">
-            <button type="button" class="magnetar-btn magnetar-btn-primary" id="magnetar-sync-create-pairing">Create pairing QR</button>
-          </div>
-        </div>`;
+    const stateContent = mobileAcknowledged
+      ? buildSyncConnectedDashboard({ lastSyncAt, mobileAck })
+      : (syncQrVisible && paired ? buildSyncQrView({ pairingQr }) : buildSyncPairingOverview({ paired }));
+    const transitionClass = ` magnetar-sync-transition-${syncPanelTransition}`;
 
     wrap.innerHTML = `
-      <div class="magnetar-expanded-inner magnetar-sync-panel">
-        <div class="magnetar-section-heading magnetar-sync-heading">
-          <span>MAGNETAR SYNC</span>
-          <span class="magnetar-sync-status ${mobileAcknowledged ? 'magnetar-sync-status-online' : (paired ? 'magnetar-sync-status-muted' : 'magnetar-sync-status-warning')}">${syncStatusLabel}</span>
-        </div>
-        ${syncPanelNotice ? `<div class="magnetar-sync-app-review-note">${escapeHtml(syncPanelNotice)}</div>` : ''}
-        <div class="magnetar-sync-mobile-strip">
-          <span>To sync Magnetar, you&rsquo;ll need the Magnetar Mobile app for Android.</span>
-          <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-sync-mobile-link" id="magnetar-sync-mobile-link">Get Magnetar Mobile</button>
-        </div>
-        <div class="magnetar-sync-grid">
-          ${pairingContent}
-        </div>
-        <div class="magnetar-sync-card magnetar-sync-data-card">
-          <div class="magnetar-sync-data-copy">
-            <div class="magnetar-sync-card-label">sync data</div>
-            <div class="magnetar-sync-copy">Saved, sent and folder details sync automatically after changes.</div>
-            ${paired ? '<div class="magnetar-sync-meta-line magnetar-sync-auto-line">Auto sync: On</div>' : '<div class="magnetar-sync-meta-line">Pair Magnetar Mobile before syncing.</div>'}
-            ${lastSyncAt ? `<div class="magnetar-sync-meta-line">Last synced: ${escapeHtml(new Date(lastSyncAt).toLocaleString())}</div>` : ''}
-            <div class="magnetar-sync-meta-line magnetar-sync-push-status"></div>
-          </div>
-          <div class="magnetar-sync-actions magnetar-sync-data-actions">
-            <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-sync-pull" id="magnetar-sync-pull-panel" ${paired ? '' : 'disabled'}>Pull sync</button>
-            <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-sync-push" id="magnetar-sync-push-saved-history" ${paired ? '' : 'disabled'}>Push sync</button>
-          </div>
-        </div>
-        <div class="magnetar-sync-privacy magnetar-sync-privacy-foot"><strong>Encrypted end-to-end.</strong> Saved items, sent history and folder details are encrypted before sync. Provider API keys are never synced.</div>
+      <div class="magnetar-expanded-inner magnetar-sync-panel${transitionClass}" id="magnetar-sync-state-root" role="region" aria-live="polite">
+        ${syncPanelNotice ? `<div class="magnetar-sync-app-review-note" role="status">${escapeHtml(syncPanelNotice)}</div>` : ''}
+        ${stateContent}
       </div>
     `;
+    syncPanelTransition = 'neutral';
     wrap.querySelector('#magnetar-sync-mobile-link')?.addEventListener('click', (e) => {
       e.preventDefault();
       safeRuntimeMessage({ type: 'open-external-url', url: MOBILE_URL });
@@ -1205,42 +1297,81 @@
     wrap.querySelector('#magnetar-sync-pull-panel')?.addEventListener('click', handlePullSyncSavedHistory);
     wrap.querySelector('#magnetar-sync-push-saved-history')?.addEventListener('click', handlePushSyncSavedHistory);
     wrap.querySelector('#magnetar-sync-create-pairing')?.addEventListener('click', handleCreateSyncPairing);
+    wrap.querySelector('#magnetar-sync-show-qr')?.addEventListener('click', async () => {
+      syncPanelTransition = 'forward';
+      syncQrVisible = true;
+      await populateSyncPanel();
+      wrap.querySelector('#magnetar-sync-qr-title')?.focus();
+    });
+    const returnToOverview = async () => {
+      syncPanelTransition = 'back';
+      syncQrVisible = false;
+      await populateSyncPanel();
+      wrap.querySelector('#magnetar-sync-show-qr')?.focus();
+    };
+    wrap.querySelector('#magnetar-sync-back-from-qr')?.addEventListener('click', returnToOverview);
+    wrap.querySelector('#magnetar-sync-hide-qr')?.addEventListener('click', returnToOverview);
     wrap.querySelector('#magnetar-sync-copy-pairing')?.addEventListener('click', handleCopySyncPairingCode);
     wrap.querySelector('#magnetar-sync-reset-pairing')?.addEventListener('click', handleResetSyncPairing);
   }
   async function handleCreateSyncPairing(e) {
     const button = e?.currentTarget;
-    const original = button?.textContent;
-    if (button) { button.disabled = true; button.textContent = 'Creating...'; }
+    const label = button?.querySelector('.magnetar-sync-action-label');
+    const original = label?.textContent;
+    if (button) button.disabled = true;
+    if (label) label.textContent = t('syncCreatingQr');
     const result = await safeRuntimeMessage({ type: 'create-sync-pairing' }, null);
     if (result?.ok) {
-      syncPanelNotice = 'Pairing code ready. Scan it in Magnetar Mobile.';
+      syncPanelNotice = '';
+      showToast(t('syncPairingReadyNotice'));
+      syncPanelTransition = 'forward';
+      syncQrVisible = true;
       await populateSyncPanel();
+      document.getElementById('magnetar-expanded-section')?.querySelector('#magnetar-sync-qr-title')?.focus();
       return;
     }
-    if (button) { button.disabled = false; button.textContent = original || 'Create pairing QR'; }
-    showToast(result?.error || 'Could not create pairing code', true);
+    if (button) button.disabled = false;
+    if (label) label.textContent = original || t('syncCreateQrAction');
+    showToast(result?.error || t('syncCreateError'), true);
   }
 
   async function handleCopySyncPairingCode() {
-    const settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
-    const payload = buildSyncPairingPayloadFromSettings(settings);
+    let settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
+    let payload = buildSyncPairingPayloadFromSettings(settings);
+    const feedback = document.getElementById('magnetar-expanded-section')?.querySelector('.magnetar-sync-feedback');
+    if (!payload) {
+      const result = await safeRuntimeMessage({ type: 'create-sync-pairing' }, null);
+      if (result?.ok && result.pairingPayload) payload = result.pairingPayload;
+      else {
+        settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
+        payload = buildSyncPairingPayloadFromSettings(settings);
+      }
+    }
     if (!payload || !globalThis.MagnetarSyncQr?.encodePairingPayload) {
-      showToast('Pairing code is unavailable', true);
+      if (feedback) feedback.textContent = t('syncCopyUnavailable');
+      showToast(t('syncCopyUnavailable'), true);
       return;
     }
     try {
       await navigator.clipboard.writeText(globalThis.MagnetarSyncQr.encodePairingPayload(payload));
-      showToast('Pairing code copied');
+      if (feedback) feedback.textContent = t('syncCopySuccess');
+      showToast(t('syncCopySuccess'));
     } catch (e) {
-      showToast('Could not copy pairing code', true);
+      if (feedback) feedback.textContent = t('syncCopyError');
+      showToast(t('syncCopyError'), true);
     }
   }
 
-  async function handleResetSyncPairing() {
-    if (!(await showMagnetarConfirmDialog({ title: 'Reset pairing', message: 'Reset Magnetar Mobile pairing on this browser?', confirmLabel: 'Reset', destructive: true }))) return;
+  async function handleResetSyncPairing(e) {
+    const connected = e?.currentTarget?.dataset?.connected === 'true';
+    if (!(await showMagnetarConfirmDialog({
+      title: t(connected ? 'syncDisconnectConfirmTitle' : 'syncStartOverConfirmTitle'),
+      message: t(connected ? 'syncDisconnectConfirmMessage' : 'syncStartOverConfirmMessage'),
+      confirmLabel: t(connected ? 'syncDisconnectConfirm' : 'syncStartOverConfirm'),
+      destructive: true
+    }))) return;
     await safeRuntimeMessage({ type: 'clear-sync-settings' }, null);
-    syncPanelNotice = 'Pairing reset on this browser.';
+    syncPanelNotice = t(connected ? 'syncDisconnectedNotice' : 'syncPairingDiscardedNotice');
     await populateSyncPanel();
   }
   async function handlePullSyncSavedHistory(e) {
@@ -1248,28 +1379,29 @@
     const wrap = document.getElementById('magnetar-expanded-section');
     const statusNode = wrap?.querySelector('.magnetar-sync-push-status');
     const isIconButton = !!button?.classList?.contains('magnetar-btn-sync-pull');
-    const original = isIconButton ? '' : (button?.textContent || '');
+    const label = isIconButton ? null : button?.querySelector('.magnetar-sync-action-label');
+    const original = label?.textContent || '';
     const restoreButton = () => {
       if (!button) return;
       button.disabled = false;
       button.classList.remove('magnetar-sync-pull-active');
       if (isIconButton) button.innerHTML = syncPullIconSvg();
-      else if (original) button.textContent = original;
-      button.title = 'Pull latest sync';
-      button.setAttribute('aria-label', 'Pull latest sync');
+      else if (label) label.textContent = original || t('syncGetLatestAction');
+      button.title = t('syncGetLatestAction');
+      button.setAttribute('aria-label', t('syncGetLatestAction'));
     };
     if (button) {
       button.disabled = true;
       button.classList.add('magnetar-sync-pull-active');
       if (isIconButton) button.innerHTML = syncPullIconSvg();
-      else if (original) button.textContent = 'Pulling...';
-      button.title = 'Pulling latest...';
-      button.setAttribute('aria-label', 'Pulling latest sync');
+      else if (label) label.textContent = t('syncGettingLatest');
+      button.title = t('syncGettingLatest');
+      button.setAttribute('aria-label', t('syncGettingLatest'));
     }
-    if (statusNode) statusNode.textContent = 'Pulling latest saved items and history...';
+    if (statusNode) statusNode.textContent = t('syncGettingLatestStatus');
     const pullResult = await forcePullLatest('toolbar-button');
     if (pullResult?.ok) {
-      const message = pullResult.empty ? 'Nothing synced yet' : `Synced ${pullResult.savedCount || 0} saved and ${pullResult.historyCount || 0} history items`;
+      const message = pullResult.empty ? t('syncNothingYet') : t('syncResultCounts', String(pullResult.savedCount || 0), String(pullResult.historyCount || 0));
       showToast(message);
       restoreButton();
       if (syncPanelOpen) await populateSyncPanel();
@@ -1277,24 +1409,27 @@
       return;
     }
     restoreButton();
-    if (statusNode) statusNode.textContent = pullResult?.error || 'Sync pull failed.';
-    showToast(pullResult?.error ? `Sync failed: ${pullResult.error}` : 'Could not sync', true);
+    if (statusNode) statusNode.textContent = pullResult?.error || t('syncGetLatestError');
+    showToast(pullResult?.error ? `${t('syncFailed')}: ${pullResult.error}` : t('syncCouldNotSync'), true);
   }
   async function handlePushSyncSavedHistory(e) {
     const button = e?.currentTarget;
     const wrap = document.getElementById('magnetar-expanded-section');
     const statusNode = wrap?.querySelector('.magnetar-sync-push-status');
-    if (button) { button.disabled = true; button.textContent = 'Pushing...'; }
-    if (statusNode) statusNode.textContent = 'Encrypting saved items and history...';
+    const label = button?.querySelector('.magnetar-sync-action-label');
+    if (button) button.disabled = true;
+    if (label) label.textContent = t('syncSendingLatest');
+    if (statusNode) statusNode.textContent = t('syncSendingLatestStatus');
     const result = await safeRuntimeMessage({ type: 'sync-push-saved-history' }, null);
     if (result?.ok) {
-      showToast(`Synced ${result.savedCount || 0} saved and ${result.historyCount || 0} history items`);
+      showToast(t('syncResultCounts', String(result.savedCount || 0), String(result.historyCount || 0)));
       if (syncPanelOpen) await populateSyncPanel();
       return;
     }
-    if (button) { button.disabled = false; button.textContent = 'Push sync'; }
-    if (statusNode) statusNode.textContent = result?.error || 'Sync push failed.';
-    showToast(result?.error ? `Sync failed: ${result.error}` : 'Sync failed', true);
+    if (button) button.disabled = false;
+    if (label) label.textContent = t('syncSendLatestAction');
+    if (statusNode) statusNode.textContent = result?.error || t('syncSendLatestError');
+    showToast(result?.error ? `${t('syncFailed')}: ${result.error}` : t('syncFailed'), true);
   }
   function closeClientPanel() {
     if (clientPanelOpen) {
@@ -3016,7 +3151,7 @@
     });
 
     wrap.querySelector('#magnetar-organised-sync-open')?.addEventListener('click', async () => {
-      await openSyncPanelWithNotice('Pair Magnetar Mobile to bring your organised folders into the extension.');
+      await openSyncPanelWithNotice(t('syncNoticePairForFolders'));
     });
 
     wrap.querySelectorAll('.magnetar-organised-mobile-link').forEach(button => {
@@ -3792,7 +3927,7 @@
         <a class="magnetar-support-action" href="${HELP_URL}" target="_blank" rel="noopener" title="Help" aria-label="Help">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 4.83 2.39c-.95.7-1.42 1.11-1.42 2.61"/><path d="M12 17h.01"/></svg>
         </a>
-        <button type="button" class="magnetar-support-action magnetar-whats-new-open" title="What's new" aria-label="What's new">
+        <button type="button" class="magnetar-support-action magnetar-whats-new-open" title="${escapeAttr(t('whatsNewOpenLabel'))}" aria-label="${escapeAttr(t('whatsNewOpenLabel'))}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
         </button>
         <a class="magnetar-support-action" href="${STORE_URL}" target="_blank" rel="noopener" title="Review Magnetar" aria-label="Review Magnetar">
@@ -3813,90 +3948,149 @@
       phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M10 18h4"/><path d="M13 7l3 3-3 3"/><path d="M8 10h8"/></svg>',
       lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="M12 15v2"/></svg>',
       green: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M9 7h6v10H9z"/><path d="M12 3v4"/><path d="M12 17v4"/></svg>',
-      qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h2v2h-2z"/><path d="M19 15h2"/><path d="M15 19h6"/><path d="M11 5h1"/><path d="M11 17h1"/><path d="M17 11h1"/></svg>'
+      qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h2v2h-2z"/><path d="M19 15h2"/><path d="M15 19h6"/><path d="M11 5h1"/><path d="M11 17h1"/><path d="M17 11h1"/></svg>',
+      extension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/><path d="M7 6h.01"/><path d="M10 6h.01"/></svg>',
+      item: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h4"/></svg>',
+      box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 4-8 4-8-4z"/><path d="m4 7 8 4 8-4"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>',
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg>'
     };
     return icons[name] || icons.sync;
   }
 
   const WHATS_NEW_FEATURES = [
-    {
-      id: 'sync',
-      icon: 'sync',
-      title: 'Sync with mobile',
-      pill: 'Private sync',
-      summary: 'Keep your saved items, history and folders in step.',
-      detail: 'Magnetar Sync keeps your saved items, sent history and organised folders in step between the extension and Magnetar Mobile. Your Magnetar activity stays together across devices so you can pick up where you left off. Provider files are never changed, and provider API keys and client passwords always stay local.'
-    },
-    {
-      id: 'folder',
-      icon: 'folder',
-      title: 'Sync folders',
-      pill: 'Sync folders',
-      summary: 'Pair Magnetar Mobile to organise folders across devices.',
-      detail: 'Pair Magnetar Mobile to create and sync organised Magnetar folders between desktop and mobile. You can group provider items your way without moving, renaming or changing anything in the provider itself. Folder names, colours, order and contents stay in step through Magnetar Sync.'
-    },
-    {
-      id: 'phone',
-      icon: 'phone',
-      title: 'Send to mobile',
-      pill: 'Review queue',
-      summary: 'Send items or batches straight to the app Review queue.',
-      detail: "Send a single item or a whole batch from the extension to Magnetar Mobile. Items arrive in the app's Review queue so you can check them before saving, sending or browsing. This makes it easy to move Magnetar findings from desktop to phone without losing context."
-    },
-    {
-      id: 'lock',
-      icon: 'lock',
-      title: 'TorBox Airlock',
-      pill: 'Airlocked',
-      summary: 'Protect supported TorBox items directly from Magnetar.',
-      detail: 'TorBox items can be Airlocked directly from Magnetar on both the provider list and organised folder items. This lets you protect supported TorBox items without leaving the Magnetar workflow. Airlock is a TorBox feature, so it only appears when TorBox is the active provider and the item supports it.'
-    },
-    {
-      id: 'green',
-      icon: 'green',
-      title: 'Green means sync',
-      pill: 'Soft green',
-      summary: 'Green highlights features connected to Magnetar Sync.',
-      detail: 'Green now marks Magnetar Sync features across the extension so they are easier to spot at a glance. Sync actions, organised features and mobile-connected controls share the same visual language. It is a small change, but it makes the sync workflow feel clearer and more connected.'
-    },
-    {
-      id: 'qr',
-      icon: 'qr',
-      title: 'Pair with QR',
-      pill: 'Private pairing',
-      summary: 'Scan a private QR to connect your extension and phone.',
-      detail: 'Create a private pairing QR in the extension, then scan it in Magnetar Mobile to connect your devices. Once paired, Magnetar Sync can keep supported Magnetar data in step automatically after changes. Pairing is private and encrypted, and it never syncs provider API keys or client passwords.'
-    }
+    { id: 'sync', icon: 'sync', titleKey: 'whatsNewSyncTitle', teaserKey: 'whatsNewSyncTeaser' },
+    { id: 'folder', icon: 'folder', titleKey: 'whatsNewFoldersTitle', teaserKey: 'whatsNewFoldersTeaser' },
+    { id: 'phone', icon: 'phone', titleKey: 'whatsNewSendTitle', teaserKey: 'whatsNewSendTeaser' },
+    { id: 'lock', icon: 'lock', titleKey: 'whatsNewAirlockTitle', teaserKey: 'whatsNewAirlockTeaser' },
+    { id: 'green', icon: 'green', titleKey: 'whatsNewGreenTitle', teaserKey: 'whatsNewGreenTeaser' },
+    { id: 'qr', icon: 'qr', titleKey: 'whatsNewQrTitle', teaserKey: 'whatsNewQrTeaser' }
   ];
 
   function getWhatsNewFeature(id) {
     return WHATS_NEW_FEATURES.find(feature => feature.id === id) || WHATS_NEW_FEATURES[0];
   }
 
-  function buildWhatsNewCard(feature) {
+  function buildWhatsNewStoryFlow(steps, extraClass = '') {
     return `
-      <article class="magnetar-whats-new-card magnetar-whats-new-card-${escapeAttr(feature.icon)}">
-        <div class="magnetar-whats-new-card-head">
-          <span class="magnetar-whats-new-icon">${whatsNewIconSvg(feature.icon)}</span>
-          <span class="magnetar-whats-new-pill">${escapeHtml(feature.pill)}</span>
-          <span class="magnetar-whats-new-card-title">${escapeHtml(feature.title)}</span>
+      <div class="magnetar-whats-new-story-flow${extraClass ? ' ' + extraClass : ''}" role="list">
+        ${steps.map((step, index) => `
+          <div class="magnetar-whats-new-story-step" role="listitem">
+            <span class="magnetar-whats-new-story-step-icon">${whatsNewIconSvg(step.icon)}</span>
+            <span>${escapeHtml(step.label)}</span>
+          </div>
+          ${index < steps.length - 1 ? '<span class="magnetar-whats-new-story-connector" aria-hidden="true"><span></span></span>' : ''}
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function buildWhatsNewStory(feature) {
+    let content = '';
+    if (feature.id === 'sync') {
+      content = `
+        ${buildWhatsNewStoryFlow([
+          { icon: 'extension', label: t('whatsNewStepExtension') },
+          { icon: 'lock', label: t('whatsNewStepEncryptedSync') },
+          { icon: 'phone', label: t('whatsNewStepMobile') }
+        ])}
+        <div class="magnetar-whats-new-story-tags" role="list" aria-label="${escapeAttr(t('whatsNewSyncDataLabel'))}">
+          ${['whatsNewDataSaved', 'whatsNewDataHistory', 'whatsNewDataFolders', 'whatsNewDataReview'].map(key => `<span role="listitem">${escapeHtml(t(key))}</span>`).join('')}
         </div>
-        <span class="magnetar-whats-new-copy">${escapeHtml(feature.summary)}</span>
-        <button type="button" class="magnetar-whats-new-learn" data-whats-new-feature="${escapeAttr(feature.id)}">Learn more</button>
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewSyncPrivacy'))}</p>
+      `;
+    } else if (feature.id === 'folder') {
+      content = `
+        ${buildWhatsNewStoryFlow([
+          { icon: 'phone', label: t('whatsNewFolderStepAndroid') },
+          { icon: 'sync', label: t('whatsNewFolderStepExtension') },
+          { icon: 'folder', label: t('whatsNewFolderStepBoth') }
+        ], 'magnetar-whats-new-folder-flow')}
+        <div class="magnetar-whats-new-folder-swatches" aria-hidden="true"><span></span><span></span><span></span></div>
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewFolderPrivacy'))}</p>
+      `;
+    } else if (feature.id === 'phone') {
+      content = `
+        ${buildWhatsNewStoryFlow([
+          { icon: 'extension', label: t('whatsNewSendStepDetect') },
+          { icon: 'item', label: t('whatsNewSendStepSend') },
+          { icon: 'phone', label: t('whatsNewSendStepReview') }
+        ], 'magnetar-whats-new-travel-flow')}
+      `;
+    } else if (feature.id === 'lock') {
+      content = `
+        ${buildWhatsNewStoryFlow([
+          { icon: 'box', label: t('whatsNewAirlockStepItem') },
+          { icon: 'lock', label: t('whatsNewAirlockStepEnabled') },
+          { icon: 'check', label: t('whatsNewAirlockStepSaved') }
+        ])}
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewAirlockNote'))}</p>
+        <p class="magnetar-whats-new-story-subnote">${escapeHtml(t('whatsNewAirlockCopy'))}</p>
+      `;
+    } else if (feature.id === 'green') {
+      content = `
+        <div class="magnetar-whats-new-green-controls" role="list">
+          ${[
+            ['sync', 'whatsNewGreenSyncMobile'],
+            ['phone', 'whatsNewGreenSendMobile'],
+            ['check', 'whatsNewGreenConnected'],
+            ['folder', 'whatsNewGreenFolderSync']
+          ].map(([icon, key]) => `<span role="listitem">${whatsNewIconSvg(icon)}${escapeHtml(t(key))}</span>`).join('')}
+        </div>
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewGreenNote'))}</p>
+      `;
+    } else {
+      content = `
+        ${buildWhatsNewStoryFlow([
+          { icon: 'phone', label: t('whatsNewQrStepOpen') },
+          { icon: 'qr', label: t('whatsNewQrStepScan') },
+          { icon: 'check', label: t('whatsNewQrStepPaired') }
+        ], 'magnetar-whats-new-qr-flow')}
+        <div class="magnetar-whats-new-story-assurances">
+          <span>${escapeHtml(t('whatsNewQrNoAccount'))}</span>
+          <span>${escapeHtml(t('whatsNewQrCredentials'))}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="magnetar-whats-new-story-surface">
+        ${content}
+      </div>
+    `;
+  }
+
+  function buildWhatsNewCard(feature) {
+    const title = t(feature.titleKey);
+    const teaser = t(feature.teaserKey);
+    const buttonId = `magnetar-whats-new-button-${feature.id}`;
+    return `
+      <article class="magnetar-whats-new-card magnetar-whats-new-card-${escapeAttr(feature.icon)}" data-whats-new-card="${escapeAttr(feature.id)}">
+        <button type="button" class="magnetar-whats-new-tile" id="${buttonId}" data-whats-new-feature="${escapeAttr(feature.id)}" aria-expanded="false" aria-controls="magnetar-whats-new-viewer">
+          <span class="magnetar-whats-new-icon">${whatsNewIconSvg(feature.icon)}</span>
+          <span class="magnetar-whats-new-tile-copy">
+            <strong class="magnetar-whats-new-card-title">${escapeHtml(title)}</strong>
+            <span class="magnetar-whats-new-copy">${escapeHtml(teaser)}</span>
+          </span>
+          <span class="magnetar-whats-new-indicator">${chevronDownIconSvg()}</span>
+        </button>
       </article>
     `;
   }
 
-  function buildWhatsNewDetail(feature) {
+  function buildWhatsNewViewerContent(feature) {
     return `
-      <div class="magnetar-whats-new-detail-card magnetar-whats-new-card-${escapeAttr(feature.icon)}">
-        <div class="magnetar-whats-new-detail-head">
-          <span class="magnetar-whats-new-icon">${whatsNewIconSvg(feature.icon)}</span>
-          <span class="magnetar-whats-new-pill">${escapeHtml(feature.pill)}</span>
-          <strong>${escapeHtml(feature.title)}</strong>
-          <button type="button" class="magnetar-whats-new-detail-close" data-whats-new-detail-close aria-label="Close feature detail">${closeIconSvg()}</button>
-        </div>
-        <p>${escapeHtml(feature.detail)}</p>
+      <div class="magnetar-whats-new-viewer-head">
+        <span class="magnetar-whats-new-icon">${whatsNewIconSvg(feature.icon)}</span>
+        <span class="magnetar-whats-new-viewer-copy">
+          <strong>${escapeHtml(t(feature.titleKey))}</strong>
+          <span>${escapeHtml(t(feature.teaserKey))}</span>
+        </span>
+        <button type="button" class="magnetar-whats-new-story-collapse" data-whats-new-collapse="${escapeAttr(feature.id)}" title="${escapeAttr(t('whatsNewCollapse'))}" aria-label="${escapeAttr(t('whatsNewCollapse'))}">
+          ${chevronDownIconSvg()}
+        </button>
+      </div>
+      <div class="magnetar-whats-new-story-inner">
+        ${buildWhatsNewStory(feature)}
       </div>
     `;
   }
@@ -3922,21 +4116,24 @@
       <div class="magnetar-expanded-inner magnetar-whats-new-panel" id="magnetar-whats-new-panel">
         <div class="magnetar-whats-new-panel-head">
           <div class="magnetar-whats-new-header">
-            <span class="magnetar-whats-new-kicker">Magnetar 2.2</span>
-            <h2 id="magnetar-whats-new-title">What's new in Magnetar 2.2</h2>
-            <p>A cleaner way to sync, organise and protect your Magnetar items.</p>
+            <span class="magnetar-whats-new-kicker">${escapeHtml(t('whatsNewKicker'))}</span>
+            <h2 id="magnetar-whats-new-title">${escapeHtml(t('whatsNewTitle'))}</h2>
+            <p>${escapeHtml(t('whatsNewIntro'))}</p>
           </div>
-          <button type="button" class="magnetar-whats-new-close" data-whats-new-close aria-label="Close What's new">${closeIconSvg()}</button>
+          <button type="button" class="magnetar-whats-new-close" data-whats-new-close aria-label="${escapeAttr(t('whatsNewClose'))}">${closeIconSvg()}</button>
         </div>
-        <div class="magnetar-whats-new-grid">
+        <div class="magnetar-whats-new-grid" aria-label="${escapeAttr(t('whatsNewHighlightsLabel'))}">
           ${WHATS_NEW_FEATURES.map(buildWhatsNewCard).join('')}
         </div>
-        <div class="magnetar-whats-new-detail" data-whats-new-detail hidden></div>
-        <div class="magnetar-whats-new-privacy">Provider keys and client passwords stay local.</div>
+        <div class="magnetar-whats-new-viewer" id="magnetar-whats-new-viewer" data-whats-new-viewer aria-hidden="true" inert>
+          <div class="magnetar-whats-new-viewer-clip">
+            <div class="magnetar-whats-new-viewer-stage" data-whats-new-viewer-stage role="region" aria-live="polite" tabindex="-1"></div>
+          </div>
+        </div>
         <div class="magnetar-whats-new-actions">
-          <button type="button" class="magnetar-btn magnetar-whats-new-primary" data-whats-new-start>Start using Magnetar</button>
-          <button type="button" class="magnetar-btn magnetar-whats-new-secondary" data-whats-new-sync>Open Sync</button>
-          <button type="button" class="magnetar-whats-new-later" data-whats-new-later>Maybe later</button>
+          <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-primary" data-whats-new-sync>${escapeHtml(t('whatsNewOpenSync'))}</button>
+          <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-secondary" data-whats-new-start>${escapeHtml(t('whatsNewStart'))}</button>
+          <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-tertiary" data-whats-new-later>${escapeHtml(t('whatsNewLater'))}</button>
         </div>
       </div>
     `;
@@ -3964,38 +4161,94 @@
     root.querySelector('[data-whats-new-close]')?.addEventListener('click', closeTour);
     root.querySelector('[data-whats-new-start]')?.addEventListener('click', closeTour);
     root.querySelector('[data-whats-new-later]')?.addEventListener('click', closeTour);
-    const detailHost = root.querySelector('[data-whats-new-detail]');
-    root.querySelectorAll('[data-whats-new-feature]').forEach((button) => {
-      button.addEventListener('click', () => {
-        if (!detailHost) return;
-        const feature = getWhatsNewFeature(button.dataset.whatsNewFeature || 'sync');
-        detailHost.innerHTML = buildWhatsNewDetail(feature);
-        detailHost.hidden = false;
-        detailHost.classList.remove('magnetar-whats-new-detail-open');
-        void detailHost.offsetWidth;
-        detailHost.classList.add('magnetar-whats-new-detail-open');
-        detailHost.querySelector('[data-whats-new-detail-close]')?.addEventListener('click', () => {
-          detailHost.hidden = true;
-          detailHost.classList.remove('magnetar-whats-new-detail-open');
-          detailHost.innerHTML = '';
-        });
-        requestAnimationFrame(() => {
-          const scroller = detailHost.closest('.magnetar-expanded-section');
-          if (!scroller) {
-            detailHost.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
-            return;
-          }
-          const detailRect = detailHost.getBoundingClientRect();
-          const scrollRect = scroller.getBoundingClientRect();
-          const bottomOverflow = detailRect.bottom - scrollRect.bottom + 12;
-          const topOverflow = detailRect.top - scrollRect.top - 8;
-          if (bottomOverflow > 0) {
-            scroller.scrollBy({ top: bottomOverflow, behavior: 'smooth' });
-          } else if (topOverflow < 0) {
-            scroller.scrollBy({ top: topOverflow, behavior: 'smooth' });
-          }
-        });
+    const cards = [...root.querySelectorAll('[data-whats-new-card]')];
+    const viewer = root.querySelector('[data-whats-new-viewer]');
+    const viewerClip = viewer?.querySelector('.magnetar-whats-new-viewer-clip');
+    const viewerStage = viewer?.querySelector('[data-whats-new-viewer-stage]');
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    let activeFeature = '';
+    let viewerHeightTimer = 0;
+
+    const bindViewerCollapse = () => {
+      viewerStage?.querySelector('[data-whats-new-collapse]')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setActiveFeature('', { returnFocus: true });
       });
+    };
+
+    const renderViewer = (feature, wasOpen) => {
+      if (!viewerStage || !viewerClip) return;
+      window.clearTimeout(viewerHeightTimer);
+      const currentHeight = viewerClip.getBoundingClientRect().height;
+      if (wasOpen && !prefersReducedMotion) viewerClip.style.height = `${currentHeight}px`;
+      viewerStage.classList.remove('magnetar-whats-new-viewer-stage-entering');
+      viewerStage.innerHTML = buildWhatsNewViewerContent(feature);
+      viewerStage.setAttribute('aria-labelledby', `magnetar-whats-new-button-${feature.id}`);
+      bindViewerCollapse();
+      const nextHeight = viewerStage.scrollHeight;
+      void viewerStage.offsetWidth;
+      viewerStage.classList.add('magnetar-whats-new-viewer-stage-entering');
+      if (wasOpen && !prefersReducedMotion) {
+        requestAnimationFrame(() => {
+          viewerClip.style.height = `${nextHeight}px`;
+          viewerHeightTimer = window.setTimeout(() => {
+            viewerClip.style.height = '';
+          }, 460);
+        });
+      } else {
+        viewerClip.style.height = '';
+      }
+    };
+
+    const setActiveFeature = (nextFeature, { returnFocus = false, focusStory = false } = {}) => {
+      const previousFeature = activeFeature;
+      const wasOpen = Boolean(activeFeature);
+      activeFeature = nextFeature || '';
+      cards.forEach((card) => {
+        const featureId = card.dataset.whatsNewCard || '';
+        const expanded = featureId === activeFeature;
+        const button = card.querySelector('[data-whats-new-feature]');
+        card.classList.toggle('magnetar-whats-new-card-active', expanded);
+        button?.setAttribute('aria-expanded', String(expanded));
+      });
+
+      viewer?.classList.toggle('magnetar-whats-new-viewer-active', Boolean(activeFeature));
+      viewer?.setAttribute('aria-hidden', String(!activeFeature));
+      if (viewer) viewer.inert = !activeFeature;
+
+      if (returnFocus && previousFeature) {
+        root.querySelector(`[data-whats-new-feature="${CSS.escape(previousFeature)}"]`)?.focus();
+      }
+      if (!activeFeature) {
+        window.clearTimeout(viewerHeightTimer);
+        if (viewerClip) viewerClip.style.height = '';
+        return;
+      }
+
+      renderViewer(getWhatsNewFeature(activeFeature), wasOpen);
+      if (focusStory) viewerStage?.focus({ preventScroll: true });
+    };
+
+    root.querySelectorAll('[data-whats-new-feature]').forEach((button) => {
+      button.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') button.dataset.whatsNewKeyboardActivation = 'true';
+      });
+      button.addEventListener('click', (event) => {
+        const featureId = button.dataset.whatsNewFeature || getWhatsNewFeature('sync').id;
+        const focusStory = button.dataset.whatsNewKeyboardActivation === 'true' || event.detail === 0;
+        delete button.dataset.whatsNewKeyboardActivation;
+        setActiveFeature(activeFeature === featureId ? '' : featureId, { focusStory });
+      });
+    });
+    root.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (activeFeature) {
+        setActiveFeature('', { returnFocus: true });
+      } else {
+        closeTour();
+      }
     });
     root.querySelector('[data-whats-new-sync]')?.addEventListener('click', async (e) => {
       e.preventDefault();
@@ -4289,7 +4542,7 @@
         const metaStr = [seedStr, sizeStr].filter(Boolean).join(' � ');
         return `
           <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
-            <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${inHistory ? 'disabled' : ''} ${!inHistory && selectedHashes.has(m.hash) ? 'checked' : ''}>
+            <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${selectedHashes.has(m.hash) ? 'checked' : ''}>
             ${showCache ? `<span class="magnetar-batch-cache-dot magnetar-cache-loading" id="magnetar-bcd-${origIdx}"></span>` : ''}
             <span class="magnetar-batch-name" title="${name}">${truncName}</span>
             ${metaStr ? `<span class="magnetar-batch-meta">${metaStr}</span>` : ''}
@@ -4556,7 +4809,7 @@
       }
       const syncSettings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
       if (!isUsableSyncSettings(syncSettings)) {
-        await openSyncPanelWithNotice('Pair Magnetar Mobile to use Send to mobile. Send selected batch items straight to your phone\'s Review queue.');
+        await openSyncPanelWithNotice(t('syncNoticePairForBatchReview'));
         return;
       }
       const original = sendMobileBtn.textContent || 'Send to mobile';
@@ -4670,11 +4923,9 @@
         const idx = parseInt(cb.dataset.index);
         const row = panel.querySelector(`.magnetar-batch-row[data-index="${idx}"]`);
         if (row && row.classList.contains('magnetar-batch-done')) {
-          cb.disabled = true;
           cb.checked = false;
-        } else {
-          cb.disabled = false;
         }
+        cb.disabled = false;
       });
       updateCount();
       await persistBatchSession();

@@ -7,12 +7,10 @@
     "message": "Detect magnet links and send them to your preferred download client. Built-in popup blocker included.",
     "description": "Extension description for store listings"
   },
-
   "appTagline": {
     "message": "Grab torrents, send them anywhere.",
     "description": "Tagline shown in settings header"
   },
-
   "sendLabelLocal": {
     "message": "Open in Client",
     "description": "Send button label for local torrent client mode"
@@ -61,7 +59,6 @@
     "message": "AllDebrid",
     "description": "Batch send button label for AllDebrid"
   },
-
   "unknownTorrent": {
     "message": "Unknown torrent",
     "description": "Fallback name when torrent name cannot be determined"
@@ -128,7 +125,6 @@
     "message": "Retry",
     "description": "Button label after send failure"
   },
-
   "batchTorrentsDetected": {
     "message": "$COUNT$ torrents detected",
     "description": "Batch panel header showing count",
@@ -219,7 +215,6 @@
       }
     }
   },
-
   "shareEmail": {
     "message": "Email",
     "description": "Share menu: email option"
@@ -244,7 +239,6 @@
     "message": "Check out this torrent",
     "description": "Default email subject when sharing"
   },
-
   "popupSettingsTitle": {
     "message": "Settings",
     "description": "Tooltip for settings gear icon in popup"
@@ -297,7 +291,6 @@
     "message": "No torrent hash detected",
     "description": "Popup status when no hash detected"
   },
-
   "settingsTitle": {
     "message": "Magnetar — Settings",
     "description": "Settings page title"
@@ -306,7 +299,6 @@
     "message": "Support Magnetar",
     "description": "BMC link tooltip"
   },
-
   "sectionDownloadMode": {
     "message": "Download Mode",
     "description": "Settings section heading"
@@ -363,7 +355,6 @@
     "message": "Cloud downloading",
     "description": "AllDebrid mode card description"
   },
-
   "credsNoConfig": {
     "message": "No configuration needed. Magnetar will fire magnet links to your system's default torrent client.",
     "description": "Local mode credentials note"
@@ -462,7 +453,6 @@
     "message": "Testing…",
     "description": "Button label while testing credentials"
   },
-
   "sectionDetection": {
     "message": "Detection & Banner",
     "description": "Settings section heading"
@@ -523,8 +513,7 @@
     "message": "Bottom of page",
     "description": "Banner position option"
   },
-
-    "interfaceModeLabel": {
+  "interfaceModeLabel": {
     "message": "Interface mode",
     "description": "Interface mode setting label"
   },
@@ -540,7 +529,7 @@
     "message": "Advanced",
     "description": "Advanced interface mode option"
   },
-"sectionShield": {
+  "sectionShield": {
     "message": "Magnetar Shield",
     "description": "Shield settings section heading"
   },
@@ -564,7 +553,6 @@
     "message": "Export",
     "description": "Export shield list button"
   },
-
   "sectionHistory": {
     "message": "Download History",
     "description": "History section heading"
@@ -611,7 +599,6 @@
     "message": "Clear all download history? This cannot be undone.",
     "description": "Confirm dialog for clearing history"
   },
-
   "sectionCustomSites": {
     "message": "Custom Sites",
     "description": "Custom sites section heading"
@@ -672,7 +659,6 @@
     "message": "Export",
     "description": "Export custom sites button"
   },
-
   "sectionAdvanced": {
     "message": "Advanced",
     "description": "Advanced section heading"
@@ -693,12 +679,10 @@
     "message": "Reset all Magnetar settings to defaults? This cannot be undone.",
     "description": "Confirm dialog for resetting settings"
   },
-
   "invalidJsonFile": {
     "message": "Invalid JSON file",
     "description": "Alert when imported file is not valid JSON"
   },
-
   "contextMenuBlock": {
     "message": "Block this site with Magnetar",
     "description": "Context menu item to block current site"
@@ -707,7 +691,6 @@
     "message": "Unblock this site",
     "description": "Context menu item to unblock current site"
   },
-
   "footerGitHub": {
     "message": "GitHub",
     "description": "Footer link text"
@@ -865,5 +848,495 @@
   "obFinish": {
     "message": "Start using Magnetar →",
     "description": "Onboarding finish button"
+  },
+  "whatsNewOpenLabel": {
+    "message": "What's new",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewKicker": {
+    "message": "Magnetar 2.2",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewTitle": {
+    "message": "What's new in Magnetar 2.2",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewIntro": {
+    "message": "Your extension and phone now work together.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewClose": {
+    "message": "Close What's new",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewHighlightsLabel": {
+    "message": "Magnetar 2.2 feature stories",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewCollapse": {
+    "message": "Collapse feature story",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewStart": {
+    "message": "Start using Magnetar",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewOpenSync": {
+    "message": "Open Sync",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewLater": {
+    "message": "Maybe later",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSyncTitle": {
+    "message": "Sync with mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSyncTeaser": {
+    "message": "Keep Saved, History and folders together.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFoldersTitle": {
+    "message": "Organised everywhere",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFoldersTeaser": {
+    "message": "Your Magnetar folders follow you.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSendTitle": {
+    "message": "Send to mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSendTeaser": {
+    "message": "Move a find to your phone in seconds.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockTitle": {
+    "message": "TorBox Airlock",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockTeaser": {
+    "message": "Protect supported TorBox items.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenTitle": {
+    "message": "Follow the green",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenTeaser": {
+    "message": "Green shows connected Magnetar features.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrTitle": {
+    "message": "Pair privately",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrTeaser": {
+    "message": "Scan once and connect your devices.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewStepExtension": {
+    "message": "Extension",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewStepEncryptedSync": {
+    "message": "Private encrypted sync",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewStepMobile": {
+    "message": "Magnetar Mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSyncDataLabel": {
+    "message": "Data kept in step",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewDataSaved": {
+    "message": "Saved",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewDataHistory": {
+    "message": "History",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewDataFolders": {
+    "message": "Organised folders",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewDataReview": {
+    "message": "Review queue",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSyncPrivacy": {
+    "message": "Provider keys and passwords stay local.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFolderStepAndroid": {
+    "message": "Create on Android",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFolderStepExtension": {
+    "message": "Appears in the extension",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFolderStepBoth": {
+    "message": "Organised on both",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewFolderPrivacy": {
+    "message": "Provider files are never moved or renamed.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSendStepDetect": {
+    "message": "Detect in the browser",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSendStepSend": {
+    "message": "Send to mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewSendStepReview": {
+    "message": "Android Review",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockStepItem": {
+    "message": "Supported TorBox item",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockStepEnabled": {
+    "message": "Airlock enabled",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockStepSaved": {
+    "message": "State saved in TorBox",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockNote": {
+    "message": "Airlock is TorBox state, controlled through your TorBox API.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewAirlockCopy": {
+    "message": "Magnetar does not create a separate copy.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenSyncMobile": {
+    "message": "Sync mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenSendMobile": {
+    "message": "Send to mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenConnected": {
+    "message": "Connected",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenFolderSync": {
+    "message": "Folder sync",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewGreenNote": {
+    "message": "Soft green highlights actions connected to Magnetar Mobile and Sync.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrStepOpen": {
+    "message": "Open Magnetar Mobile",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrStepScan": {
+    "message": "Scan the private QR",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrStepPaired": {
+    "message": "Devices paired",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrNoAccount": {
+    "message": "No Magnetar account required.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "whatsNewQrCredentials": {
+    "message": "Provider credentials are not synced.",
+    "description": "Magnetar 2.2 What's New panel"
+  },
+  "syncPanelTitle": {
+    "message": "MAGNETAR SYNC"
+  },
+  "syncPairMobileTitle": {
+    "message": "Pair Magnetar Mobile"
+  },
+  "syncScanMobileTitle": {
+    "message": "Scan with Magnetar Mobile"
+  },
+  "syncBackToPairing": {
+    "message": "Back to pairing overview"
+  },
+  "syncBack": {
+    "message": "Back"
+  },
+  "syncConnectedAutoBody": {
+    "message": "Auto sync is keeping Magnetar metadata in step."
+  },
+  "syncStatusReady": {
+    "message": "Ready to pair"
+  },
+  "syncStatusWaiting": {
+    "message": "Waiting for QR scan"
+  },
+  "syncStatusConnected": {
+    "message": "Connected"
+  },
+  "syncPairIntro": {
+    "message": "Pair once to keep Saved, History, Review and Organised folders in step between your extension and Android."
+  },
+  "syncPairingStepsLabel": {
+    "message": "Pairing steps"
+  },
+  "syncStepOne": {
+    "message": "Step 1"
+  },
+  "syncStepTwo": {
+    "message": "Step 2"
+  },
+  "syncStepThree": {
+    "message": "Step 3"
+  },
+  "syncOpenAppTitle": {
+    "message": "Open Magnetar Mobile"
+  },
+  "syncOpenAppRoute": {
+    "message": "Settings, then Sync, then Scan QR"
+  },
+  "syncRouteSettings": {
+    "message": "Settings"
+  },
+  "syncRouteSync": {
+    "message": "Sync"
+  },
+  "syncRouteScanQr": {
+    "message": "Scan QR"
+  },
+  "syncGetMobileAction": {
+    "message": "Get Magnetar Mobile"
+  },
+  "syncScanCodeTitle": {
+    "message": "Scan this code"
+  },
+  "syncScanCodeHelp": {
+    "message": "Scan with Magnetar Mobile to pair this extension."
+  },
+  "syncCodePrivate": {
+    "message": "Private pairing code"
+  },
+  "syncCreateQrHelp": {
+    "message": "Create a private QR code for Magnetar Mobile."
+  },
+  "syncCreateQrAction": {
+    "message": "Show QR code"
+  },
+  "syncHideQrAction": {
+    "message": "Hide QR code"
+  },
+  "syncCreatingQr": {
+    "message": "Creating QR..."
+  },
+  "syncQrUnavailable": {
+    "message": "QR unavailable. Use the pairing code instead."
+  },
+  "syncQrDescription": {
+    "message": "Private Magnetar Mobile pairing QR code"
+  },
+  "syncPairAnotherWayTitle": {
+    "message": "Pair another way"
+  },
+  "syncPairAnotherWayHelp": {
+    "message": "Use this if the QR cannot be scanned."
+  },
+  "syncCreateFirstHelp": {
+    "message": "Create the QR first. A pairing-code option will then appear here."
+  },
+  "syncCopyPairingCode": {
+    "message": "Copy pairing code"
+  },
+  "syncCopySecurity": {
+    "message": "Only share this private code with your own phone."
+  },
+  "syncCopySuccess": {
+    "message": "Pairing code copied"
+  },
+  "syncCopyUnavailable": {
+    "message": "Pairing code is unavailable"
+  },
+  "syncCopyError": {
+    "message": "Could not copy pairing code"
+  },
+  "syncConnectedTitle": {
+    "message": "Connected to Magnetar Mobile"
+  },
+  "syncConnectedBody": {
+    "message": "Your extension and Android are ready to stay in step."
+  },
+  "syncDeviceLabel": {
+    "message": "Device"
+  },
+  "syncPairAnotherDevice": {
+    "message": "Pair another device"
+  },
+  "syncPairAnotherDeviceHelp": {
+    "message": "Scan this private code on another device you own."
+  },
+  "syncStatusHeading": {
+    "message": "Sync status and actions"
+  },
+  "syncAutomaticExplanation": {
+    "message": "Magnetar automatically syncs metadata after changes."
+  },
+  "syncStatusFactsLabel": {
+    "message": "Automatic sync status and last sync time"
+  },
+  "syncAutoSyncLabel": {
+    "message": "Auto sync"
+  },
+  "syncOn": {
+    "message": "On"
+  },
+  "syncOff": {
+    "message": "Off"
+  },
+  "syncLastSyncedLabel": {
+    "message": "Last synced"
+  },
+  "syncNotYet": {
+    "message": "Not yet"
+  },
+  "syncIncludedLabel": {
+    "message": "Synced Magnetar data"
+  },
+  "syncDataSaved": {
+    "message": "Saved"
+  },
+  "syncDataHistory": {
+    "message": "History"
+  },
+  "syncDataReview": {
+    "message": "Review"
+  },
+  "syncDataOrganised": {
+    "message": "Organised folders"
+  },
+  "syncManualActionsLabel": {
+    "message": "Manual sync actions"
+  },
+  "syncGetLatestAction": {
+    "message": "Get latest from mobile"
+  },
+  "syncGetLatestHelp": {
+    "message": "Bring the newest Magnetar changes into this extension."
+  },
+  "syncSendLatestAction": {
+    "message": "Send latest to mobile"
+  },
+  "syncSendLatestHelp": {
+    "message": "Send this extension's latest Magnetar changes to Android."
+  },
+  "syncPairBeforeActions": {
+    "message": "Pair Magnetar Mobile to use manual sync actions."
+  },
+  "syncPrivacyTitle": {
+    "message": "Encrypted Magnetar metadata only."
+  },
+  "syncPrivacyBody": {
+    "message": "Provider API keys, passwords and provider files stay on your devices."
+  },
+  "syncStartOver": {
+    "message": "Start over"
+  },
+  "syncStartOverHelp": {
+    "message": "Discard this code and create a new private pairing."
+  },
+  "syncDisconnect": {
+    "message": "Disconnect mobile"
+  },
+  "syncDisconnectHelp": {
+    "message": "Disconnect the currently paired device. You can pair again at any time."
+  },
+  "syncDisconnectConfirmTitle": {
+    "message": "Disconnect Magnetar Mobile?"
+  },
+  "syncDisconnectConfirmMessage": {
+    "message": "You can pair again at any time."
+  },
+  "syncDisconnectConfirm": {
+    "message": "Disconnect"
+  },
+  "syncStartOverConfirmTitle": {
+    "message": "Discard this pairing code?"
+  },
+  "syncStartOverConfirmMessage": {
+    "message": "You can create a new private code afterward."
+  },
+  "syncStartOverConfirm": {
+    "message": "Discard code"
+  },
+  "syncDisconnectedNotice": {
+    "message": "Magnetar Mobile disconnected from this browser."
+  },
+  "syncPairingDiscardedNotice": {
+    "message": "Pairing code discarded."
+  },
+  "syncPairingReadyNotice": {
+    "message": "Pairing code ready. Scan it in Magnetar Mobile."
+  },
+  "syncCreateError": {
+    "message": "Could not create pairing code"
+  },
+  "syncGettingLatest": {
+    "message": "Getting latest..."
+  },
+  "syncGettingLatestStatus": {
+    "message": "Getting the latest Magnetar changes from mobile..."
+  },
+  "syncNothingYet": {
+    "message": "Nothing synced yet"
+  },
+  "syncGetLatestError": {
+    "message": "Could not get the latest changes."
+  },
+  "syncFailed": {
+    "message": "Sync failed"
+  },
+  "syncCouldNotSync": {
+    "message": "Could not sync"
+  },
+  "syncSendingLatest": {
+    "message": "Sending latest..."
+  },
+  "syncSendingLatestStatus": {
+    "message": "Encrypting and sending the latest Magnetar changes..."
+  },
+  "syncSendLatestError": {
+    "message": "Could not send the latest changes."
+  },
+  "syncNoticePairForReview": {
+    "message": "Pair Magnetar Mobile to send items to your phone's Review queue."
+  },
+  "syncNoticePairForFolders": {
+    "message": "Pair Magnetar Mobile to bring Organised folders into the extension."
+  },
+  "syncNoticePairForBatchReview": {
+    "message": "Pair Magnetar Mobile to send selected items to your phone's Review queue."
+  },
+  "syncResultCounts": {
+    "message": "Synced $SAVED$ saved and $HISTORY$ history items",
+    "placeholders": {
+      "saved": {
+        "content": "$1"
+      },
+      "history": {
+        "content": "$2"
+      }
+    }
   }
 }
