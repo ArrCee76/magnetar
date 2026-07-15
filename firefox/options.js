@@ -917,6 +917,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Section 6: Appearance / Theme
   // ═══════════════════════════════════════════════════════════════════════
 
+  const interfaceStyleInputs = [...document.querySelectorAll('input[name=interface-style]')];
+  const setInterfaceStyleValue = value => {
+    const normalised = value === 'glass' ? 'glass' : 'classic';
+    interfaceStyleInputs.forEach(input => {
+      input.checked = input.value === normalised;
+    });
+  };
+  setInterfaceStyleValue(settings?.preferences?.interfaceStyle);
+
+  interfaceStyleInputs.forEach(input => {
+    input.addEventListener('change', async () => {
+      if (!input.checked) return;
+      await MAGNETAR_API.runtime.sendMessage({
+        type: 'set-interface-style',
+        interfaceStyle: input.value
+      });
+    });
+  });
+
   const themeSelect = document.getElementById('theme-select');
   const themeRes = await MAGNETAR_API.runtime.sendMessage({ type: 'get-theme' });
   const currentTheme = themeRes?.theme === 'dark' ? 'dark' : 'light';
@@ -943,6 +962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       themeSelect.value = newTheme;
       applyTheme(newTheme);
     }
+    setInterfaceStyleValue(prefs.interfaceStyle);
     if (Object.prototype.hasOwnProperty.call(prefs, 'batchMode')) {
       batchMode.checked = prefs.batchMode === true;
       updateBannerInterlock();

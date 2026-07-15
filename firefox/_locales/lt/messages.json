@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Sąsajos stilius"
+  },
+  "interfaceStyleClassic": {
+    "message": "Klasikinis"
+  },
+  "interfaceStyleGlass": {
+    "message": "Stiklas"
+  },
+  "switchToGlassInterface": {
+    "message": "Perjungti į stiklinę sąsają"
+  },
+  "switchToClassicInterface": {
+    "message": "Perjungti į klasikinę sąsają"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Stiklinė sąsaja įjungta"
+  },
+  "classicInterfaceRestored": {
+    "message": "Klasikinė sąsaja atkurta"
   }
 }

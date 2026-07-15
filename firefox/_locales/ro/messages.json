@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Stil interfață"
+  },
+  "interfaceStyleClassic": {
+    "message": "Clasic"
+  },
+  "interfaceStyleGlass": {
+    "message": "Sticlă"
+  },
+  "switchToGlassInterface": {
+    "message": "Comută la interfața din sticlă"
+  },
+  "switchToClassicInterface": {
+    "message": "Comută la interfața clasică"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Interfața din sticlă a fost activată"
+  },
+  "classicInterfaceRestored": {
+    "message": "Interfața clasică a fost restaurată"
   }
 }

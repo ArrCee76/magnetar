@@ -1338,5 +1338,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Interface Style"
+  },
+  "interfaceStyleClassic": {
+    "message": "Classic"
+  },
+  "interfaceStyleGlass": {
+    "message": "Glass"
+  },
+  "switchToGlassInterface": {
+    "message": "Switch to Glass interface"
+  },
+  "switchToClassicInterface": {
+    "message": "Switch to Classic interface"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Glass interface enabled"
+  },
+  "classicInterfaceRestored": {
+    "message": "Classic interface restored"
   }
 }

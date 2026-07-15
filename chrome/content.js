@@ -160,6 +160,10 @@
     return value === 'advanced' ? 'advanced' : 'standard';
   }
 
+  function normaliseInterfaceStyle(value) {
+    return value === 'glass' ? 'glass' : 'classic';
+  }
+
   function normaliseDomain(domain) {
     domain = String(domain || '').trim().toLowerCase().replace(/^www\./, '');
     if (!domain || /[\s/?#:*\\]/.test(domain)) return '';
@@ -216,6 +220,7 @@
   let theme = settings?.preferences?.theme === 'dark' ? 'dark' : 'light';
   let interfaceMode = normaliseInterfaceMode(settings?.preferences?.interfaceMode);
   let isAdvancedMode = interfaceMode === 'advanced';
+  let interfaceStyle = normaliseInterfaceStyle(settings?.preferences?.interfaceStyle);
   let pinBanner = (await safeRuntimeMessage({ type: 'get-tab-pin' }, { pinned: false }))?.pinned === true;
   const currentDomain = normaliseDomain(window.location.hostname);
   const siteIgnored = isIgnoredDomain(currentDomain, settings?.ignoredWebsites || []);
@@ -358,6 +363,10 @@
     banner.querySelector('#magnetar-banner-settings')?.addEventListener('click', (e) => {
       e.preventDefault();
       safeRuntimeMessage({ type: 'open-options' });
+    });
+    banner.querySelector('#magnetar-interface-style')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleInterfaceStyle();
     });
     banner.querySelector('#magnetar-mobile-link')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -595,6 +604,47 @@
     if (!root) return;
     root.dataset.interfaceMode = interfaceMode;
     root.classList.toggle('magnetar-advanced-mode', isAdvancedMode);
+    applyInterfaceStyle(root);
+  }
+
+  function applyInterfaceStyle(root) {
+    if (!root) return;
+    const glassEnabled = interfaceStyle === 'glass';
+    root.dataset.interfaceStyle = interfaceStyle;
+    root.classList.toggle('magnetar-glass-mode', glassEnabled);
+    updateInterfaceStyleToggle(root);
+  }
+
+  function updateInterfaceStyleToggle(root = document) {
+    const glassEnabled = interfaceStyle === 'glass';
+    const label = t(glassEnabled ? 'switchToClassicInterface' : 'switchToGlassInterface');
+    root.querySelectorAll('.magnetar-interface-style-toggle').forEach(btn => {
+      btn.classList.toggle('magnetar-interface-style-toggle-active', glassEnabled);
+      btn.setAttribute('aria-pressed', String(glassEnabled));
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
+    });
+  }
+
+  function applyInterfaceStyleToLiveUi() {
+    applyInterfaceStyle(document.getElementById('magnetar-banner'));
+    applyInterfaceStyle(document.getElementById('magnetar-batch'));
+  }
+
+  async function toggleInterfaceStyle() {
+    const previous = interfaceStyle;
+    interfaceStyle = interfaceStyle === 'glass' ? 'classic' : 'glass';
+    applyInterfaceStyleToLiveUi();
+    const response = await safeRuntimeMessage({
+      type: 'set-interface-style',
+      interfaceStyle
+    }, { ok: false });
+    if (!response?.ok) {
+      interfaceStyle = previous;
+      applyInterfaceStyleToLiveUi();
+      return;
+    }
+    showToast(t(interfaceStyle === 'glass' ? 'glassInterfaceEnabled' : 'classicInterfaceRestored'));
   }
 
   function prepareTitleReveal(root = document) {
@@ -807,6 +857,12 @@
     if (newTheme && newTheme !== theme) {
       theme = newTheme;
       applyTheme(theme);
+    }
+
+    const newInterfaceStyle = normaliseInterfaceStyle(prefs.interfaceStyle);
+    if (newInterfaceStyle !== interfaceStyle) {
+      interfaceStyle = newInterfaceStyle;
+      applyInterfaceStyleToLiveUi();
     }
 
     const newInterfaceMode = normaliseInterfaceMode(changes.magnetar.newValue?.preferences?.interfaceMode);
@@ -3888,6 +3944,10 @@
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 1 1 4.83 2.39c-.95.7-1.42 1.11-1.42 2.61"/><path d="M12 17h.01"/></svg>';
   }
 
+  function interfaceStyleIconSvg() {
+    return '<svg viewBox=0,0,24,24 fill=none stroke=currentColor stroke-width=1.8 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d=M12,2a10,10,0,0,0,0,20c1.1,0,2-.9,2-2,0-.5-.2-1-.6-1.4-.4-.4-.6-.9-.6-1.4,0-1.1.9-2,2-2H17a5,5,0,0,0,5-5C22,5.7,17.5,2,12,2Z/><circle cx=8 cy=8 r=1 fill=currentColor stroke=none/><circle cx=13 cy=6 r=1 fill=currentColor stroke=none/><circle cx=17 cy=9 r=1 fill=currentColor stroke=none/><circle cx=7 cy=13 r=1 fill=currentColor stroke=none/></svg>';
+  }
+
   function chevronDownIconSvg() {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
   }
@@ -4283,6 +4343,8 @@
     const sendLabel = getSendLabel(mode);
     const showCache = !isManualShell && mode !== 'local';
     const isFull = isManualShell || bannerStyle === 'full';
+    const glassEnabled = interfaceStyle === 'glass';
+    const interfaceStyleToggleLabel = escapeAttr(t(glassEnabled ? 'switchToClassicInterface' : 'switchToGlassInterface'));
     const mobileButton = `
       <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-mobile" id="magnetar-mobile-link" title="Get Magnetar Mobile" aria-label="Get Magnetar Mobile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5" ry="2.5"/><path d="M10 18h4"/><path d="M9 6h6"/></svg>
@@ -4376,7 +4438,7 @@
               <svg class="magnetar-theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
               <svg class="magnetar-theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             </button>
-            <a class="magnetar-btn magnetar-btn-icon magnetar-btn-help" href="${HELP_URL}" target="_blank" rel="noopener" title="Help" aria-label="Help">${helpIconSvg()}</a>
+            <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-interface-style-toggle ${glassEnabled ? 'magnetar-interface-style-toggle-active' : ''}" id="magnetar-interface-style" title="${interfaceStyleToggleLabel}" aria-label="${interfaceStyleToggleLabel}" aria-pressed="${String(glassEnabled)}">${interfaceStyleIconSvg()}</button>
             <button class="magnetar-btn magnetar-btn-icon magnetar-btn-settings" id="magnetar-banner-settings" title="Settings" aria-label="Settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
@@ -5856,9 +5918,51 @@
     if (!banner) return;
     setExpandedPanel('');
     updateExpandedToggleState();
+    const useGlassExit = banner.classList.contains('magnetar-advanced-mode')
+      && banner.classList.contains('magnetar-glass-mode')
+      && typeof banner.animate === 'function';
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    const exitsDownward = banner.classList.contains('magnetar-bottom');
     banner.classList.remove('magnetar-visible');
     banner.classList.add('magnetar-hiding');
-    setTimeout(() => banner.remove(), 300);
+    if (useGlassExit) {
+      banner.getAnimations().forEach(animation => animation.cancel());
+      const duration = reduceMotion ? 150 : 280;
+      const exitAnimation = banner.animate(
+        reduceMotion
+          ? [
+              { transform: 'translateX(-50%) translateY(0)', opacity: 1 },
+              { transform: `translateX(-50%) translateY(${exitsDownward ? '4px' : '-4px'})`, opacity: 0 }
+            ]
+          : [
+              {
+                transform: 'perspective(850px) translateX(-50%) translateY(0) rotateX(0deg)',
+                opacity: 1,
+                boxShadow: 'var(--mg-glass-shadow), inset 0 1px 0 var(--mg-glass-highlight), inset 0 -1px 0 rgba(137, 105, 68, 0.07)'
+              },
+              {
+                transform: `perspective(850px) translateX(-50%) translateY(${exitsDownward ? '6px' : '-6px'}) rotateX(${exitsDownward ? '38deg' : '-38deg'})`,
+                opacity: 0,
+                boxShadow: '0 3px 10px rgba(30, 26, 20, 0.08)'
+              }
+            ],
+        {
+          duration,
+          easing: reduceMotion ? 'ease' : 'cubic-bezier(0.4, 0, 0.2, 1)',
+          fill: 'forwards'
+        }
+      );
+      let removed = false;
+      const removeAfterExit = () => {
+        if (removed) return;
+        removed = true;
+        banner.remove();
+      };
+      exitAnimation.finished.then(removeAfterExit, removeAfterExit);
+      setTimeout(removeAfterExit, duration + 80);
+    } else {
+      setTimeout(() => banner.remove(), 300);
+    }
     if (result?.hash) {
       if (!window._magnetarDismissed) window._magnetarDismissed = [];
       if (!window._magnetarDismissed.includes(result.hash)) {

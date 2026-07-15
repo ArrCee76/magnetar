@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Стиль интерфейса"
+  },
+  "interfaceStyleClassic": {
+    "message": "Классический"
+  },
+  "interfaceStyleGlass": {
+    "message": "Стекло"
+  },
+  "switchToGlassInterface": {
+    "message": "Переключиться на стеклянный интерфейс"
+  },
+  "switchToClassicInterface": {
+    "message": "Переключиться на классический интерфейс"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Стеклянный интерфейс включён"
+  },
+  "classicInterfaceRestored": {
+    "message": "Классический интерфейс восстановлен"
   }
 }

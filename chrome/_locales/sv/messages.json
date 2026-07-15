@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Gränssnittsstil"
+  },
+  "interfaceStyleClassic": {
+    "message": "Klassisk"
+  },
+  "interfaceStyleGlass": {
+    "message": "Glas"
+  },
+  "switchToGlassInterface": {
+    "message": "Byt till glasgränssnittet"
+  },
+  "switchToClassicInterface": {
+    "message": "Byt till det klassiska gränssnittet"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Glasgränssnitt aktiverat"
+  },
+  "classicInterfaceRestored": {
+    "message": "Klassiskt gränssnitt återställt"
   }
 }

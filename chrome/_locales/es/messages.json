@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Estilo de interfaz"
+  },
+  "interfaceStyleClassic": {
+    "message": "Clásico"
+  },
+  "interfaceStyleGlass": {
+    "message": "Cristal"
+  },
+  "switchToGlassInterface": {
+    "message": "Cambiar a la interfaz de cristal"
+  },
+  "switchToClassicInterface": {
+    "message": "Cambiar a la interfaz clásica"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Interfaz de cristal activada"
+  },
+  "classicInterfaceRestored": {
+    "message": "Interfaz clásica restaurada"
   }
 }

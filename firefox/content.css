@@ -8128,3 +8128,826 @@
     transform: none !important;
   }
 }
+
+#magnetar-banner .magnetar-interface-style-toggle.magnetar-interface-style-toggle-active {
+  color: var(--mg-ink) !important;
+  background: rgba(205, 216, 198, 0.52) !important;
+  border-color: var(--mg-ink) !important;
+  box-shadow: inset 0 0 0 1px rgba(118, 158, 118, 0.12);
+}
+
+#magnetar-banner.magnetar-theme-dark .magnetar-interface-style-toggle.magnetar-interface-style-toggle-active {
+  background: rgba(101, 115, 98, 0.34) !important;
+  border-color: var(--mg-ink) !important;
+}
+
+/* ========================================================================
+   OPTIONAL STYLE: Expert toolbar glass pass (Chrome and Firefox)
+
+   Deliberately isolated behind .magnetar-advanced-mode.magnetar-glass-mode
+   so Classic and simplified toolbars remain unchanged. Remove this section
+   to remove the optional Glass interface style.
+   ======================================================================== */
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode {
+  --mg-toolbar-control: 30px;
+  --mg-toolbar-icon-control: 30px;
+  --mg-toolbar-radius: 9px;
+  --mg-toolbar-primary-width: 104px;
+  --mg-glass-base: rgba(246, 240, 228, 0.92);
+  --mg-glass-panel: rgba(235, 226, 207, 0.82);
+  --mg-glass-control: rgba(244, 235, 217, 0.84);
+  --mg-glass-control-hover: rgba(255, 249, 237, 0.9);
+  --mg-glass-control-pressed: rgba(226, 215, 193, 0.9);
+  --mg-glass-card: rgba(247, 241, 229, 0.84);
+  --mg-glass-shell-outline: #1e1a14;
+  --mg-glass-control-outline: rgba(255, 255, 255, 0.96);
+  --mg-primary-outline: rgba(255, 255, 255, 0.98);
+  --mg-disabled-outline: rgba(255, 255, 255, 0.62);
+  --mg-logo-outline: #1e1a14;
+  --mg-reflection-outline: linear-gradient(
+    135deg,
+    #aaa59d 0%,
+    #aaa59d 18%,
+    #817b72 38%,
+    #5f5950 61%,
+    #39342d 79%,
+    #15120e 100%
+  );
+  --mg-glass-structural-outline: rgba(30, 26, 20, 0.46);
+  --mg-glass-outline-soft: rgba(30, 26, 20, 0.24);
+  --mg-glass-highlight: rgba(255, 255, 255, 0.88);
+  --mg-glass-blur: 12px;
+  --mg-glass-saturation: 112%;
+  --mg-logo-highlight: rgba(255, 255, 255, 0.38);
+  --mg-wave-blue: rgba(137, 105, 68, 0.08);
+  --mg-wave-beige: rgba(137, 105, 68, 0.16);
+  --mg-wave-green: rgba(69, 116, 87, 0.1);
+  --mg-liquid-sheen: linear-gradient(145deg, rgba(255, 255, 255, 0.38), rgba(222, 207, 181, 0.14) 44%, rgba(255, 255, 255, 0.03) 72%);
+  --mg-toolbar-wash: linear-gradient(110deg, rgba(196, 177, 145, 0.74), rgba(228, 214, 190, 0.7) 46%, rgba(252, 247, 237, 0.9) 100%);
+  --mg-neutral-liquid: linear-gradient(145deg, rgba(255, 252, 245, 0.88), rgba(230, 226, 214, 0.9) 52%, rgba(235, 224, 204, 0.92));
+  --mg-neutral-liquid-hover: linear-gradient(145deg, rgba(255, 255, 250, 0.98), rgba(250, 242, 226, 0.96) 50%, rgba(239, 226, 203, 0.98));
+  --mg-neutral-liquid-pressed: linear-gradient(145deg, rgba(218, 225, 222, 0.92), rgba(223, 213, 194, 0.96));
+  --mg-primary-liquid: linear-gradient(180deg, #454039 0%, #1e1a14 62%, #15120e 100%);
+  --mg-mobile-liquid: linear-gradient(145deg, rgba(245, 247, 239, 0.94), rgba(225, 232, 216, 0.9) 52%, rgba(207, 219, 199, 0.86));
+  --mg-mobile-liquid-hover: linear-gradient(145deg, rgba(251, 249, 241, 0.98), rgba(235, 237, 222, 0.95) 52%, rgba(219, 226, 208, 0.92));
+  --mg-mobile-liquid-pressed: linear-gradient(145deg, rgba(209, 218, 201, 0.92), rgba(190, 204, 183, 0.9));
+  --mg-mobile-glass: rgba(205, 218, 199, 0.66);
+  --mg-mobile-glass-hover: rgba(195, 211, 190, 0.72);
+  --mg-mobile-glass-pressed: rgba(181, 200, 176, 0.78);
+  --mg-focus-ring: rgba(54, 91, 70, 0.44);
+  --mg-glass-shadow: 0 10px 26px rgba(30, 26, 20, 0.14),
+                     0 2px 6px rgba(30, 26, 20, 0.09);
+  --mg-glass-shadow-expanded: 0 16px 38px rgba(30, 26, 20, 0.18),
+                              0 3px 8px rgba(30, 26, 20, 0.09);
+  --mg-control-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+                       0 1px 2px rgba(30, 26, 20, 0.05);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-theme-dark,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-theme-dark {
+  --mg-glass-base: rgba(27, 25, 22, 0.96);
+  --mg-glass-panel: rgba(39, 36, 31, 0.9);
+  --mg-glass-control: rgba(48, 44, 37, 0.9);
+  --mg-glass-control-hover: rgba(65, 59, 49, 0.9);
+  --mg-glass-control-pressed: rgba(35, 32, 27, 0.9);
+  --mg-glass-card: rgba(43, 40, 34, 0.9);
+  --mg-glass-shell-outline: rgba(245, 241, 232, 0.78);
+  --mg-glass-control-outline: rgba(245, 241, 232, 0.66);
+  --mg-primary-outline: var(--mg-ink);
+  --mg-disabled-outline: var(--mg-glass-structural-outline);
+  --mg-logo-outline: var(--mg-glass-control-outline);
+  --mg-glass-structural-outline: rgba(245, 241, 232, 0.38);
+  --mg-glass-outline-soft: rgba(245, 241, 232, 0.24);
+  --mg-glass-highlight: rgba(237, 230, 216, 0.13);
+  --mg-glass-blur: 10px;
+  --mg-glass-saturation: 108%;
+  --mg-logo-highlight: rgba(237, 230, 216, 0.08);
+  --mg-wave-blue: rgba(93, 152, 184, 0.14);
+  --mg-wave-beige: rgba(126, 96, 64, 0.12);
+  --mg-wave-green: rgba(76, 126, 94, 0.13);
+  --mg-liquid-sheen: linear-gradient(145deg, rgba(204, 233, 247, 0.08), rgba(100, 157, 187, 0.06) 44%, rgba(255, 255, 255, 0.01) 72%);
+  --mg-toolbar-wash: linear-gradient(110deg, rgba(49, 44, 37, 0.84), rgba(28, 26, 22, 0.9) 100%);
+  --mg-neutral-liquid: linear-gradient(145deg, rgba(67, 67, 62, 0.82), rgba(51, 49, 43, 0.9) 48%, rgba(42, 38, 32, 0.94));
+  --mg-neutral-liquid-hover: linear-gradient(145deg, rgba(78, 82, 78, 0.9), rgba(62, 61, 54, 0.94) 50%, rgba(54, 49, 40, 0.96));
+  --mg-neutral-liquid-pressed: linear-gradient(145deg, rgba(44, 49, 47, 0.94), rgba(31, 29, 25, 0.97));
+  --mg-primary-liquid: linear-gradient(180deg, #fffdf6 0%, #e4dece 66%, #cfc7b7 100%);
+  --mg-mobile-liquid: linear-gradient(145deg, rgba(105, 120, 103, 0.4), rgba(73, 88, 72, 0.54) 55%, rgba(49, 59, 49, 0.68));
+  --mg-mobile-liquid-hover: linear-gradient(145deg, rgba(119, 133, 116, 0.48), rgba(84, 100, 82, 0.62) 55%, rgba(57, 69, 57, 0.72));
+  --mg-mobile-liquid-pressed: linear-gradient(145deg, rgba(72, 87, 71, 0.7), rgba(43, 52, 43, 0.8));
+  --mg-mobile-glass: rgba(91, 107, 90, 0.4);
+  --mg-mobile-glass-hover: rgba(101, 118, 99, 0.48);
+  --mg-mobile-glass-pressed: rgba(78, 94, 77, 0.54);
+  --mg-focus-ring: rgba(155, 202, 172, 0.5);
+  --mg-glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.46),
+                     0 2px 8px rgba(0, 0, 0, 0.34);
+  --mg-glass-shadow-expanded: 0 22px 58px rgba(0, 0, 0, 0.54),
+                              0 3px 10px rgba(0, 0, 0, 0.38);
+  --mg-control-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+                       0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-logo,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-logo {
+  box-shadow: 0 0 0 1.5px var(--mg-logo-outline);
+}
+
+/* One translucent toolbar layer, anchored by quiet blue/beige/green fields. */
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode {
+  --mg-fold-angle: -38deg;
+  --mg-fold-y: -6px;
+  perspective: 850px;
+  background:
+    var(--mg-liquid-sheen),
+    radial-gradient(circle at 4% 20%, var(--mg-logo-highlight), transparent 24%),
+    radial-gradient(ellipse 52% 135% at 2% -30%, var(--mg-wave-blue), transparent 70%),
+    radial-gradient(ellipse 48% 125% at 58% -42%, var(--mg-wave-beige), transparent 68%),
+    radial-gradient(ellipse 50% 125% at 104% -16%, var(--mg-wave-green), transparent 67%),
+    var(--mg-toolbar-wash),
+    var(--mg-glass-base);
+  border-width: 2px;
+  border-color: var(--mg-glass-shell-outline);
+  border-radius: 16px;
+  box-shadow: 0 5px 14px rgba(30, 26, 20, 0.12),
+              inset 0 1px 0 var(--mg-glass-highlight),
+              inset 0 -1px 0 rgba(137, 105, 68, 0.07);
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity, box-shadow;
+  transform: perspective(850px) translateX(-50%) translateY(var(--mg-fold-y)) rotateX(var(--mg-fold-angle));
+  opacity: 0.56;
+  pointer-events: none;
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 190ms ease,
+              box-shadow 280ms ease,
+              max-width 260ms ease;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-bottom {
+  --mg-fold-angle: 38deg;
+  --mg-fold-y: 6px;
+  transform-origin: 50% 100%;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-visible {
+  transform: perspective(850px) translateX(-50%) translateY(0) rotateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: var(--mg-glass-shadow),
+              inset 0 1px 0 var(--mg-glass-highlight),
+              inset 0 -1px 0 rgba(137, 105, 68, 0.07);
+  animation: magnetar-expert-fold-down 300ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-hiding {
+  transform: perspective(850px) translateX(-50%) translateY(var(--mg-fold-y)) rotateX(var(--mg-fold-angle));
+  opacity: 0;
+  pointer-events: none;
+  animation: magnetar-expert-fold-up 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  box-shadow: 0 3px 10px rgba(30, 26, 20, 0.08);
+  transition-duration: 280ms, 180ms, 260ms, 220ms;
+}
+
+@keyframes magnetar-expert-fold-down {
+  from {
+    transform: perspective(850px) translateX(-50%) translateY(var(--mg-fold-y)) rotateX(var(--mg-fold-angle));
+    opacity: 0.56;
+    box-shadow: 0 3px 9px rgba(30, 26, 20, 0.08),
+                inset 0 1px 0 var(--mg-glass-highlight);
+  }
+  to {
+    transform: perspective(850px) translateX(-50%) translateY(0) rotateX(0);
+    opacity: 1;
+    box-shadow: var(--mg-glass-shadow),
+                inset 0 1px 0 var(--mg-glass-highlight),
+                inset 0 -1px 0 rgba(137, 105, 68, 0.07);
+  }
+}
+
+@keyframes magnetar-expert-fold-up {
+  from {
+    transform: perspective(850px) translateX(-50%) translateY(0) rotateX(0);
+    opacity: 1;
+    box-shadow: var(--mg-glass-shadow),
+                inset 0 1px 0 var(--mg-glass-highlight),
+                inset 0 -1px 0 rgba(137, 105, 68, 0.07);
+  }
+  to {
+    transform: perspective(850px) translateX(-50%) translateY(var(--mg-fold-y)) rotateX(var(--mg-fold-angle));
+    opacity: 0;
+    box-shadow: 0 3px 10px rgba(30, 26, 20, 0.08);
+  }
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-expanded {
+  box-shadow: var(--mg-glass-shadow-expanded);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode::before {
+  left: 18px;
+  right: 18px;
+  background: linear-gradient(90deg, transparent, var(--mg-glass-structural-outline), transparent);
+  opacity: 0.62;
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode {
+    -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(var(--mg-glass-saturation));
+    backdrop-filter: blur(var(--mg-glass-blur)) saturate(var(--mg-glass-saturation));
+  }
+}
+
+/* Compact, consistent control hierarchy. */
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn {
+  min-height: var(--mg-toolbar-control);
+  padding: 5px 10px;
+  border-width: 2px;
+  border-radius: var(--mg-toolbar-radius);
+  transition: background-color 150ms ease, border-color 150ms ease,
+              color 150ms ease, box-shadow 150ms ease, opacity 150ms ease,
+              transform 90ms ease;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary {
+  border-width: 2px;
+  border-color: var(--mg-primary-outline);
+  background: var(--mg-primary-liquid);
+  color: var(--mg-bg) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 248, 232, 0.24),
+              0 2px 7px rgba(30, 26, 20, 0.18);
+  font-weight: 620;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary:hover:not(:disabled) {
+  background: var(--mg-primary-liquid);
+  border-color: var(--mg-primary-outline);
+  filter: brightness(1.12) saturate(1.04);
+  box-shadow: inset 0 1px 0 rgba(255, 248, 232, 0.34),
+              0 4px 11px rgba(91, 72, 49, 0.22);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary:active:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--mg-primary-liquid);
+  filter: brightness(0.88);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.24);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-secondary,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-provider,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-downloads,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-provider,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-sort,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-send-mobile {
+  border-width: 2px !important;
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-neutral-liquid);
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 4px rgba(91, 72, 49, 0.1);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle:hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle:hover {
+  background: var(--mg-neutral-liquid-hover);
+  border-color: var(--mg-glass-control-outline) !important;
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 5px rgba(30, 26, 20, 0.13);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle:active,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle:active {
+  transform: translateY(1px);
+  background: var(--mg-neutral-liquid-pressed);
+  box-shadow: inset 0 2px 3px rgba(30, 26, 20, 0.16);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-secondary:hover:not(:disabled),
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-provider:hover,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-downloads:hover,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-open-provider:hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-sort:hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-send-mobile:hover:not(:disabled) {
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-neutral-liquid-hover) !important;
+  color: var(--mg-ink) !important;
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 5px rgba(30, 26, 20, 0.13);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-btn-secondary, .magnetar-open-provider, .magnetar-open-downloads, .magnetar-panel-send-target):active:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-open-provider, .magnetar-panel-send-target, .magnetar-batch-send-mobile):active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--mg-neutral-liquid-pressed) !important;
+  box-shadow: inset 0 2px 3px rgba(30, 26, 20, 0.16);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-icon,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-cancel,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-support-action,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-close,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-header-actions .magnetar-btn-icon,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target-toggle {
+  width: var(--mg-toolbar-icon-control);
+  height: var(--mg-toolbar-icon-control);
+  min-height: var(--mg-toolbar-icon-control);
+  padding: 0;
+  border-width: 2px !important;
+  border-color: var(--mg-glass-control-outline) !important;
+  border-radius: var(--mg-toolbar-radius);
+  background: var(--mg-neutral-liquid);
+  color: var(--mg-ink-2);
+  box-shadow: var(--mg-control-shadow);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-support-action {
+  border-radius: 50% !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-icon:hover:not(:disabled),
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-cancel:hover,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-support-action:hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-close:hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-header-actions .magnetar-btn-icon:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-panel-send-target-toggle:hover:not(:disabled) {
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-neutral-liquid-hover) !important;
+  color: var(--mg-ink) !important;
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 5px rgba(30, 26, 20, 0.14);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-toggle:active {
+  transform: translateY(1px);
+  background: var(--mg-mobile-liquid-pressed) !important;
+  box-shadow: inset 0 2px 3px rgba(30, 26, 20, 0.2);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-btn-mobile, .magnetar-btn-sync-pull, .magnetar-btn-sync, .magnetar-btn-app-review):active:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-btn-mobile, .magnetar-btn-sync-pull, .magnetar-batch-send-mobile):active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--mg-mobile-liquid-pressed) !important;
+  box-shadow: inset 0 2px 3px rgba(30, 26, 20, 0.2);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-btn-icon, .magnetar-btn-cancel, .magnetar-support-action):active:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-batch-close, .magnetar-btn-icon, .magnetar-panel-send-target-toggle):active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--mg-neutral-liquid-pressed) !important;
+  box-shadow: inset 0 2px 3px rgba(30, 26, 20, 0.18);
+}
+
+/* Mobile, Client and Sync remain a single muted-green action family. */
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-mobile,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-toggle,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync-pull,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-app-review,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-header-actions .magnetar-btn-mobile,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync-pull,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-send-mobile {
+  border-width: 2px !important;
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-mobile-liquid) !important;
+  color: var(--mg-ink) !important;
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-mobile:hover:not(:disabled),
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-toggle:hover,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-toggle.magnetar-client-mode-toggle-active,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync-pull:hover:not(:disabled),
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync:hover:not(:disabled),
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-app-review:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-header-actions .magnetar-btn-mobile:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-btn-sync-pull:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-send-mobile:hover:not(:disabled) {
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-mobile-liquid-hover) !important;
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 5px rgba(30, 26, 20, 0.14);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-toggle,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle {
+  min-height: var(--mg-toolbar-control);
+  padding: 3px 8px 3px 6px;
+  border-width: 2px !important;
+  border-color: var(--mg-glass-control-outline) !important;
+  background: var(--mg-neutral-liquid);
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 4px rgba(91, 72, 49, 0.1);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-client-mode-input:checked + .magnetar-client-mode-track,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-input:checked + .magnetar-batch-mode-track {
+  border-color: var(--mg-signal);
+  background: var(--mg-mobile-glass-hover);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(button, a, select, input, [tabindex]):focus-visible,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(button, a, select, input, [tabindex]):focus-visible,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(.magnetar-batch-mode-toggle, .magnetar-client-mode-toggle):has(input:focus-visible),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-mode-toggle:has(input:focus-visible) {
+  outline: 2px solid var(--mg-focus-ring) !important;
+  outline-offset: 2px;
+  box-shadow: var(--mg-control-shadow) !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(button, select):disabled,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(button, select):disabled {
+  opacity: 1;
+  border-color: var(--mg-disabled-outline) !important;
+  background: var(--mg-surface-2) !important;
+  color: var(--mg-ink-3) !important;
+  box-shadow: none !important;
+  filter: saturate(0.35);
+}
+
+/* Real light-mode gradient borders: fill is clipped inside the 2px border. */
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-support-action,
+  .magnetar-batch-mode-toggle,
+  .magnetar-client-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-open-downloads,
+  .magnetar-panel-send-target
+),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-batch-close,
+  .magnetar-panel-send-target-toggle,
+  .magnetar-batch-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-panel-send-target,
+  .magnetar-batch-sort,
+  .magnetar-batch-send-mobile
+) {
+  --mg-reflect-fill: var(--mg-neutral-liquid);
+  border-color: transparent !important;
+  background: var(--mg-reflect-fill) padding-box,
+              var(--mg-reflection-outline) border-box !important;
+  background-origin: border-box !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-support-action,
+  .magnetar-batch-mode-toggle,
+  .magnetar-client-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-open-downloads,
+  .magnetar-panel-send-target
+):hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-batch-close,
+  .magnetar-panel-send-target-toggle,
+  .magnetar-batch-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-panel-send-target,
+  .magnetar-batch-sort,
+  .magnetar-batch-send-mobile
+):hover {
+  --mg-reflect-fill: var(--mg-neutral-liquid-hover);
+  border-color: transparent !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary {
+  --mg-reflect-fill: var(--mg-primary-liquid);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary:hover:not(:disabled),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary:hover:not(:disabled) {
+  --mg-reflect-fill: var(--mg-primary-liquid);
+  border-color: transparent !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-client-mode-toggle,
+  .magnetar-btn-sync-pull,
+  .magnetar-btn-sync,
+  .magnetar-btn-app-review,
+  .magnetar-interface-style-toggle-active
+),
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-btn-sync-pull,
+  .magnetar-batch-send-mobile
+) {
+  --mg-reflect-fill: var(--mg-mobile-liquid);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-client-mode-toggle,
+  .magnetar-btn-sync-pull,
+  .magnetar-btn-sync,
+  .magnetar-btn-app-review,
+  .magnetar-interface-style-toggle-active
+):hover,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-btn-sync-pull,
+  .magnetar-batch-send-mobile
+):hover {
+  --mg-reflect-fill: var(--mg-mobile-liquid-hover);
+  border-color: transparent !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-support-action,
+  .magnetar-batch-mode-toggle,
+  .magnetar-client-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-open-downloads,
+  .magnetar-panel-send-target
+):active,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn,
+  .magnetar-batch-close,
+  .magnetar-panel-send-target-toggle,
+  .magnetar-batch-mode-toggle,
+  .magnetar-open-provider,
+  .magnetar-panel-send-target,
+  .magnetar-batch-sort,
+  .magnetar-batch-send-mobile
+):active {
+  --mg-reflect-fill: var(--mg-neutral-liquid-pressed);
+  border-color: transparent !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-client-mode-toggle,
+  .magnetar-btn-sync-pull,
+  .magnetar-btn-sync,
+  .magnetar-btn-app-review,
+  .magnetar-interface-style-toggle-active
+):active,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(
+  .magnetar-btn-mobile,
+  .magnetar-btn-sync-pull,
+  .magnetar-batch-send-mobile
+):active {
+  --mg-reflect-fill: var(--mg-mobile-liquid-pressed);
+  border-color: transparent !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary:active,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) .magnetar-btn-primary:active {
+  --mg-reflect-fill: var(--mg-primary-liquid);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(button, select):disabled,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode:not(.magnetar-theme-dark) :is(button, select):disabled {
+  --mg-reflect-fill: var(--mg-surface-2);
+}
+
+/* Attached panels use one shell layer; only meaningful content groups lift. */
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-expanded-section {
+  border-top-color: transparent;
+  background:
+    var(--mg-liquid-sheen),
+    radial-gradient(ellipse 62% 48% at 0% 0%, var(--mg-wave-blue), transparent 72%),
+    radial-gradient(ellipse 58% 46% at 100% 18%, var(--mg-wave-green), transparent 74%),
+    linear-gradient(150deg, var(--mg-glass-panel), rgba(255, 255, 255, 0));
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-expanded .magnetar-expanded-section {
+  border-top-width: 2px;
+  border-top-color: var(--mg-glass-structural-outline);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-expanded-inner {
+  padding: 14px 15px 16px;
+  opacity: 0;
+  transform: translateY(-7px) scale(0.994);
+  transform-origin: 50% 0;
+  transition: opacity 190ms ease 40ms,
+              transform 260ms cubic-bezier(0.2, 0.78, 0.24, 1) 20ms;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-expanded .magnetar-expanded-inner {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-whats-new-panel,
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-sync-panel {
+  border-top: 0;
+  background: transparent;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-sync-state h2 {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(
+  .magnetar-detection-details,
+  .magnetar-stat,
+  .magnetar-saved,
+  .magnetar-activity,
+  .magnetar-provider-files,
+  .magnetar-sync-overview-stage,
+  .magnetar-sync-connected-heading,
+  .magnetar-sync-qr-wrap,
+  .magnetar-whats-new-viewer-stage
+) {
+  border-color: var(--mg-glass-structural-outline);
+  background-color: var(--mg-glass-card);
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 3px 10px rgba(30, 26, 20, 0.055);
+}
+
+#magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode :is(
+  .magnetar-organised-folder-card,
+  .magnetar-organised-open-folder,
+  .magnetar-organised-open-item,
+  .magnetar-whats-new-card
+) {
+  border-color: var(--mg-glass-structural-outline);
+  box-shadow: inset 0 1px 0 var(--mg-glass-highlight),
+              0 2px 7px rgba(30, 26, 20, 0.045);
+}
+
+/* Batch is a separate expert shell, with the same restrained surface family. */
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode {
+  --mg-batch-fold-angle: -34deg;
+  --mg-batch-fold-y: -5px;
+  perspective: 850px;
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transform: perspective(850px) translateY(var(--mg-batch-fold-y)) rotateX(var(--mg-batch-fold-angle));
+  opacity: 0.58;
+  pointer-events: none;
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 180ms ease;
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-bottom {
+  --mg-batch-fold-angle: 34deg;
+  --mg-batch-fold-y: 5px;
+  transform-origin: 50% 100%;
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-visible {
+  transform: perspective(850px) translateY(0) rotateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  animation: magnetar-expert-batch-fold-down 300ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-hiding {
+  transform: perspective(850px) translateY(var(--mg-batch-fold-y)) rotateX(var(--mg-batch-fold-angle));
+  opacity: 0;
+  pointer-events: none;
+  animation: magnetar-expert-batch-fold-up 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  transition-duration: 280ms, 180ms;
+}
+
+@keyframes magnetar-expert-batch-fold-down {
+  from {
+    transform: perspective(850px) translateY(var(--mg-batch-fold-y)) rotateX(var(--mg-batch-fold-angle));
+    opacity: 0.58;
+  }
+  to {
+    transform: perspective(850px) translateY(0) rotateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes magnetar-expert-batch-fold-up {
+  from {
+    transform: perspective(850px) translateY(0) rotateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: perspective(850px) translateY(var(--mg-batch-fold-y)) rotateX(var(--mg-batch-fold-angle));
+    opacity: 0;
+  }
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-inner,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-drawer-inner {
+  background:
+    var(--mg-liquid-sheen),
+    radial-gradient(circle at 4% 16%, var(--mg-logo-highlight), transparent 24%),
+    radial-gradient(ellipse 60% 40% at 4% 0%, var(--mg-wave-blue), transparent 72%),
+    radial-gradient(ellipse 58% 46% at 100% 10%, var(--mg-wave-green), transparent 74%),
+    var(--mg-toolbar-wash),
+    var(--mg-glass-base);
+  border-width: 2px;
+  border-color: var(--mg-glass-shell-outline);
+  box-shadow: 0 5px 14px rgba(30, 26, 20, 0.12),
+              inset 0 1px 0 var(--mg-glass-highlight);
+  transition: box-shadow 280ms ease;
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-visible .magnetar-batch-inner,
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-visible .magnetar-batch-drawer-inner {
+  box-shadow: var(--mg-glass-shadow),
+              inset 0 1px 0 var(--mg-glass-highlight);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-inner,
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-drawer-inner {
+    -webkit-backdrop-filter: blur(var(--mg-glass-blur)) saturate(var(--mg-glass-saturation));
+    backdrop-filter: blur(var(--mg-glass-blur)) saturate(var(--mg-glass-saturation));
+  }
+}
+
+#magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode :is(
+  .magnetar-batch-toolbar,
+  .magnetar-batch-row,
+  .magnetar-stat,
+  .magnetar-saved,
+  .magnetar-activity
+) {
+  border-color: var(--mg-glass-structural-outline);
+}
+
+@media (max-width: 560px) {
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode,
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-inner,
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode .magnetar-batch-drawer-inner {
+    border-radius: 13px;
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-expanded-inner {
+    padding-inline: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode,
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-bottom,
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-hiding,
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-bottom.magnetar-hiding {
+    transform: translateX(-50%) translateY(-4px);
+    transition: opacity 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+    animation: none !important;
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-bottom,
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-bottom.magnetar-hiding {
+    transform: translateX(-50%) translateY(4px);
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-visible {
+    transform: translateX(-50%) translateY(0);
+    animation: none;
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode.magnetar-hiding {
+    opacity: 0;
+  }
+
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode,
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-hiding {
+    transform: translateY(-4px);
+    transition: opacity 150ms ease, transform 150ms ease;
+    animation: none !important;
+  }
+
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-bottom,
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-bottom.magnetar-batch-hiding {
+    transform: translateY(4px);
+  }
+
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-visible {
+    transform: translateY(0);
+    animation: none;
+  }
+
+  #magnetar-batch.magnetar-advanced-mode.magnetar-glass-mode.magnetar-batch-hiding {
+    opacity: 0;
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode .magnetar-expanded-inner {
+    transform: none;
+    transition: opacity 140ms ease;
+  }
+
+  #magnetar-banner.magnetar-advanced-mode.magnetar-glass-mode::before {
+    animation: none;
+  }
+}

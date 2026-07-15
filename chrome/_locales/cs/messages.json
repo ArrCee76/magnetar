@@ -1242,5 +1242,26 @@
         "content": "$2"
       }
     }
+  },
+  "interfaceStyle": {
+    "message": "Styl rozhraní"
+  },
+  "interfaceStyleClassic": {
+    "message": "Klasický"
+  },
+  "interfaceStyleGlass": {
+    "message": "Sklo"
+  },
+  "switchToGlassInterface": {
+    "message": "Přepnout na skleněné rozhraní"
+  },
+  "switchToClassicInterface": {
+    "message": "Přepnout na klasické rozhraní"
+  },
+  "glassInterfaceEnabled": {
+    "message": "Skleněné rozhraní zapnuto"
+  },
+  "classicInterfaceRestored": {
+    "message": "Klasické rozhraní obnoveno"
   }
 }

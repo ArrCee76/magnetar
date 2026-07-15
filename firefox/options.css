@@ -318,6 +318,59 @@ a:hover {
   flex-shrink: 0;
 }
 
+.interface-style-options {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--mg-border);
+  border-radius: 8px;
+  background: var(--mg-bg);
+}
+
+.interface-style-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.interface-style-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.interface-style-option span {
+  display: block;
+  min-width: 68px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--mg-ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: color 0.15s ease, background-color 0.15s ease,
+              border-color 0.15s ease;
+}
+
+.interface-style-option:hover span {
+  color: var(--mg-ink);
+  background: var(--mg-surface-2);
+}
+
+.interface-style-option input:checked + span {
+  color: var(--mg-ink);
+  border-color: var(--mg-border-mid);
+  background: rgba(118, 158, 118, 0.22);
+}
+
+.interface-style-option input:focus-visible + span {
+  outline: 2px solid var(--mg-ink);
+  outline-offset: 2px;
+}
+
 .field-select option {
   background: var(--mg-surface);
 }

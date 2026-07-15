@@ -85,6 +85,7 @@ const DEFAULT_SETTINGS = {
   ignoredWebsites: [],
   preferences: {
     theme: 'light',
+    interfaceStyle: 'classic',
     bannerPosition: 'top',
     bannerStyle: 'full',
     interfaceMode: 'advanced',
@@ -2370,6 +2371,14 @@ async function handleMessage(msg, sender) {
       const s = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
       s.preferences = s.preferences || {};
       s.preferences.theme = msg.theme;
+      await MAGNETAR_API.storage.sync.set({ magnetar: s });
+      return { ok: true };
+    }
+
+    case 'set-interface-style': {
+      const s = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
+      s.preferences = s.preferences || {};
+      s.preferences.interfaceStyle = msg.interfaceStyle === 'glass' ? 'glass' : 'classic';
       await MAGNETAR_API.storage.sync.set({ magnetar: s });
       return { ok: true };
     }
