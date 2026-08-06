@@ -6,6 +6,7 @@ const ProviderRealDebrid = {
   name: 'Real-Debrid',
   id: 'realdebrid',
   baseUrl: 'https://api.real-debrid.com/rest/1.0',
+  supportsUrlSend: false,
 
   _headers(apiKey) {
     return {
@@ -34,15 +35,19 @@ const ProviderRealDebrid = {
   },
 
   async sendMagnet(magnetUri, creds) {
+    const canonicalMagnet = String(magnetUri || '').trim();
+    if (!/^magnet:\?[^#]*\bxt=urn:btih:[a-f0-9]{40}(?:&|$)/i.test(canonicalMagnet)) {
+      return { success: false, code: 'SAVED_SEND_INVALID_PAYLOAD', error: 'This Saved item does not contain a valid magnet or torrent hash.' };
+    }
     try {
       const res = await magnetarFetch(`${this.baseUrl}/torrents/addMagnet`, {
         method: 'POST',
         headers: this._headers(creds.apiKey),
-        body: `magnet=${encodeURIComponent(magnetUri)}`
+        body: `magnet=${encodeURIComponent(canonicalMagnet)}`
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        return { success: false, error: data.error || `HTTP ${res.status}` };
+        return { success: false, adapterStatus: res.status, adapterCode: data.error_code || data.error || '', error: data.error || `HTTP ${res.status}` };
       }
       const data = await res.json();
 

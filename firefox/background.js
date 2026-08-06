@@ -17,10 +17,13 @@ if (typeof importScripts === 'function') {
     'lib/sync-crypto.js',
     'lib/sync-api.js',
     'lib/sync-storage.js',
+    'lib/sync-diagnostics.js',
     'lib/sync-data.js',
+    'lib/selfhost-sync.js',
     'lib/fetch-helper.js',
     'lib/shield.js',
     'lib/cache-store.js',
+    'lib/send-normalization.js',
     'lib/providers/local.js',
     'lib/providers/realdebrid.js',
     'lib/providers/rdtclient.js',
@@ -62,15 +65,484 @@ const providerDashboardUrls = {
 };
 
 const EXTENSION_OPENED_TAB_TTL = 45 * 1000;
-const SHIELD_PENDING_POPUP_TTL = 30 * 1000;
 const extensionOpenedTabs = new Map();
 const extensionOpenedUrlGuards = new Map();
-const shieldPendingPopupTabs = new Map();
 let shieldStateCache = { enabled: true, blockedDomains: [] };
 let configuredProtectedDomains = [];
-const SAVED_HISTORY_SYNC_KEYS = new Set(['magnetar-saved', 'magnetar-history']);
+const SAVED_HISTORY_SYNC_KEYS = new Set(['magnetar-saved', 'magnetar-history', 'magnetar-organised-folders']);
 const APP_REVIEW_SEND_COUNT_KEY = 'magnetar-app-review-send-count';
 const ORGANISED_FOLDER_COLOR_IDS = new Set(['default', 'sage', 'blue', 'lavender', 'rose', 'peach', 'yellow', 'grey']);
+const SELF_HOSTED_STORAGE_KEY = 'magnetar-self-hosted';
+const SYNC_COORDINATOR_CHECKPOINT_KEY = 'magnetar-sync-coordinator-checkpoint';
+const HARMONY_SYNC_ALARM = 'magnetar-three-way-harmony';
+const HARMONY_SYNC_PERIOD_MINUTES = 1;
+let selfHostedSyncInFlight = null;
+let hardSyncAllInFlight = null;
+let canonicalSyncTail = Promise.resolve();
+let harmonySyncTimer = null;
+
+MagnetarSyncDiagnostics?.lifecycle?.('background-startup', { adapter: 'extension', manifestVersion: MAGNETAR_API.runtime.getManifest?.().version || '' });
+
+function runCanonicalExclusive(operation) {
+  const run = canonicalSyncTail.then(operation, operation);
+  canonicalSyncTail = run.catch(() => undefined);
+  return run;
+}
+
+async function writeCanonicalStorage(update, context = {}) {
+  if (globalThis.MagnetarSyncDiagnostics?.write) return MagnetarSyncDiagnostics.write(MAGNETAR_API.storage.local, update, context);
+  await MAGNETAR_API.storage.local.set(update);
+  return { skipped: false };
+}
+
+MagnetarSyncData?.setCanonicalRunner?.(runCanonicalExclusive);
+
+function normaliseSelfHostedUrl(value) {
+  const raw = String(value || '').trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(raw)) throw new Error('Server URL must start with http:// or https://.');
+  const url = new URL(raw);
+  if (url.username || url.password) throw new Error('Do not put credentials in the server URL.');
+  return url.toString().replace(/\/$/, '');
+}
+
+async function getSelfHostedConnection() {
+  const data = await MAGNETAR_API.storage.local.get([SELF_HOSTED_STORAGE_KEY]);
+  return data[SELF_HOSTED_STORAGE_KEY] || null;
+}
+
+function sanitiseSelfHostedSourceUrl(value) {
+  const candidate = String(value ?? '').trim();
+  if (!candidate) return undefined;
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? candidate : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function sanitiseSelfHostedItemMetadata(item = {}) {
+  const { sourceUrl: rawSourceUrl, url: legacyUrl, ...metadata } = item;
+  const sourceUrl = sanitiseSelfHostedSourceUrl(rawSourceUrl ?? legacyUrl);
+  for (const key of ['stableKey', 'displayName', 'hash', 'magnet', 'id', 'errorSummary']) {
+    if (metadata[key] === null || metadata[key] === undefined) delete metadata[key];
+  }
+  if ('updatedAt' in metadata) {
+    const rawUpdatedAt = metadata.updatedAt;
+    const updatedAt = typeof rawUpdatedAt === 'number' ? rawUpdatedAt : Date.parse(String(rawUpdatedAt || ''));
+    if (Number.isFinite(updatedAt)) metadata.updatedAt = Math.trunc(updatedAt);
+    else delete metadata.updatedAt;
+  }
+  return sourceUrl ? { ...metadata, sourceUrl } : metadata;
+}
+
+async function selfHostedRequest(path, options = {}, allowUnpaired = false) {
+  const connection = options.connection || await getSelfHostedConnection();
+  if (!connection?.serverUrl) throw new Error('Connect My Magnetar first.');
+  if (!allowUnpaired && !connection.token) throw new Error('My Magnetar is not connected.');
+  let response;
+  try {
+    response = await fetch(`${connection.serverUrl}${path}`, {
+      method: options.method || 'GET',
+      headers: {
+        ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(!allowUnpaired && connection.token ? { Authorization: `Bearer ${connection.token}` } : {})
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(15000)
+    });
+  } catch (error) {
+    throw new Error(error?.name === 'TimeoutError'
+      ? 'My Magnetar did not respond in time.'
+      : 'My Magnetar could not be reached.');
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = Array.isArray(data.details) ? data.details[0] : null;
+    const safeDetail = detail?.path && detail?.message ? ` (${detail.path}: ${detail.message})` : '';
+    console.error('Magnetar: My Magnetar request rejected', {
+      path, status: response.status, error: data.error, code: data.code,
+      mutationType: data.mutationType, recordId: data.recordId,
+      conflictingRecordId: data.conflictingRecordId, conflictingName: data.conflictingName
+    });
+    const requestError = new Error(`${data.error || data.message || `My Magnetar request failed (HTTP ${response.status}).`}${safeDetail}`);
+    requestError.status = response.status;
+    requestError.payload = data;
+    requestError.code = data.code;
+    for (const key of ['mutationType', 'recordId', 'conflictingRecordId', 'conflictingName']) if (data[key] != null) requestError[key] = data[key];
+    throw requestError;
+  }
+  return data;
+}
+
+function selfHostedIntakeItem(item = {}) {
+  const magnet = String(item.magnet || item.magnetUri || '').trim();
+  const hash = String(item.hash || item.infoHash || '').trim();
+  const sourceUrl = sanitiseSelfHostedSourceUrl(item.sourceUrl ?? item.url);
+  return sanitiseSelfHostedItemMetadata({ value: magnet || hash || sourceUrl, displayName: String(item.title || item.name || '').trim() || undefined, sourceUrl, sourceDomain: String(item.sourceDomain || '').trim() || undefined, category: String(item.category || '').trim() || undefined, detectedAt: Number(item.addedAt || item.timestamp || Date.now()), idempotencyKey: String(item.idempotencyKey || `${hash || magnet || sourceUrl}:${Date.now()}`) });
+}
+
+async function synchroniseSelfHosted(connection, options) {
+  if (!globalThis.MagnetarSelfHostedSync) throw new Error('My Magnetar sync engine is unavailable.');
+  options = options || {};
+  const checkpointSchemaVersion = 4;
+  const cycleId = String(options.cycleId || `selfhost-${Date.now().toString(36)}`);
+  const trace = (stage, detail = {}) => console.info('Magnetar: My Magnetar sync trace', { cycleId, stage, ...detail });
+  const snapshotCounts = snapshot => ({ saved: (snapshot?.saved || []).length, folders: (snapshot?.folders || []).length, assignments: (snapshot?.folders || []).reduce((count, folder) => count + (folder.items || []).length, 0), history: (snapshot?.historyEvents || []).length });
+  const storageKeys = ['magnetar-saved', 'magnetar-history', 'magnetar-organised-folders'];
+  const localFromStorage = data => ({ saved: data['magnetar-saved'] || [], history: data['magnetar-history'] || [], folders: data['magnetar-organised-folders'] || {} });
+  const storageSignature = local => MagnetarSelfHostedSync.stableStringify(local);
+  const semanticStorageSignature = local => {
+    const canonical = MagnetarSelfHostedSync.canonicaliseReplica(local, {}, 0);
+    const stripRecordMetadata = records => Object.fromEntries(Object.entries(records || {}).sort(([left], [right]) => left.localeCompare(right)).map(([key, record]) => {
+      const next = { ...record };
+      delete next.updatedAt;
+      delete next.deletedAt;
+      delete next.sourceDevice;
+      return [key, next];
+    }));
+    const history = {};
+    for (const item of local.history || []) {
+      const record = {
+        stableKey: MagnetarSelfHostedSync.stableKey(item),
+        displayName: item.name || item.displayName || 'Sent item',
+        hash: item.hash || '',
+        magnet: item.magnet || item.magnetUri || '',
+        sourceUrl: item.sourceUrl || item.url || '',
+        provider: item.provider || item.providerId || item.target || '',
+        status: item.status === 'failed' ? 'failed' : 'succeeded',
+        errorSummary: item.errorSummary || '',
+        sendCount: Number(item.sendCount || 1)
+      };
+      const key = `${record.stableKey}|${record.provider}`;
+      if (!history[key] || MagnetarSelfHostedSync.stableStringify(record) > MagnetarSelfHostedSync.stableStringify(history[key])) history[key] = record;
+    }
+    return MagnetarSelfHostedSync.stableStringify({
+      saved: stripRecordMetadata(canonical.saved),
+      folders: stripRecordMetadata(canonical.folders),
+      assignments: stripRecordMetadata(canonical.assignments),
+      history
+    });
+  };
+  const notConverged = (serverCanonical, localCanonical, phase) => {
+    const detail = MagnetarSelfHostedSync.semanticDiff?.(serverCanonical, localCanonical, phase) || { code: 'SYNC_NOT_CONVERGED', entity: 'sync', id: 'replica', field: 'semanticState', local: '<different>', server: '<different>', phase };
+    const entityResults = MagnetarSelfHostedSync.semanticDiffs?.(serverCanonical, localCanonical, phase) || { sync: detail };
+    console.error('Magnetar: My Magnetar semantic convergence failed', { cycleId, ...detail, entityResults });
+    const message = detail.entity === 'folder' || detail.entity === 'assignment' ? 'Organised folders did not finish syncing.' : 'My Magnetar did not converge after concurrent changes.';
+    throw Object.assign(new Error(message), detail, { entityResults, cycleId });
+  };
+  let currentConnection = connection;
+  if (currentConnection.checkpoint && (!currentConnection.checkpoint.canonical || Number(currentConnection.checkpoint.schemaVersion || 0) < checkpointSchemaVersion)) {
+    currentConnection = { ...currentConnection, checkpoint: null };
+    trace('checkpoint-migrated', { fromVersion: Number(connection.checkpoint?.schemaVersion || 0), freshReplica: true, reason: 'canonical-checkpoint-upgrade' });
+  }
+  trace('background-cycle-started', { cursor: Number(currentConnection.cursor || 0), checkpointVersion: Number(currentConnection.checkpoint?.schemaVersion || 0) });
+  if (Number(currentConnection.apiVersion || 1) < 2 || !Array.isArray(currentConnection.capabilities) || !currentConnection.capabilities.includes('sync.mutations-v2')) {
+    const capabilities = await selfHostedRequest('/api/v1/capabilities', { connection: currentConnection });
+    if (Number(capabilities.apiVersion || 1) < 2 || !capabilities.capabilities?.includes('sync.mutations-v2')) throw new Error('Update My Magnetar before using safe bidirectional sync.');
+    currentConnection = { ...currentConnection, apiVersion: capabilities.apiVersion, schemaVersion: capabilities.schemaVersion, capabilities: capabilities.capabilities };
+  }
+  for (let conflictAttempt = 0; conflictAttempt < 4; conflictAttempt += 1) {
+    const pulled = await selfHostedRequest(`/api/v1/sync/changes?cursor=${Number(currentConnection.cursor || 0)}`, { connection: currentConnection });
+    trace('pull-completed', { attempt: conflictAttempt + 1, cursor: Number(pulled.cursor || 0), counts: snapshotCounts(pulled.snapshot) });
+    const data = await MAGNETAR_API.storage.local.get(storageKeys);
+    const local = localFromStorage(data);
+    const initialStorageSignature = storageSignature(local);
+    const reconciled = MagnetarSelfHostedSync.reconcile({ local, serverSnapshot: pulled.snapshot || {}, checkpoint: currentConnection.checkpoint || null });
+    trace('merge-completed', { attempt: conflictAttempt + 1, mutationCount: reconciled.mutations.length, mutationTypes: reconciled.mutations.map(mutation => mutation.type) });
+    const mutationId = MagnetarSelfHostedSync.mutationId(currentConnection.deviceId || 'extension', Number(pulled.cursor || 0), reconciled.mutations);
+    let pushResult = { cursor: Number(pulled.cursor || 0), applied: 0, noops: 0, duplicate: false };
+    if (reconciled.mutations.length) {
+      const body = { schemaVersion: 'magnetar-self-hosted-sync-v2', baseCursor: Number(pulled.cursor || 0), mutationId, mutations: reconciled.mutations };
+      try {
+        pushResult = await selfHostedRequest('/api/v1/sync/push', { method: 'POST', body, connection: currentConnection });
+      } catch (error) {
+        if (error?.status === 409 && /cursor is stale/i.test(error.message || '')) continue;
+        if (error?.status) throw error;
+        pushResult = await selfHostedRequest('/api/v1/sync/push', { method: 'POST', body, connection: currentConnection });
+      }
+    }
+    trace(reconciled.mutations.length ? 'push-completed' : 'push-skipped', { cursor: Number(pushResult.cursor || pulled.cursor || 0), applied: Number(pushResult.applied || 0), noops: Number(pushResult.noops || 0), duplicate: pushResult.duplicate === true });
+    const finalPull = reconciled.mutations.length
+      ? await selfHostedRequest(`/api/v1/sync/changes?cursor=${Number(pushResult.cursor || pulled.cursor || 0)}`, { connection: currentConnection })
+      : pulled;
+    trace('final-pull-completed', { cursor: Number(finalPull.cursor || 0), counts: snapshotCounts(finalPull.snapshot) });
+    const finalReconcile = MagnetarSelfHostedSync.reconcile({ local: reconciled.local, serverSnapshot: finalPull.snapshot || {}, checkpoint: { canonical: reconciled.canonical } });
+    if (finalReconcile.mutations.length) {
+      if (conflictAttempt < 3) { currentConnection = { ...currentConnection, cursor: Number(finalPull.cursor || 0) }; continue; }
+      notConverged(reconciled.canonical, finalReconcile.canonical, 'final-pull-canonicalisation');
+    }
+    const latestLocal = localFromStorage(await MAGNETAR_API.storage.local.get(storageKeys));
+    if (storageSignature(latestLocal) !== initialStorageSignature) {
+      currentConnection = { ...currentConnection, cursor: Number(finalPull.cursor || 0) };
+      continue;
+    }
+    const finalStorage = {
+      'magnetar-saved': finalReconcile.local.saved,
+      'magnetar-history': finalReconcile.local.history,
+      'magnetar-organised-folders': finalReconcile.local.folders
+    };
+    const localChanged = semanticStorageSignature(local) !== semanticStorageSignature(finalReconcile.local);
+    const changed = reconciled.mutations.length > 0 || localChanged;
+    if (localChanged) {
+      trace('local-write-started', { saved: finalStorage['magnetar-saved'].length, folders: finalStorage['magnetar-organised-folders'].folders.length, assignments: finalStorage['magnetar-organised-folders'].folders.reduce((count, folder) => count + folder.items.length, 0), history: finalStorage['magnetar-history'].length });
+      const canonicalWriter = globalThis.MagnetarSyncDiagnostics?.write;
+      if (canonicalWriter) await canonicalWriter(MAGNETAR_API.storage.local, finalStorage, { syncRunId: cycleId, caller: 'synchroniseSelfHosted', trigger: options.trigger || 'my-magnetar-sync', adapter: 'self-hosted', cursor: Number(finalPull.cursor || 0), operation: 'record-merge', acceptedBecause: 'three-way-self-hosted-reconciliation' });
+      else await MAGNETAR_API.storage.local.set(finalStorage);
+      trace('local-write-completed');
+    } else trace('local-write-skipped', { reason: 'canonical-state-unchanged' });
+    const persistedLocal = localFromStorage(await MAGNETAR_API.storage.local.get(storageKeys));
+    trace('persisted-state-reread', { saved: persistedLocal.saved.length, folders: (persistedLocal.folders?.folders || []).length, assignments: (persistedLocal.folders?.folders || []).reduce((count, folder) => count + (folder.items || []).length, 0), history: persistedLocal.history.length });
+    const persistedReconcile = MagnetarSelfHostedSync.reconcile({ local: persistedLocal, serverSnapshot: finalPull.snapshot || {}, checkpoint: { canonical: finalReconcile.canonical } });
+    if (persistedReconcile.mutations.length) notConverged(finalReconcile.canonical, persistedReconcile.canonical, 'post-apply-verification');
+    trace('convergence-succeeded', { entityResults: MagnetarSelfHostedSync.semanticDiffs?.(finalReconcile.canonical, persistedReconcile.canonical, 'post-apply-verification') });
+    const next = { ...currentConnection, cursor: Number(finalPull.cursor || pushResult.cursor || pulled.cursor || 0), lastSyncAt: Date.now(), status: 'connected', schemaVersion: 'magnetar-self-hosted-sync-v2', apiVersion: 2, checkpoint: { schemaVersion: checkpointSchemaVersion, canonical: persistedReconcile.canonical } };
+    await selfHostedRequest('/api/v1/sync/ack', { method: 'POST', body: { cursor: next.cursor }, connection: currentConnection });
+    await MAGNETAR_API.storage.local.set({ [SELF_HOSTED_STORAGE_KEY]: next });
+    trace('checkpoint-stored', { cursor: next.cursor, checkpointVersion: checkpointSchemaVersion });
+    return { ok: true, cycleId, cursor: next.cursor, changed, mutationCount: reconciled.mutations.length, applied: Number(pushResult.applied || 0), noops: Number(pushResult.noops || 0), duplicate: pushResult.duplicate === true, connection: next };
+  }
+  throw new Error('My Magnetar kept changing during synchronisation. Try again.');
+}
+
+async function runSelfHostedExclusive(connection, cycleId) {
+  if (!selfHostedSyncInFlight) {
+    selfHostedSyncInFlight = synchroniseSelfHosted(connection, { cycleId }).finally(() => { selfHostedSyncInFlight = null; });
+  }
+  return selfHostedSyncInFlight;
+}
+
+async function hardSyncCanonicalFingerprint() {
+  const data = await MAGNETAR_API.storage.local.get(['magnetar-saved', 'magnetar-history', 'magnetar-organised-folders']);
+  const local = {
+    saved: data['magnetar-saved'] || [],
+    history: data['magnetar-history'] || [],
+    folders: data['magnetar-organised-folders'] || {}
+  };
+  const canonical = MagnetarSelfHostedSync.canonicaliseReplica(local, {}, 0);
+  const strip = records => Object.fromEntries(Object.entries(records || {}).sort(([left], [right]) => left.localeCompare(right)).map(([key, record]) => {
+    const next = { ...record };
+    delete next.updatedAt;
+    delete next.deletedAt;
+    delete next.sourceDevice;
+    return [key, next];
+  }));
+  const history = (local.history || []).map(item => ({
+    stableKey: MagnetarSelfHostedSync.stableKey(item),
+    provider: item.provider || item.providerId || item.target || '',
+    status: item.status === 'failed' ? 'failed' : 'succeeded',
+    sendCount: Number(item.sendCount || 1),
+    displayName: item.name || item.displayName || 'Sent item'
+  })).sort((left, right) => MagnetarSelfHostedSync.stableStringify(left).localeCompare(MagnetarSelfHostedSync.stableStringify(right)));
+  return MagnetarSelfHostedSync.stableStringify({ saved: strip(canonical.saved), folders: strip(canonical.folders), assignments: strip(canonical.assignments), history });
+}
+
+async function publishHardSyncProgress(cycleId, stage, detail = {}) {
+  const message = { type: 'hard-sync-all-progress', cycleId, stage, ...detail };
+  console.info('Magnetar: hard sync all', message);
+  try {
+    const tabs = await MAGNETAR_API.tabs.query({});
+    await Promise.allSettled((tabs || []).filter(tab => tab.id).map(tab => MAGNETAR_API.tabs.sendMessage(tab.id, message)));
+  } catch (error) {
+    console.debug('Magnetar: hard sync progress broadcast unavailable', { cycleId, stage, error: error?.message || 'unknown' });
+  }
+}
+
+async function loadCoordinatorLocalState() {
+  const data = await MAGNETAR_API.storage.local.get(['magnetar-saved', 'magnetar-history', 'magnetar-organised-folders']);
+  return {
+    saved: Array.isArray(data['magnetar-saved']) ? data['magnetar-saved'] : [],
+    history: Array.isArray(data['magnetar-history']) ? data['magnetar-history'] : [],
+    folders: data['magnetar-organised-folders'] || { version: 1, updatedAt: 0, deletedFolders: [], folders: [] }
+  };
+}
+
+function coordinatorHistoryItem(item = {}) {
+  const attemptedAt = Number(item.sentAt || item.attemptedAt || item.updatedAt || item.createdAt || item.timestamp || 0);
+  return {
+    name: item.displayName || item.name || 'Sent item',
+    displayName: item.displayName || item.name || 'Sent item',
+    hash: item.hash || item.infoHash || '',
+    magnet: item.magnet || item.magnetUri || '',
+    magnetUri: item.magnet || item.magnetUri || '',
+    sourceUrl: item.sourceUrl || item.url || '',
+    url: item.sourceUrl || item.url || '',
+    provider: item.provider || item.providerId || item.target || '',
+    destinationName: item.destinationName || item.provider || '',
+    status: item.status === 'failed' ? 'failed' : 'succeeded',
+    errorSummary: item.errorSummary || '',
+    timestamp: attemptedAt,
+    lastSentAt: attemptedAt,
+    sendCount: Number(item.sendCount || 1),
+    stableKey: MagnetarSelfHostedSync.stableKey(item)
+  };
+}
+
+function mergeCoordinatorHistory(...collections) {
+  const records = new Map();
+  for (const item of collections.flat()) {
+    const next = coordinatorHistoryItem(item);
+    const key = `${next.stableKey}|${next.provider}`;
+    if (!next.stableKey) continue;
+    const current = records.get(key);
+    const nextTime = Number(next.lastSentAt || 0);
+    const currentTime = Number(current?.lastSentAt || 0);
+    if (!current || nextTime > currentTime || (nextTime === currentTime && MagnetarSelfHostedSync.stableStringify(next) > MagnetarSelfHostedSync.stableStringify(current))) records.set(key, next);
+  }
+  return [...records.values()].sort((left, right) => Number(right.lastSentAt || 0) - Number(left.lastSentAt || 0) || `${left.stableKey}|${left.provider}`.localeCompare(`${right.stableKey}|${right.provider}`));
+}
+
+function selfHostedSnapshotState(snapshot = {}) {
+  const canonical = MagnetarSelfHostedSync.normaliseServer(snapshot);
+  return { ...MagnetarSelfHostedSync.projectCanonical(canonical, (snapshot.history || []).map(coordinatorHistoryItem)), _canonicalSync: canonical };
+}
+
+function coordinatorChangeCount(before, after) {
+  const left = MagnetarSelfHostedSync.canonicaliseReplica(before, {}, 0);
+  const right = MagnetarSelfHostedSync.canonicaliseReplica(after, left, 0);
+  return ['saved', 'folders', 'assignments'].reduce((count, entity) => count + [...new Set([...Object.keys(left[entity] || {}), ...Object.keys(right[entity] || {})])].filter(key => MagnetarSelfHostedSync.stableStringify(left[entity]?.[key] || null) !== MagnetarSelfHostedSync.stableStringify(right[entity]?.[key] || null)).length, 0);
+}
+
+async function executeHardSyncAll(options = {}) {
+  const cycleId = String(options.cycleId || `hard-sync-${Date.now().toString(36)}`);
+  const startedAt = Date.now();
+  const timings = { bridgeMs: Number(options.bridgeMs || 0), pullsMs: 0, commitMs: 0, pushes: {}, totalMs: 0 };
+  let selfConnection = await getSelfHostedConnection();
+  const hostedSettings = await MagnetarSyncStorage.loadSettings();
+  const selfPaired = Boolean(selfConnection?.token);
+  const hostedPaired = Boolean(hostedSettings?.enabled && hostedSettings.syncId && hostedSettings.syncToken && hostedSettings.encryptionKey);
+  if (!selfPaired && !hostedPaired) throw Object.assign(new Error('No Magnetar sync service is paired.'), { code: 'HARD_SYNC_NOT_PAIRED', cycleId });
+  const adapters = {
+    selfHosted: selfPaired ? { paired: true, ok: false } : { paired: false, skipped: true, reason: 'not-paired' },
+    hosted: hostedPaired ? { paired: true, ok: false } : { paired: false, skipped: true, reason: 'not-paired' }
+  };
+
+  const initialLocal = await loadCoordinatorLocalState();
+  const checkpointData = await MAGNETAR_API.storage.local.get([SYNC_COORDINATOR_CHECKPOINT_KEY]);
+  const checkpoint = checkpointData[SYNC_COORDINATOR_CHECKPOINT_KEY] || null;
+  const pullStartedAt = Date.now();
+  await publishHardSyncProgress(cycleId, 'pulling-remotes', { message: 'Pulling connected sync services' });
+  const [selfPull, hostedPull] = await Promise.all([
+    selfPaired ? selfHostedRequest(`/api/v1/sync/changes?cursor=${Number(selfConnection.cursor || 0)}`, { connection: selfConnection }).then(value => ({ ok: true, value })).catch(error => ({ ok: false, error })) : Promise.resolve(null),
+    hostedPaired ? MagnetarSyncData.inspectHostedReplica().then(value => ({ ok: true, value })).catch(error => ({ ok: false, error })) : Promise.resolve(null)
+  ]);
+  timings.pullsMs = Date.now() - pullStartedAt;
+  const remotes = [];
+  const historyCollections = [initialLocal.history];
+  if (selfPull?.ok) {
+    const state = selfHostedSnapshotState(selfPull.value.snapshot || {});
+    remotes.push({ id: 'selfHosted', state }); historyCollections.push(state.history || []);
+    adapters.selfHosted = { paired: true, ok: false, pulled: true, cursor: Number(selfPull.value.cursor || 0) };
+  } else if (selfPull) adapters.selfHosted = { paired: true, ok: false, stage: 'pull', code: selfPull.error?.code || 'SELF_HOSTED_PULL_FAILED', error: selfPull.error?.message || 'My Magnetar could not be reached.' };
+  if (hostedPull?.ok) {
+    remotes.push({ id: 'hosted', state: hostedPull.value.state, inferDeletes: false }); historyCollections.push(hostedPull.value.state.history || []);
+    adapters.hosted = { paired: true, ok: false, pulled: true, revision: Number(hostedPull.value.revision || 0) };
+  } else if (hostedPull) adapters.hosted = { paired: true, ok: false, stage: 'pull', code: hostedPull.error?.code || 'HOSTED_PULL_FAILED', error: hostedPull.error?.message || 'Mobile sync could not be reached.' };
+
+  console.info('Magnetar: hard sync all', {
+    cycleId, stage: 'pulls-completed',
+    selfHosted: selfPull?.ok ? { cursor: Number(selfPull.value.cursor || 0), saved: Number(selfPull.value.snapshot?.saved?.length || 0), folders: Number(selfPull.value.snapshot?.folders?.length || 0), history: Number(selfPull.value.snapshot?.history?.length || 0) } : { skipped: !selfPaired, ok: false },
+    hosted: hostedPull?.ok ? { revision: Number(hostedPull.value.revision || 0), ...hostedPull.value.counts } : { skipped: !hostedPaired, ok: false }
+  });
+
+  const mergeTime = Date.now();
+  const reconciled = MagnetarSelfHostedSync.reconcileReplicas({ local: initialLocal, remotes, checkpoint, now: mergeTime });
+  const mergedHistory = mergeCoordinatorHistory(...historyCollections);
+  const canonicalLocal = { ...reconciled.local, history: mergedHistory };
+  const mergedChanges = coordinatorChangeCount(initialLocal, canonicalLocal) + (MagnetarSelfHostedSync.stableStringify(initialLocal.history) === MagnetarSelfHostedSync.stableStringify(mergedHistory) ? 0 : 1);
+  await publishHardSyncProgress(cycleId, 'committing-canonical', { message: 'Updating extension', mergedChanges });
+  const commitStartedAt = Date.now();
+  if (mergedChanges > 0) {
+    const canonicalUpdate = { 'magnetar-saved': canonicalLocal.saved, 'magnetar-history': canonicalLocal.history, 'magnetar-organised-folders': canonicalLocal.folders };
+    const canonicalWriter = globalThis.MagnetarSyncDiagnostics?.write;
+    if (canonicalWriter) await canonicalWriter(MAGNETAR_API.storage.local, canonicalUpdate, { syncRunId: cycleId, caller: 'executeHardSyncAll', trigger: 'hard-sync-all', adapter: 'all', operation: 'record-merge', acceptedBecause: 'three-replica-reconciliation' });
+    else await MAGNETAR_API.storage.local.set(canonicalUpdate);
+  }
+  timings.commitMs = Date.now() - commitStartedAt;
+
+  if (selfPull?.ok) {
+    const pushStartedAt = Date.now();
+    await publishHardSyncProgress(cycleId, 'pushing-self-hosted', { message: 'Updating My Magnetar' });
+    try {
+      const result = await runSelfHostedExclusive(selfConnection, `${cycleId}:self`);
+      selfConnection = result.connection || selfConnection;
+      adapters.selfHosted = { paired: true, ok: true, verified: true, cursor: Number(result.cursor || 0), mutationCount: Number(result.mutationCount || 0), changed: result.changed === true };
+    } catch (error) {
+      adapters.selfHosted = { paired: true, ok: false, stage: 'push', code: error?.code || 'SELF_HOSTED_SYNC_FAILED', error: error?.message || 'My Magnetar sync unavailable.' };
+    }
+    timings.pushes.selfHostedMs = Date.now() - pushStartedAt;
+  }
+  if (hostedPull?.ok) {
+    const pushStartedAt = Date.now();
+    await publishHardSyncProgress(cycleId, 'pushing-hosted', { message: 'Updating Mobile sync' });
+    try {
+      const result = await MagnetarSyncData.synchroniseHostedCanonical({ manual: true, hard: true, force: true, cycleId, canonical: reconciled.canonical, expectedRevision: Number(hostedPull.value.revision || 0) });
+      adapters.hosted = { paired: true, ok: true, verified: true, revision: Number(result.revision || 0), mutationCount: Number(result.mutationCount || 0), changed: result.changed === true };
+    } catch (error) {
+      adapters.hosted = { paired: true, ok: false, stage: 'push', code: error?.code || 'HOSTED_SYNC_FAILED', error: error?.message || 'Mobile sync unavailable.' };
+    }
+    timings.pushes.hostedMs = Date.now() - pushStartedAt;
+  }
+
+  await publishHardSyncProgress(cycleId, 'verifying', { message: 'Verifying' });
+  const finalLocal = await loadCoordinatorLocalState();
+  const finalCanonical = MagnetarSelfHostedSync.canonicaliseReplica(finalLocal, reconciled.canonical, Date.now());
+  await MAGNETAR_API.storage.local.set({ [SYNC_COORDINATOR_CHECKPOINT_KEY]: { schemaVersion: 1, canonical: finalCanonical, sources: reconciled.sources, savedAt: Date.now() } });
+  const failures = Object.values(adapters).filter(adapter => adapter.paired && !adapter.ok);
+  if (failures.length) {
+    await publishHardSyncProgress(cycleId, 'failed', { message: 'Sync completed with an adapter error' });
+    const error = new Error(failures.length > 1 ? 'Connected sync services could not be reached. Canonical extension state was preserved.' : `${failures[0].error || 'A sync service failed.'} Canonical extension state was preserved.`);
+    Object.assign(error, { code: 'HARD_SYNC_PARTIAL_FAILURE', cycleId, adapters, mergedChanges, timings: { ...timings, totalMs: Date.now() - startedAt } });
+    throw error;
+  }
+  timings.totalMs = Date.now() - startedAt;
+  await publishHardSyncProgress(cycleId, 'complete', { message: 'Sync complete.' });
+  return { ok: true, cycleId, changed: mergedChanges > 0 || Object.values(adapters).some(adapter => adapter.changed), mergedChanges, passes: 1, adapters, timings, mobileSkipped: !hostedPaired, selfHostedSkipped: !selfPaired };
+}
+
+async function hardSyncAll(options = {}) {
+  if (hardSyncAllInFlight) return hardSyncAllInFlight;
+  hardSyncAllInFlight = runCanonicalExclusive(() => executeHardSyncAll(options)).finally(() => { hardSyncAllInFlight = null; });
+  return hardSyncAllInFlight;
+}
+
+async function runAutomaticHarmonySync(trigger = 'automatic') {
+  const [connection, settings] = await Promise.all([getSelfHostedConnection(), MagnetarSyncStorage.loadSettings()]);
+  const selfPaired = Boolean(connection?.token);
+  const hostedPaired = Boolean(settings?.enabled && settings.syncId && settings.syncToken && settings.encryptionKey);
+  if (!selfPaired && !hostedPaired) return { ok: false, skipped: true, reason: 'not-paired' };
+  MagnetarSyncDiagnostics?.lifecycle?.('harmony-sync-fired', { adapter: 'all', trigger });
+  return hardSyncAll({ cycleId: `harmony-${Date.now().toString(36)}`, trigger });
+}
+
+function scheduleAutomaticHarmonySync(trigger = 'canonical-change', delayMs = 2000) {
+  if (hardSyncAllInFlight) return;
+  if (harmonySyncTimer) clearTimeout(harmonySyncTimer);
+  harmonySyncTimer = setTimeout(() => {
+    harmonySyncTimer = null;
+    runAutomaticHarmonySync(trigger).catch(error => {
+      console.warn('Magnetar: automatic three-way harmony failed', { trigger, error: error?.message || 'Sync failed.' });
+    });
+  }, delayMs);
+}
+
+async function ensureHarmonySyncAlarm() {
+  try {
+    if (!MAGNETAR_API.alarms?.get || !MAGNETAR_API.alarms?.create) return;
+    const existing = await MAGNETAR_API.alarms.get(HARMONY_SYNC_ALARM);
+    if (existing) return;
+    await MAGNETAR_API.alarms.create(HARMONY_SYNC_ALARM, {
+      delayInMinutes: HARMONY_SYNC_PERIOD_MINUTES,
+      periodInMinutes: HARMONY_SYNC_PERIOD_MINUTES
+    });
+  } catch {}
+}
+
+function publicSelfHostedConnection(connection) {
+  if (!connection) return null;
+  const { token: _token, ...safe } = connection;
+  return { ...safe, paired: Boolean(connection.token) };
+}
 
 function normaliseOrganisedFolderColor(value) {
   const clean = String(value || '').trim().toLowerCase();
@@ -437,9 +909,6 @@ function getHostnameFromUrl(value) {
   }
 }
 
-function isBlankTabUrl(url) {
-  return !url || url === 'about:blank' || url === 'about:newtab';
-}
 function domainMatchesRule(domain, rule) {
   domain = normaliseHostname(domain);
   rule = MagnetarShield.normaliseDomain(rule);
@@ -581,6 +1050,7 @@ async function openExtensionTab(createProps, purpose = 'extension') {
 
 
 MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
+  MagnetarSyncDiagnostics?.lifecycle?.('runtime-on-installed', { reason: details.reason || '', previousVersion: details.previousVersion || '' });
   // First install — open onboarding
   if (details.reason === 'install') {
     MAGNETAR_API.tabs.create({ url: MAGNETAR_API.runtime.getURL('onboarding.html') });
@@ -631,8 +1101,23 @@ MAGNETAR_API.runtime.onInstalled.addListener(async (details) => {
   // Init download history storage if needed
   const hist = await MAGNETAR_API.storage.local.get(['magnetar-history']);
   if (!hist['magnetar-history']) {
-    await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
+    await writeCanonicalStorage({ 'magnetar-history': [] }, { caller: 'onInstalled', trigger: 'history-storage-initialisation', adapter: 'extension', operation: 'initialise', acceptedBecause: 'canonical-key-missing' });
   }
+  ensureHarmonySyncAlarm();
+});
+
+MAGNETAR_API.runtime.onStartup?.addListener?.(() => {
+  MagnetarSyncDiagnostics?.lifecycle?.('runtime-on-startup', { adapter: 'extension' });
+  ensureHarmonySyncAlarm();
+  scheduleAutomaticHarmonySync('runtime-startup', 5000);
+});
+
+ensureHarmonySyncAlarm();
+MAGNETAR_API.alarms?.onAlarm?.addListener?.(alarm => {
+  if (alarm?.name !== HARMONY_SYNC_ALARM) return;
+  runAutomaticHarmonySync('periodic-alarm').catch(error => {
+    console.warn('Magnetar: periodic three-way harmony failed', { error: error?.message || 'Sync failed.' });
+  });
 });
 
 // Also init Shield on service worker startup (not just install)
@@ -710,49 +1195,13 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 
-// Firefox MV2 Shield navigation handling keeps popup/new-tab edge cases stable.
+// ── Tab Navigation — close tabs heading to blocked domains ───────────────
 
-function pruneShieldPendingPopups(now = Date.now()) {
-  for (const [tabId, entry] of shieldPendingPopupTabs.entries()) {
-    if (!entry || now - Number(entry.createdAt || 0) > SHIELD_PENDING_POPUP_TTL) {
-      shieldPendingPopupTabs.delete(tabId);
-    }
-  }
-}
-
-function rememberShieldPopupTab(tab, source = 'created') {
-  if (!tab || tab.id == null) return;
-  pruneShieldPendingPopups();
-  const existing = shieldPendingPopupTabs.get(tab.id) || {};
-  const url = tab.url || tab.pendingUrl || existing.lastUrl || '';
-  shieldPendingPopupTabs.set(tab.id, {
-    createdAt: existing.createdAt || Date.now(),
-    openerTabId: tab.openerTabId ?? existing.openerTabId,
-    initialUrl: existing.initialUrl || url || '',
-    lastUrl: url || existing.lastUrl || '',
-    source,
-    blankOnCreate: existing.blankOnCreate || isBlankTabUrl(existing.initialUrl || url)
-  });
-}
-
-function forgetShieldPopupTab(tabId) {
-  if (tabId != null) shieldPendingPopupTabs.delete(tabId);
-}
-
-async function closeShieldBlockedTab(tabId, url, source = 'navigation', tab = null) {
-  if (tabId == null) return false;
-  if (tab) rememberShieldPopupTab(tab, source);
-  if (isBlankTabUrl(url)) return false;
-  if (isExtensionOpenedTab(tabId, url)) {
-    forgetShieldPopupTab(tabId);
-    return false;
-  }
+async function closeShieldBlockedTab(tabId, url, source = 'navigation') {
+  if (!tabId || isExtensionOpenedTab(tabId, url)) return false;
   const domain = getHostnameFromUrl(url);
   if (!domain) return false;
-  if (shieldStateCache.enabled === false) {
-    forgetShieldPopupTab(tabId);
-    return false;
-  }
+  if (shieldStateCache.enabled === false) return false;
 
   let blocked = isBlockedByShieldCache(domain);
   if (!blocked) {
@@ -762,50 +1211,22 @@ async function closeShieldBlockedTab(tabId, url, source = 'navigation', tab = nu
 
   try {
     await MAGNETAR_API.tabs.remove(tabId);
-    forgetShieldPopupTab(tabId);
     return true;
   } catch (e) {
-    forgetShieldPopupTab(tabId);
+    // Tab may already be closed by DNR or another Shield path.
     return false;
   }
 }
 
 MAGNETAR_API.tabs.onCreated.addListener(tab => {
-  rememberShieldPopupTab(tab, 'created');
-  if (tab?.url) closeShieldBlockedTab(tab.id, tab.url, 'created', tab).catch(() => {});
+  if (tab?.url) closeShieldBlockedTab(tab.id, tab.url, 'created').catch(() => {});
 });
 
 MAGNETAR_API.webNavigation.onBeforeNavigate.addListener(details => {
   if (details.frameId !== 0) return;
-  const existing = shieldPendingPopupTabs.get(details.tabId);
-  if (existing) {
-    rememberShieldPopupTab({
-      id: details.tabId,
-      openerTabId: existing.openerTabId,
-      url: details.url
-    }, 'beforeNavigate');
-  }
   closeShieldBlockedTab(details.tabId, details.url, 'beforeNavigate').catch(() => {});
 });
 
-MAGNETAR_API.tabs.onRemoved.addListener(tabId => {
-  forgetShieldPopupTab(tabId);
-});
-
-async function closeExistingShieldBlockedTabs(source = 'shield-refresh') {
-  if (shieldStateCache.enabled === false) return;
-  let tabs = [];
-  try {
-    tabs = await MAGNETAR_API.tabs.query({});
-  } catch (e) {
-    return;
-  }
-  await Promise.all((tabs || []).map(tab => {
-    const url = tab?.url || tab?.pendingUrl || '';
-    if (!url || isBlankTabUrl(url)) return Promise.resolve(false);
-    return closeShieldBlockedTab(tab.id, url, source, tab).catch(() => false);
-  }));
-}
 
 // ── Icon State Management ────────────────────────────────────────────────
 
@@ -990,12 +1411,15 @@ MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
   try {
     if (area !== 'local') return;
     if (!Object.keys(changes || {}).some(key => SAVED_HISTORY_SYNC_KEYS.has(key))) return;
+    MagnetarSyncDiagnostics?.lifecycle?.('storage-change-fired', { area, keys: Object.keys(changes || {}).filter(key => SAVED_HISTORY_SYNC_KEYS.has(key)) });
     queueSavedHistoryAutoSync('saved-history-change');
   } catch (e) {}
 });
 MAGNETAR_API.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.shield) {
-    setShieldStateCache(changes.shield.newValue);
+  if (area === 'local') {
+    if (changes.shield) setShieldStateCache(changes.shield.newValue);
+    if ([...SAVED_HISTORY_SYNC_KEYS].some(key => changes[key])) scheduleAutomaticHarmonySync('canonical-storage-change');
+    else if (changes[SELF_HOSTED_STORAGE_KEY]) scheduleAutomaticHarmonySync('self-hosted-connection-change');
     return;
   }
   if (area !== 'sync' || !changes.magnetar) return;
@@ -1069,7 +1493,7 @@ async function queueSavedHistoryAutoSync(reason = 'saved-history-change', option
   }
   return null;
 }
-async function commitPostSend({ hash, name, provider, category, pageUrl, magnetUri, cacheAtSend }) {
+async function commitPostSend({ itemKey, hash, name, provider, category, pageUrl, magnetUri, cacheAtSend }) {
   const data = await MAGNETAR_API.storage.local.get([
     'magnetar-history',
     'magnetar-send-count',
@@ -1085,11 +1509,13 @@ async function commitPostSend({ hash, name, provider, category, pageUrl, magnetU
   const sourceUrl = normaliseSourceUrl(pageUrl);
   const sourceDomain = getSourceDomain(sourceUrl);
   const now = Date.now();
-  const existingIndex = hash ? history.findIndex(h => h.hash === hash) : -1;
+  const sentKey = itemKey || MagnetarSendNormalization.normalise({ hash, magnetUri, sourceUrl, name }).itemKey;
+  const existingIndex = sentKey ? history.findIndex(entry => MagnetarSendNormalization.normalise({ item: entry }).itemKey === sentKey) : -1;
 
   // History: dedupe by hash, but keep the existing row useful on repeat sends.
-  if (hash && existingIndex === -1) {
+  if (sentKey && existingIndex === -1) {
     const entry = {
+      stableKey: sentKey,
       hash,
       name: name || 'Unknown',
       provider,
@@ -1130,12 +1556,12 @@ async function commitPostSend({ hash, name, provider, category, pageUrl, magnetU
     update['magnetar-history'] = history;
   }
 
-  // Saved queue: drop this hash if present
-  if (hash && saved.some(s => s.hash === hash)) {
-    update['magnetar-saved'] = saved.filter(s => s.hash !== hash);
+  // Saved queue: remove only the canonical item confirmed by the provider.
+  if (sentKey && saved.some(entry => MagnetarSendNormalization.normalise({ item: entry }).itemKey === sentKey)) {
+    update['magnetar-saved'] = saved.filter(entry => MagnetarSendNormalization.normalise({ item: entry }).itemKey !== sentKey);
   }
 
-  await MAGNETAR_API.storage.local.set(update);
+  await writeCanonicalStorage(update, { caller: 'commitPostSend', trigger: 'provider-send-completed', adapter: 'extension', operation: 'record-merge', acceptedBecause: 'confirmed-provider-send' });
   return currentCount + 1;
 }
 
@@ -1155,7 +1581,11 @@ async function commitPostSend({ hash, name, provider, category, pageUrl, magnetU
 MAGNETAR_API.runtime.onMessage.addListener((msg, sender) => {
   return handleMessage(msg, sender).catch(err => {
     console.error('Magnetar: message handler error', err);
-    return { error: err.message };
+    return {
+      error: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...Object.fromEntries(['mutationType', 'recordId', 'conflictingRecordId', 'conflictingName', 'entity', 'id', 'field', 'local', 'server', 'phase'].filter(key => err[key] != null).map(key => [key, err[key]]))
+    };
   });
 });
 
@@ -1264,12 +1694,12 @@ async function handleMessage(msg, sender) {
 
 
     case 'sync-push-saved-history': {
-      return await MagnetarSyncData.pushSavedAndHistory({ manual: true });
+      return await runCanonicalExclusive(() => MagnetarSyncData.pushSavedAndHistory({ manual: true }));
     }
     case 'sync-pull-saved-history': {
       try {
         if (typeof MagnetarSyncData?.pullSavedAndHistory !== 'function') return { ok: false, error: 'Sync pull is unavailable.' };
-        return await MagnetarSyncData.pullSavedAndHistory({ manual: true });
+        return await runCanonicalExclusive(() => MagnetarSyncData.pullSavedAndHistory({ manual: true }));
       } catch (e) {
         return { ok: false, error: e?.message || 'Could not pull latest sync.' };
       }
@@ -1287,7 +1717,7 @@ async function handleMessage(msg, sender) {
     case 'sync-maybe-auto-push': {
       try {
         if (typeof MagnetarSyncData?.maybeAutoPush !== 'function') return { ok: false, skipped: true, reason: 'sync-unavailable' };
-        return await MagnetarSyncData.maybeAutoPush(msg.reason || 'content-check', { force: msg.force === true });
+        return await runCanonicalExclusive(() => MagnetarSyncData.maybeAutoPush(msg.reason || 'content-check', { force: msg.force === true }));
       } catch (e) {
         return { ok: false, error: e?.message || 'Auto sync unavailable.' };
       }
@@ -1296,7 +1726,7 @@ async function handleMessage(msg, sender) {
     case 'sync-maybe-pull-saved-history': {
       try {
         if (typeof MagnetarSyncData?.maybePullLatest !== 'function') return { ok: false, skipped: true, reason: 'sync-unavailable' };
-        return await MagnetarSyncData.maybePullLatest(msg.reason || 'interaction', { force: msg.force === true });
+        return await runCanonicalExclusive(() => MagnetarSyncData.maybePullLatest(msg.reason || 'interaction', { force: msg.force === true }));
       } catch (e) {
         return { ok: false, error: e?.message || 'Auto pull unavailable.' };
       }
@@ -1335,7 +1765,7 @@ async function handleMessage(msg, sender) {
     case 'sync-saved-list-send-complete': {
       try {
         if (typeof MagnetarSyncData?.pushSavedAndHistory !== 'function') return { ok: true, skipped: true, reason: 'sync-unavailable' };
-        const result = await MagnetarSyncData.pushSavedAndHistory({ manual: false });
+        const result = await runCanonicalExclusive(() => MagnetarSyncData.pushSavedAndHistory({ manual: false }));
         console.debug('Magnetar Sync: saved-list-send sync succeeded', { revision: result?.revision });
         return result;
       } catch (e) {
@@ -1370,7 +1800,7 @@ async function handleMessage(msg, sender) {
 
     case 'clear-sync-settings': {
       const cleared = await MagnetarSyncStorage.clearSettings();
-      await MAGNETAR_API.storage.local.remove(['magnetar-sync-mobile-ack', 'magnetar-organised-folders']);
+      await MAGNETAR_API.storage.local.remove(['magnetar-sync-mobile-ack', 'magnetar-sync-hosted-checkpoint']);
       return cleared;
     }
 
@@ -1386,7 +1816,7 @@ async function handleMessage(msg, sender) {
       const encryptionKey = MagnetarSyncCrypto.generateEncryptionKey();
       const deviceId = current.deviceId || (crypto.randomUUID ? crypto.randomUUID() : MagnetarSyncCrypto.generateEncryptionKey());
       const deviceName = current.deviceName || 'Chrome browser';
-      await MAGNETAR_API.storage.local.remove(['magnetar-sync-mobile-ack', 'magnetar-organised-folders']);
+      await MAGNETAR_API.storage.local.remove(['magnetar-sync-mobile-ack', 'magnetar-sync-hosted-checkpoint']);
       const settings = await MagnetarSyncStorage.saveSettings({
         enabled: true,
         serverUrl,
@@ -1639,7 +2069,7 @@ async function handleMessage(msg, sender) {
           });
           if (changed) {
             const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-            await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+            await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-item-airlock', adapter: 'extension', operation: 'record-edit' });
             await queueSavedHistoryAutoSync('organised-folder-item-airlock', { flush: true, force: true });
           }
         }
@@ -1723,53 +2153,77 @@ async function handleMessage(msg, sender) {
 
     case 'send-magnet': {
       const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
-      const mode = msg.mode || settings.mode || 'local';
+      const mode = normaliseProviderMode(msg.mode || settings.mode || 'local', 'local');
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
 
-      const creds = settings.credentials?.[mode] || {};
-
-      if (mode === 'local') {
-        await commitPostSend({
-          hash: msg.hash || '',
-          name: msg.name || '',
+      const request = MagnetarSendNormalization.normalise(msg);
+      const validated = MagnetarSendNormalization.validate(request, { supportsUrl: provider.supportsUrlSend === true });
+      if (!validated.ok) {
+        console.warn('Magnetar: Saved send payload rejected before provider request', {
+          code: validated.code,
+          savedId: request.itemKey,
+          payloadKind: request.payloadKind,
+          resolvedValuePresent: Boolean(request.magnet || request.url),
           provider: mode,
-          category: msg.category || '',
-          pageUrl: msg.pageUrl || '',
-          magnetUri: msg.magnetUri || ''
+          dispatchField: request.magnet ? 'magnet' : request.url ? 'url' : 'none'
         });
-        await queueSavedHistoryAutoSync('send-magnet', { flush: true, force: true });
-        return { success: true, action: 'open-magnet', magnetUri: msg.magnetUri, provider: mode };
+        return { success: false, code: validated.code, error: validated.error, provider: mode };
       }
 
-      const result = await provider.sendMagnet(msg.magnetUri, creds, {
-        category: msg.category || ''
-      }) || { success: false, error: 'Provider returned no response' };
-
-      if (result?.success) {
-        const cacheEntry = msg.hash ? await MagnetarCacheStore.get(mode, msg.hash) : null;
-        const displayName = result.name || result.title || result.filename || msg.name || '';
+      const creds = settings.credentials?.[mode] || {};
+      if (mode === 'local') {
         await commitPostSend({
-          hash: msg.hash || '',
+          itemKey: request.itemKey,
+          hash: request.hash,
+          name: request.displayName,
+          provider: mode,
+          category: request.category,
+          pageUrl: request.sourceUrl,
+          magnetUri: request.magnet
+        });
+        await queueSavedHistoryAutoSync('send-magnet', { flush: true, force: true });
+        return { success: true, action: 'open-magnet', magnetUri: request.magnet, provider: mode };
+      }
+
+      const result = validated.dispatchField === 'url' && typeof provider.sendUrl === 'function'
+        ? await provider.sendUrl(validated.value, creds, { category: request.category })
+        : await provider.sendMagnet(validated.value, creds, { category: request.category });
+      const providerResult = result || { success: false, error: 'Provider returned no response' };
+
+      if (providerResult?.success) {
+        const cacheEntry = request.hash ? await MagnetarCacheStore.get(mode, request.hash) : null;
+        const displayName = providerResult.name || providerResult.title || providerResult.filename || request.displayName;
+        await commitPostSend({
+          itemKey: request.itemKey,
+          hash: request.hash,
           name: displayName,
           provider: mode,
-          category: msg.category || '',
-          pageUrl: msg.pageUrl || '',
-          magnetUri: msg.magnetUri || '',
+          category: request.category,
+          pageUrl: request.sourceUrl,
+          magnetUri: request.magnet,
           cacheAtSend: cacheEntry?.status
         });
         await queueSavedHistoryAutoSync('send-magnet', { flush: true, force: true });
-        // Seed the cache store — a successful add means it's now cached
-        // for this provider. Skips a probe next time someone views this torrent.
-        if (msg.hash) MagnetarCacheStore.set(mode, msg.hash, 'cached');
+        if (request.hash) MagnetarCacheStore.set(mode, request.hash, 'cached');
+      } else {
+        console.warn('Magnetar: provider rejected canonical send request', {
+          code: 'SAVED_SEND_PROVIDER_REJECTED',
+          savedId: request.itemKey,
+          payloadKind: request.payloadKind,
+          resolvedValuePresent: Boolean(validated.value),
+          provider: mode,
+          dispatchField: validated.dispatchField,
+          adapterStatus: providerResult?.adapterStatus,
+          adapterError: providerResult?.error || 'Provider returned no response'
+        });
       }
 
-      return { ...result, provider: mode };
+      return { ...providerResult, provider: mode };
     }
-
     case 'batch-send': {
       const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
-      const mode = msg.mode || settings.mode || 'local';
+      const mode = normaliseProviderMode(msg.mode || settings.mode || 'local', 'local');
       const provider = providers[mode];
       if (!provider) return { success: false, error: 'Unknown mode: ' + mode };
 
@@ -1780,54 +2234,57 @@ async function handleMessage(msg, sender) {
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
+        const request = MagnetarSendNormalization.normalise({ item, pageUrl: msg.pageUrl || '' });
+        const validated = MagnetarSendNormalization.validate(request, { supportsUrl: provider.supportsUrlSend === true });
+        if (!validated.ok) {
+          results.push({ itemKey: request.itemKey, hash: request.hash, success: false, code: validated.code, error: validated.error, provider: mode });
+          continue;
+        }
 
         if (mode === 'local') {
-          results.push({ hash: item.hash, success: true, action: 'open-magnet', magnetUri: item.magnetUri, provider: mode });
+          results.push({ itemKey: request.itemKey, hash: request.hash, success: true, action: 'open-magnet', magnetUri: request.magnet, provider: mode });
           await commitPostSend({
-            hash: item.hash,
-            name: item.name,
+            itemKey: request.itemKey,
+            hash: request.hash,
+            name: request.displayName,
             provider: mode,
-            category: item.category || '',
-            pageUrl: msg.pageUrl || '',
-            magnetUri: item.magnetUri || ''
+            category: request.category,
+            pageUrl: request.sourceUrl,
+            magnetUri: request.magnet
           });
           savedHistoryChanged = true;
           continue;
         }
 
         try {
-          const res = await provider.sendMagnet(item.magnetUri, creds, {
-            category: item.category || ''
-          }) || { success: false, error: 'Provider returned no response' };
-          results.push({ hash: item.hash, ...res, provider: mode });
+          const res = (validated.dispatchField === 'url' && typeof provider.sendUrl === 'function'
+            ? await provider.sendUrl(validated.value, creds, { category: request.category })
+            : await provider.sendMagnet(validated.value, creds, { category: request.category })) || { success: false, error: 'Provider returned no response' };
+          results.push({ itemKey: request.itemKey, hash: request.hash, ...res, provider: mode });
 
           if (res?.success) {
-            const cacheEntry = item.hash ? await MagnetarCacheStore.get(mode, item.hash) : null;
+            const cacheEntry = request.hash ? await MagnetarCacheStore.get(mode, request.hash) : null;
             await commitPostSend({
-              hash: item.hash,
-              name: item.name,
+              itemKey: request.itemKey,
+              hash: request.hash,
+              name: res.name || res.title || res.filename || request.displayName,
               provider: mode,
-              category: item.category || '',
-              pageUrl: msg.pageUrl || '',
-              magnetUri: item.magnetUri || '',
+              category: request.category,
+              pageUrl: request.sourceUrl,
+              magnetUri: request.magnet,
               cacheAtSend: cacheEntry?.status
             });
             savedHistoryChanged = true;
-            MagnetarCacheStore.set(mode, item.hash, 'cached');
+            if (request.hash) MagnetarCacheStore.set(mode, request.hash, 'cached');
           }
 
-          // Small delay between sends to avoid rate limiting
-          if (i < items.length - 1) {
-            await new Promise(r => setTimeout(r, 300));
-          }
+          if (i < items.length - 1) await new Promise(r => setTimeout(r, 300));
         } catch (e) {
-          results.push({ hash: item.hash, success: false, error: e.message });
+          results.push({ itemKey: request.itemKey, hash: request.hash, success: false, error: e.message, provider: mode });
         }
       }
 
-      if (savedHistoryChanged) {
-        await queueSavedHistoryAutoSync('batch-send', { flush: true, force: true });
-      }
+      if (savedHistoryChanged) await queueSavedHistoryAutoSync('batch-send', { flush: true, force: true });
       return { success: true, results };
     }
 
@@ -1884,14 +2341,12 @@ async function handleMessage(msg, sender) {
     case 'shield-toggle': {
       const shield = await MagnetarShield.toggle(msg.enabled);
       setShieldStateCache(shield);
-      if (shield.enabled !== false) await closeExistingShieldBlockedTabs('toggle');
       return shield;
     }
 
     case 'shield-block': {
       const shield = await MagnetarShield.blockDomain(msg.domain);
       setShieldStateCache(shield);
-      if (shield.enabled !== false) await closeExistingShieldBlockedTabs('manualBlock');
       return shield;
     }
 
@@ -1907,7 +2362,6 @@ async function handleMessage(msg, sender) {
         const payload = await fetchRecommendedShieldList();
         const shield = await MagnetarShield.installRecommendedList(payload, MagnetarShield.RECOMMENDED_LIST_URL);
         setShieldStateCache(shield);
-        if (shield.enabled !== false) await closeExistingShieldBlockedTabs('recommendedList');
         return { ok: true, shield, message: 'Recommended list updated.' };
       } catch (e) {
         return { ok: false, error: e?.message || 'Could not fetch recommended list.' };
@@ -1948,22 +2402,12 @@ async function handleMessage(msg, sender) {
         return { ok: false, error: `Current tab (${host}) does not match ${domain}.` };
       }
       try {
-        let testResult = null;
-        if (MAGNETAR_API.scripting?.executeScript) {
-          const [result] = await MAGNETAR_API.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: testMagnetarCustomSelectorInPage,
-            args: [selector]
-          });
-          testResult = result?.result || null;
-        } else if (MAGNETAR_API.tabs?.executeScript) {
-          const code = `(${testMagnetarCustomSelectorInPage.toString()})(${JSON.stringify(selector)});`;
-          const [result] = await MAGNETAR_API.tabs.executeScript(tab.id, { code });
-          testResult = result || null;
-        } else {
-          return { ok: false, error: 'Selector testing is not supported in this browser.' };
-        }
-        return { ok: true, ...(testResult || { count: 0, preview: '', valid: false }) };
+        const [result] = await MAGNETAR_API.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: testMagnetarCustomSelectorInPage,
+          args: [selector]
+        });
+        return { ok: true, ...(result?.result || { count: 0, preview: '', valid: false }) };
       } catch (e) {
         return { ok: false, error: 'Could not run selector on the current tab.' };
       }
@@ -1990,7 +2434,7 @@ async function handleMessage(msg, sender) {
         items: []
       };
       const next = { ...current, schema: 'magnetar-folders-v1', updatedAt: now, sourceDevice: 'chrome', folders: [...folders, folder] };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-create', adapter: 'extension', operation: 'record-upsert' });
       await queueSavedHistoryAutoSync('organised-folder-create', { flush: true, force: true });
       return { ok: true, folder };
     }
@@ -2012,7 +2456,7 @@ async function handleMessage(msg, sender) {
       });
       if (!changed) return { ok: false, error: 'Folder not found.' };
       const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-rename', adapter: 'extension', operation: 'record-edit' });
       await queueSavedHistoryAutoSync('organised-folder-rename', { flush: true, force: true });
       return { ok: true };
     }
@@ -2029,7 +2473,7 @@ async function handleMessage(msg, sender) {
       const existingDeleted = Array.isArray(current.deletedFolders) ? current.deletedFolders.filter(entry => entry && entry.id !== folderId) : [];
       const deletedFolders = [...existingDeleted, { id: folderId, deletedAt: now, sourceDevice: 'chrome' }];
       const next = { ...current, updatedAt: now, sourceDevice: 'chrome', deletedFolders, folders };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-delete', adapter: 'extension', operation: 'tombstone' });
       await queueSavedHistoryAutoSync('organised-folder-delete', { flush: true, force: true });
       return { ok: true };
     }
@@ -2053,7 +2497,7 @@ async function handleMessage(msg, sender) {
       });
       if (!changed) return { ok: false, error: 'Item not found.' };
       const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-item-rename', adapter: 'extension', operation: 'record-edit' });
       await queueSavedHistoryAutoSync('organised-folder-item-rename', { flush: true, force: true });
       return { ok: true };
     }
@@ -2077,7 +2521,7 @@ async function handleMessage(msg, sender) {
       });
       if (!changed) return { ok: false, error: 'Item not found.' };
       const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-item-remove', adapter: 'extension', operation: 'membership-edit' });
       await queueSavedHistoryAutoSync('organised-folder-item-remove', { flush: true, force: true });
       return { ok: true };
     }
@@ -2113,7 +2557,7 @@ async function handleMessage(msg, sender) {
         return folder;
       });
       const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-      await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+      await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-item-move', adapter: 'extension', operation: 'membership-edit' });
       await queueSavedHistoryAutoSync('organised-folder-item-move', { flush: true, force: true });
       return { ok: true };
     }
@@ -2180,7 +2624,7 @@ async function handleMessage(msg, sender) {
       if (!folderName) return { ok: false, error: 'Folder not found.' };
       if (changed) {
         const next = { ...current, updatedAt: now, sourceDevice: 'chrome', folders };
-        await MAGNETAR_API.storage.local.set({ 'magnetar-organised-folders': next });
+        await writeCanonicalStorage({ 'magnetar-organised-folders': next }, { caller: 'handleMessage', trigger: 'organised-folder-item-add', adapter: 'extension', operation: 'membership-edit' });
         await queueSavedHistoryAutoSync('organised-folder-item-add', { flush: true, force: true });
       }
       return { ok: true, already, folderName, duplicateAdded: allowDuplicate && changed };
@@ -2195,7 +2639,7 @@ async function handleMessage(msg, sender) {
     }
 
     case 'clear-history': {
-      await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
+      await writeCanonicalStorage({ 'magnetar-history': [] }, { caller: 'handleMessage', trigger: 'clear-history', adapter: 'extension', operation: 'replacement', acceptedBecause: 'explicit-user-action' });
       await queueSavedHistoryAutoSync('clear-history', { flush: true, force: true });
       return { ok: true };
     }
@@ -2204,7 +2648,7 @@ async function handleMessage(msg, sender) {
       const data = await MAGNETAR_API.storage.local.get(['magnetar-history']);
       const history = data['magnetar-history'] || [];
       const filtered = history.filter(h => h.hash !== msg.hash);
-      await MAGNETAR_API.storage.local.set({ 'magnetar-history': filtered });
+      await writeCanonicalStorage({ 'magnetar-history': filtered }, { caller: 'handleMessage', trigger: 'delete-history-item', adapter: 'extension', operation: 'record-delete', acceptedBecause: 'explicit-user-action' });
       await queueSavedHistoryAutoSync('delete-history-item', { flush: true, force: true });
       return { ok: true };
     }
@@ -2275,7 +2719,7 @@ async function handleMessage(msg, sender) {
         savedAt: Date.now()
       });
       if (saved.length > 500) saved.length = 500;
-      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': saved });
+      await writeCanonicalStorage({ 'magnetar-saved': saved }, { caller: 'handleMessage', trigger: 'save-torrent', adapter: 'extension', operation: 'record-upsert' });
       await queueSavedHistoryAutoSync('save-torrent', { flush: true, force: true });
       return { ok: true };
     }
@@ -2288,14 +2732,17 @@ async function handleMessage(msg, sender) {
     case 'delete-saved-item': {
       const data = await MAGNETAR_API.storage.local.get(['magnetar-saved']);
       const saved = data['magnetar-saved'] || [];
-      const filtered = saved.filter(s => s.hash !== msg.hash);
-      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': filtered });
+      const requestedKey = MagnetarSendNormalization.normalise(msg.item ? { item: msg.item } : msg).itemKey;
+      const filtered = requestedKey
+        ? saved.filter(entry => MagnetarSendNormalization.normalise({ item: entry }).itemKey !== requestedKey)
+        : saved.filter(entry => entry.hash !== msg.hash);
+      await writeCanonicalStorage({ 'magnetar-saved': filtered }, { caller: 'handleMessage', trigger: 'delete-saved-item', adapter: 'extension', operation: 'record-delete', acceptedBecause: 'explicit-user-action' });
       await queueSavedHistoryAutoSync('delete-saved-item', { flush: true, force: true });
       return { ok: true };
     }
 
     case 'clear-saved': {
-      await MAGNETAR_API.storage.local.set({ 'magnetar-saved': [] });
+      await writeCanonicalStorage({ 'magnetar-saved': [] }, { caller: 'handleMessage', trigger: 'clear-saved', adapter: 'extension', operation: 'replacement', acceptedBecause: 'explicit-user-action' });
       await queueSavedHistoryAutoSync('clear-saved', { flush: true, force: true });
       return { ok: true };
     }
@@ -2383,6 +2830,7 @@ async function handleMessage(msg, sender) {
       return { ok: true };
     }
 
+    case 'MAGNETAR_OPEN_MOBILE_SYNC_PANEL':
     case 'open-sync-panel': {
       const allTabs = await MAGNETAR_API.tabs.query({ currentWindow: true });
       const tabs = Array.isArray(allTabs) ? allTabs : [];
@@ -2393,7 +2841,7 @@ async function handleMessage(msg, sender) {
       ];
       for (const tab of candidates) {
         try {
-          await MAGNETAR_API.tabs.sendMessage(tab.id, { type: 'open-sync-panel' });
+          await MAGNETAR_API.tabs.sendMessage(tab.id, { type: 'MAGNETAR_OPEN_MOBILE_SYNC_PANEL' });
           if (!tab.active && typeof MAGNETAR_API.tabs.update === 'function') {
             MAGNETAR_API.tabs.update(tab.id, { active: true }).catch?.(() => {});
           }
@@ -2409,7 +2857,8 @@ async function handleMessage(msg, sender) {
 
     case 'open-external-url': {
       const allowedUrls = new Set([
-        'https://arrcee.com/magnetar-mobile'
+        'https://arrcee.com/magnetar-mobile',
+        'https://arrcee.com/my-magnetar/'
       ]);
       if (!allowedUrls.has(msg.url)) {
         return { ok: false, error: 'URL not allowed' };
@@ -2418,6 +2867,56 @@ async function handleMessage(msg, sender) {
       return { ok: true };
     }
 
+    case 'hard-sync-all': {
+      try {
+        return await hardSyncAll({ cycleId: msg.cycleId, bridgeMs: msg.bridgeMs });
+      } catch (error) {
+        return {
+          ok: false,
+          cycleId: error?.cycleId || msg.cycleId,
+          code: error?.code || 'HARD_SYNC_FAILED',
+          error: error?.message || 'Magnetar hard sync failed.',
+          adapters: error?.adapters,
+          timings: error?.timings
+        };
+      }
+    }
+    case 'selfhost-get': return publicSelfHostedConnection(await getSelfHostedConnection());
+    case 'selfhost-pair': {
+      const serverUrl = normaliseSelfHostedUrl(msg.serverUrl);
+      const existing = await getSelfHostedConnection();
+      const deviceId = existing?.deviceId || crypto.randomUUID();
+      const browser = 'chrome';
+      const paired = await selfHostedRequest('/api/v1/pair', { method: 'POST', connection: { serverUrl }, body: { pairingCode: String(msg.pairingCode || '').replace(/\s/g, ''), deviceId, name: msg.name || `Magnetar ${browser}`, browser, extensionVersion: MAGNETAR_API.runtime.getManifest().version } }, true);
+      const provisionalConnection = { serverUrl, token: paired.token, deviceId, cursor: 0, status: 'connected', instanceName: paired.instanceName, apiVersion: paired.apiVersion, schemaVersion: paired.schemaVersion, capabilities: paired.capabilities || [] };
+      const tested = await selfHostedRequest('/api/v1/capabilities', { connection: provisionalConnection });
+      const connection = { ...provisionalConnection, instanceName: tested.instanceName || paired.instanceName || new URL(serverUrl).hostname, version: tested.version || '', lastTestAt: Date.now() };
+      await MAGNETAR_API.storage.local.set({ [SELF_HOSTED_STORAGE_KEY]: connection });
+      return { ok: true, connection: publicSelfHostedConnection(connection) };
+    }
+    case 'selfhost-test': {
+      const connection = await getSelfHostedConnection();
+      const result = await selfHostedRequest('/api/v1/capabilities', { connection });
+      const next = { ...connection, status: 'connected', instanceName: result.instanceName || connection?.instanceName || new URL(connection.serverUrl).hostname, version: result.version || connection?.version || '', lastTestAt: Date.now() };
+      await MAGNETAR_API.storage.local.set({ [SELF_HOSTED_STORAGE_KEY]: next });
+      return { ok: true, ...result, connection: publicSelfHostedConnection(next) };
+    }
+    case 'selfhost-disconnect': { await MAGNETAR_API.storage.local.remove([SELF_HOSTED_STORAGE_KEY]); return { ok: true }; }
+    case 'selfhost-open': { const connection = await getSelfHostedConnection(); if (!connection?.serverUrl) return { ok: false, error: 'Connect My Magnetar first.' }; await MAGNETAR_API.tabs.create({ url: connection.serverUrl }); return { ok: true }; }
+    case 'selfhost-send': { const result = await selfHostedRequest('/api/v1/intake/single', { method: 'POST', body: selfHostedIntakeItem(msg.item) }); return { ok: true, ...result }; }
+    case 'selfhost-send-batch': { const result = await selfHostedRequest('/api/v1/intake/batch', { method: 'POST', body: { items: (msg.items || []).map(selfHostedIntakeItem), idempotencyKey: crypto.randomUUID() } }); return { ok: true, ...result }; }
+    case 'selfhost-sync': {
+      const connection = await getSelfHostedConnection();
+      if (!connection?.token) return { ok: false, error: 'My Magnetar is not connected.' };
+      try {
+        const result = await runCanonicalExclusive(() => runSelfHostedExclusive(connection, msg.cycleId));
+        console.info('Magnetar: My Magnetar sync trace', { cycleId: result.cycleId || msg.cycleId, stage: 'result-returned-to-caller', ok: true });
+        return result;
+      } catch (error) {
+        console.error('Magnetar: My Magnetar sync trace', { cycleId: error?.cycleId || msg.cycleId, stage: 'result-returned-to-caller', ok: false, code: error?.code, entity: error?.entity, id: error?.id, field: error?.field, phase: error?.phase });
+        throw error;
+      }
+    }
     default:
       return { error: 'Unknown message type: ' + msg.type };
   }

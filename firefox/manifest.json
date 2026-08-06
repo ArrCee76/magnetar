@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "__MSG_extensionName__",
-  "version": "2.2.2",
+  "version": "2.2.10",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "browser_specific_settings": {
@@ -18,6 +18,7 @@
     "downloads",
     "clipboardWrite",
     "activeTab",
+    "alarms",
     "<all_urls>"
   ],
   "background": {
@@ -28,10 +29,13 @@
       "lib/sync-crypto.js",
       "lib/sync-api.js",
       "lib/sync-storage.js",
+      "lib/sync-diagnostics.js",
       "lib/sync-data.js",
+      "lib/selfhost-sync.js",
       "lib/fetch-helper.js",
       "lib/shield.js",
       "lib/cache-store.js",
+      "lib/send-normalization.js",
       "lib/providers/local.js",
       "lib/providers/realdebrid.js",
       "lib/providers/rdtclient.js",

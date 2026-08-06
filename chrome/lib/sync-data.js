@@ -9,6 +9,7 @@ var MagnetarSyncData;
   const SAVED_KEY = 'magnetar-saved';
   const HISTORY_KEY = 'magnetar-history';
   const ORGANISED_FOLDERS_KEY = 'magnetar-organised-folders';
+  const HOSTED_CHECKPOINT_KEY = 'magnetar-sync-hosted-checkpoint';
   const ORGANISED_FOLDER_COLOR_IDS = new Set(['default', 'sage', 'blue', 'lavender', 'rose', 'peach', 'yellow', 'grey']);
 
   function normalizeOrganisedFolderColor(value) {
@@ -25,6 +26,9 @@ var MagnetarSyncData;
   const AUTO_PULL_FAILURE_BACKOFF_MS = 30000;
   let autoPushTimer = null;
   let autoPushInFlight = false;
+  let autoPullInFlight = false;
+  let hostedSyncInFlight = null;
+  let canonicalRunner = operation => operation();
 
   function isRecord(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -102,6 +106,7 @@ var MagnetarSyncData;
     const data = await MAGNETAR_API.storage.local.get([MOBILE_ACK_KEY]);
     return normalizeMobileAcknowledgement(data[MOBILE_ACK_KEY]);
   }
+
 
   async function saveMobileAcknowledgement(ack) {
     const normalized = normalizeMobileAcknowledgement(ack);
@@ -329,7 +334,7 @@ var MagnetarSyncData;
     const hash = normalizeHash(item?.hash || item?.infoHash) || extractHashFromMagnet(item?.magnet || item?.magnetUri);
     const name = String(item?.name || item?.title || 'Synced item').trim() || 'Synced item';
     const magnetUri = String(item?.magnetUri || item?.magnet || '').trim() || buildMagnetUri(hash, name);
-    const savedAt = Number(item?.savedAt || item?.createdAt || item?.addedAt || item?.timestamp || Date.now());
+    const savedAt = Number(item?.savedAt ?? item?.createdAt ?? item?.addedAt ?? item?.timestamp ?? 0);
     return {
       ...item,
       id: item?.id || `sync-saved-${hash || savedAt}-${index}`,
@@ -338,7 +343,7 @@ var MagnetarSyncData;
       magnetUri,
       category: item?.category || '',
       sourceUrl: item?.sourceUrl || item?.url || '',
-      savedAt: Number.isFinite(savedAt) ? savedAt : Date.now()
+      savedAt: Number.isFinite(savedAt) ? savedAt : 0
     };
   }
 
@@ -347,7 +352,7 @@ var MagnetarSyncData;
     const name = String(item?.name || item?.title || 'Synced item').trim() || 'Synced item';
     const magnetUri = String(item?.magnetUri || item?.magnet || '').trim() || buildMagnetUri(hash, name);
     const sourceUrl = item?.sourceUrl || item?.url || '';
-    const timestamp = Number(item?.timestamp || item?.lastSentAt || item?.createdAt || item?.addedAt || Date.now());
+    const timestamp = Number(item?.timestamp ?? item?.lastSentAt ?? item?.createdAt ?? item?.addedAt ?? 0);
     const provider = item?.provider || item?.providerId || item?.target || '';
     return {
       ...item,
@@ -360,8 +365,8 @@ var MagnetarSyncData;
       sourceUrl,
       sourceDomain: item?.sourceDomain || sourceDomainFromUrl(sourceUrl),
       magnetUri,
-      timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
-      lastSentAt: Number.isFinite(Number(item?.lastSentAt)) ? Number(item.lastSentAt) : (Number.isFinite(timestamp) ? timestamp : Date.now()),
+      timestamp: Number.isFinite(timestamp) ? timestamp : 0,
+      lastSentAt: Number.isFinite(Number(item?.lastSentAt)) ? Number(item.lastSentAt) : (Number.isFinite(timestamp) ? timestamp : 0),
       sendCount: Number.isFinite(Number(item?.sendCount)) ? Number(item.sendCount) : 1
     };
   }
@@ -374,7 +379,19 @@ var MagnetarSyncData;
     const hash = normalizeHash(item.hash || item.infoHash) || extractHashFromMagnet(item.magnet || item.magnetUri);
     const magnet = clean(item.magnet) || clean(item.magnetUri);
     const sourceUrl = clean(item.sourceUrl) || clean(item.url);
-    const itemKey = clean(item.itemKey) || (hash ? `hash:${hash.toLowerCase()}` : '') || (magnet ? `magnet:${magnet}` : '') || clean(item.providerItemKey) || sourceUrl || clean(item.id) || title;
+    const provider = clean(item.provider || item.sourceProvider).toLowerCase();
+    const providerId = clean(item.providerItemId || item.providerItemKey || item.torrentId);
+    const parentItemKey = clean(item.parentItemKey) || (provider && providerId ? `provider:${provider}:${providerId}` : '');
+    const providerFileId = clean(item.providerFileId || item.fileId);
+    const filePath = clean(item.filePath);
+    const preciseKey = item.kind === 'provider-file' && parentItemKey && providerFileId
+      ? `provider-file:${parentItemKey}:${providerFileId}`
+      : item.kind === 'provider-file' && parentItemKey && filePath
+        ? `provider-file-path:${parentItemKey}:${filePath.toLowerCase()}`
+        : provider && providerId
+          ? `provider:${provider}:${providerId}`
+          : '';
+    const itemKey = clean(item.itemKey) || clean(item.stableKey) || preciseKey || (hash ? `hash:${hash.toLowerCase()}` : '') || (magnet ? `magnet:${magnet}` : '') || sourceUrl || clean(item.id) || title;
     return {
       id: String(item.id || `folder-item-${index}`),
       itemKey,
@@ -384,8 +401,8 @@ var MagnetarSyncData;
       kind: String(item.kind || 'provider-item').trim() || 'provider-item',
       clientType: String(item.clientType || item.provider || item.sourceProvider || '').trim(),
       order: Number.isFinite(Number(item.order)) ? Number(item.order) : index,
-      addedAt: Number.isFinite(Number(item.addedAt)) ? Number(item.addedAt) : Date.now(),
-      updatedAt: Number.isFinite(Number(item.updatedAt)) ? Number(item.updatedAt) : Date.now(),
+      addedAt: Number.isFinite(Number(item.addedAt)) ? Number(item.addedAt) : 0,
+      updatedAt: Number.isFinite(Number(item.updatedAt)) ? Number(item.updatedAt) : 0,
       provider: item.provider || item.sourceProvider || '',
       sourceProvider: item.sourceProvider || item.provider || '',
       providerItemId: item.providerItemId || '',
@@ -414,7 +431,7 @@ var MagnetarSyncData;
     if (!id) return null;
     return {
       id,
-      deletedAt: Number.isFinite(Number(value.deletedAt)) ? Number(value.deletedAt) : Date.now(),
+      deletedAt: Number.isFinite(Number(value.deletedAt)) ? Number(value.deletedAt) : 0,
       sourceDevice: String(value.sourceDevice || "").trim()
     };
   }
@@ -434,8 +451,8 @@ var MagnetarSyncData;
         id: String(folder.id || `folder-${index}`),
         name: String(folder.name || 'Folder').trim() || 'Folder',
         order: Number.isFinite(Number(folder.order)) ? Number(folder.order) : index,
-        createdAt: Number.isFinite(Number(folder.createdAt)) ? Number(folder.createdAt) : Date.now(),
-        updatedAt: Number.isFinite(Number(folder.updatedAt)) ? Number(folder.updatedAt) : Date.now(),
+        createdAt: Number.isFinite(Number(folder.createdAt)) ? Number(folder.createdAt) : 0,
+        updatedAt: Number.isFinite(Number(folder.updatedAt)) ? Number(folder.updatedAt) : 0,
         systemKey: folder.systemKey || '',
         color: normalizeOrganisedFolderColor(folder.color),
         items
@@ -443,7 +460,7 @@ var MagnetarSyncData;
     }).filter(Boolean).filter(folder => !(deletedAtById.get(folder.id) > Number(folder.updatedAt || 0))).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
     return {
       schema: 'magnetar-folders-v1',
-      updatedAt: Number.isFinite(Number(section.updatedAt)) ? Number(section.updatedAt) : Date.now(),
+      updatedAt: Number.isFinite(Number(section.updatedAt)) ? Number(section.updatedAt) : 0,
       sourceDevice: section.sourceDevice || '',
       deletedFolders,
       folders
@@ -631,175 +648,270 @@ var MagnetarSyncData;
       deduped: result.dedupedCount > 0
     };
   }
-  async function pushSavedAndHistory(options = {}) {
-    const settings = await MagnetarSyncStorage.loadSettings();
-    if (!isPaired(settings)) {
-      throw new Error('Magnetar Sync is not paired.');
+  function hostedHistoryKey(item = {}) {
+    const aggregate = `${syncItemKey(item)}|${String(item.providerId || item.provider || item.target || '').trim()}`;
+    return aggregate;
+  }
+
+  function historyRecordTime(item = {}) {
+    return Number(item.lastSentAt || item.timestamp || item.createdAt || item.attemptedAt || 0) || 0;
+  }
+
+  function historyWinner(base, local, remote) {
+    const same = (left, right) => stableStringify(left ?? null) === stableStringify(right ?? null);
+    const localValue = local === undefined ? base : local;
+    const remoteValue = remote === undefined ? base : remote;
+    const preserveSyncMetadata = winner => {
+      if (!winner || winner._selfHostedSync) return winner;
+      const candidates = [localValue?._selfHostedSync, remoteValue?._selfHostedSync, base?._selfHostedSync].filter(isRecord)
+        .sort((left, right) => Number(right.sendCount || 0) - Number(left.sendCount || 0) || (right.eventIds?.length || 0) - (left.eventIds?.length || 0));
+      return candidates[0] ? { ...winner, _selfHostedSync: cloneJson(candidates[0]) } : winner;
+    };
+    const localChanged = !same(localValue, base);
+    const remoteChanged = !same(remoteValue, base);
+    if (!localChanged) return preserveSyncMetadata(remoteValue);
+    if (!remoteChanged) return preserveSyncMetadata(localValue);
+    if (same(localValue, remoteValue)) return preserveSyncMetadata(localValue);
+    const localTime = historyRecordTime(localValue);
+    const remoteTime = historyRecordTime(remoteValue);
+    if (localTime !== remoteTime) return preserveSyncMetadata(localTime > remoteTime ? localValue : remoteValue);
+    const localCount = Number(localValue?.sendCount || 0);
+    const remoteCount = Number(remoteValue?.sendCount || 0);
+    if (localCount !== remoteCount) return preserveSyncMetadata(localCount > remoteCount ? localValue : remoteValue);
+    return preserveSyncMetadata(stableStringify(localValue) >= stableStringify(remoteValue) ? localValue : remoteValue);
+  }
+
+  function historyMap(items) {
+    const output = {};
+    for (const item of Array.isArray(items) ? items : []) {
+      const normalized = normalizeChromeHistoryItem(item);
+      const key = hostedHistoryKey(normalized);
+      if (!key) continue;
+      output[key] = output[key] ? historyWinner(null, output[key], normalized) : normalized;
     }
+    return output;
+  }
 
-    const local = await loadLocalSavedAndHistory();
-    const mobileAcknowledgement = await loadMobileAcknowledgement();
-    local.organisedFolders = mobileAcknowledgement?.paired ? await loadLocalOrganisedFolders() : null;
-    const fingerprint = options.fingerprint || computeSavedHistoryFingerprint(local);
+  function mergeHostedHistory(base, local, remote) {
+    const baseMap = isRecord(base) ? base : {};
+    const localMap = historyMap(local);
+    const remoteMap = historyMap(remote);
+    const merged = {};
+    for (const key of [...new Set([...Object.keys(baseMap), ...Object.keys(localMap), ...Object.keys(remoteMap)])].sort()) {
+      const value = historyWinner(baseMap[key], localMap[key], remoteMap[key]);
+      if (value) merged[key] = value;
+    }
+    return {
+      map: merged,
+      items: Object.entries(merged).sort(([left], [right]) => left.localeCompare(right)).map(([, item]) => cloneJson(item))
+    };
+  }
 
-    async function attempt() {
+  async function loadHostedCheckpoint() {
+    const data = await MAGNETAR_API.storage.local.get([HOSTED_CHECKPOINT_KEY]);
+    const checkpoint = data[HOSTED_CHECKPOINT_KEY];
+    return isRecord(checkpoint) && Number(checkpoint.schemaVersion || 0) === 1 && isRecord(checkpoint.canonical)
+      ? checkpoint
+      : null;
+  }
+
+  async function loadCanonicalLocalState() {
+    const data = await MAGNETAR_API.storage.local.get([SAVED_KEY, HISTORY_KEY, ORGANISED_FOLDERS_KEY]);
+    return {
+      saved: Array.isArray(data[SAVED_KEY]) ? cloneJson(data[SAVED_KEY]) : [],
+      history: Array.isArray(data[HISTORY_KEY]) ? cloneJson(data[HISTORY_KEY]) : [],
+      folders: normalizeOrganisedFoldersSection(data[ORGANISED_FOLDERS_KEY]) || { schema: 'magnetar-folders-v1', updatedAt: 0, sourceDevice: '', deletedFolders: [], folders: [] }
+    };
+  }
+
+  function hostedRemoteState(payload) {
+    return {
+      saved: (Array.isArray(payload?.sections?.saved?.items) ? payload.sections.saved.items : []).map(normalizeChromeSavedItem),
+      savedTombstones: (Array.isArray(payload?.sections?.saved?.tombstones) ? payload.sections.saved.tombstones : []).map(item => ({ stableKey: String(item?.stableKey || item?.itemKey || ''), deletedAt: Number(item?.deletedAt || 0) })).filter(item => item.stableKey && item.deletedAt > 0),
+      history: (Array.isArray(payload?.sections?.history?.items) ? payload.sections.history.items : []).map(normalizeChromeHistoryItem),
+      folders: normalizeOrganisedFoldersSection(payload?.sections?.organisedFolders) || { schema: 'magnetar-folders-v1', updatedAt: 0, sourceDevice: '', deletedFolders: [], folders: [] }
+    };
+  }
+
+  function canonicaliseHostedRemote(remote, baseline, timestamp) {
+    const canonical = MagnetarSelfHostedSync.canonicaliseReplica(remote, baseline || {}, timestamp, false);
+    for (const entity of ['saved', 'folders', 'assignments']) {
+      for (const [key, record] of Object.entries(baseline?.[entity] || {})) {
+        if (record?.deleted && !canonical[entity]?.[key]) canonical[entity][key] = cloneJson(record);
+      }
+    }
+    return canonical;
+  }
+
+  function withCanonicalHostedState(payload, canonicalLocal, settings, timestamp, canonical = null) {
+    const next = normalizePayload(payload, timestamp);
+    next.updatedAt = timestamp;
+    next.sections = {
+      ...next.sections,
+      saved: { ...(isRecord(next.sections?.saved) ? next.sections.saved : {}), updatedAt: timestamp, items: cloneJson(canonicalLocal.saved), tombstones: Object.values(canonical?.saved || {}).filter(item => item?.deleted && item?.stableKey).map(item => ({ stableKey: item.stableKey, deletedAt: Number(item.deletedAt || timestamp) })).sort((left, right) => left.stableKey.localeCompare(right.stableKey)) },
+      history: { ...(isRecord(next.sections?.history) ? next.sections.history : {}), updatedAt: timestamp, items: cloneJson(canonicalLocal.history) },
+      organisedFolders: { ...cloneJson(canonicalLocal.folders), updatedAt: Number(canonicalLocal.folders?.updatedAt || timestamp), sourceDevice: settings.deviceId || canonicalLocal.folders?.sourceDevice || 'chrome' }
+    };
+    const deviceId = settings.deviceId || 'chrome';
+    next.devices = { ...next.devices, [deviceId]: { name: settings.deviceName || 'Chrome', lastSeenAt: timestamp } };
+    return next;
+  }
+
+  function canonicalRecordSemantic(record) {
+    if (!isRecord(record)) return record ?? null;
+    const next = cloneJson(record);
+    delete next.updatedAt;
+    delete next.deletedAt;
+    delete next.sourceDevice;
+    return next;
+  }
+
+  function canonicalDifferenceCount(left, right) {
+    let count = 0;
+    for (const section of ['saved', 'folders', 'assignments']) {
+      const leftMap = left?.[section] || {};
+      const rightMap = right?.[section] || {};
+      for (const key of new Set([...Object.keys(leftMap), ...Object.keys(rightMap)])) {
+        if (stableStringify(canonicalRecordSemantic(leftMap[key])) !== stableStringify(canonicalRecordSemantic(rightMap[key]))) count += 1;
+      }
+    }
+    return count;
+  }
+
+  async function inspectHostedReplica() {
+    const settings = await MagnetarSyncStorage.loadSettings();
+    if (!isPaired(settings)) throw new Error('Magnetar Sync is not paired.');
+    const vault = await MagnetarSyncApi.getVault(settings);
+    const payload = vault.envelope
+      ? await MagnetarSyncCrypto.decryptJson(vault.envelope, settings.encryptionKey)
+      : MagnetarSyncContract.createPayloadSkeleton(Date.now());
+    return {
+      settings,
+      revision: Number(vault.revision || 0),
+      state: hostedRemoteState(payload),
+      counts: {
+        saved: Array.isArray(payload?.sections?.saved?.items) ? payload.sections.saved.items.length : 0,
+        history: Array.isArray(payload?.sections?.history?.items) ? payload.sections.history.items.length : 0,
+        folders: Array.isArray(payload?.sections?.organisedFolders?.folders) ? payload.sections.organisedFolders.folders.length : 0
+      }
+    };
+  }
+
+  async function executeHostedCanonicalSync(options = {}) {
+    const syncRunId = String(options.cycleId || `hosted-${Date.now().toString(36)}`);
+    globalThis.MagnetarSyncDiagnostics?.lifecycle?.('mobile-sync-request', { syncRunId, trigger: options.reason || (options.manual ? 'manual' : 'automatic'), operation: options.pull ? 'pull' : 'reconcile' });
+    const settings = await MagnetarSyncStorage.loadSettings();
+    if (!isPaired(settings)) throw new Error('Magnetar Sync is not paired.');
+    if (!globalThis.MagnetarSelfHostedSync?.reconcileReplica || !globalThis.MagnetarSelfHostedSync?.canonicaliseReplica) {
+      throw new Error('Canonical sync engine is unavailable.');
+    }
+    const checkpoint = await loadHostedCheckpoint();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
       const vault = await MagnetarSyncApi.getVault(settings);
-      let payload = null;
-      if (vault.envelope) {
-        payload = await MagnetarSyncCrypto.decryptJson(vault.envelope, settings.encryptionKey);
-      }
+      const payload = vault.envelope
+        ? await MagnetarSyncCrypto.decryptJson(vault.envelope, settings.encryptionKey)
+        : MagnetarSyncContract.createPayloadSkeleton(Date.now());
       const timestamp = Date.now();
-      const origins = await loadOrigins();
-      const next = withChromeSavedHistory(payload, local.saved, local.history, settings, origins, timestamp, vault.revision);
-      const payloadWithFolders = withLocalOrganisedFolders(next.payload, local.organisedFolders, settings, timestamp, { forceLocal: options.forceOrganisedFolders === true });
-      if (options.forceOrganisedFolders === true) {
-        const remoteFolders = normalizeOrganisedFoldersSection(payload?.sections?.organisedFolders);
-        const outgoingFolders = normalizeOrganisedFoldersSection(payloadWithFolders?.sections?.organisedFolders);
-        console.debug('Magnetar Sync: folder push started', {
-          localFolderCount: local.organisedFolders?.folders?.length || 0,
-          localFolderNames: local.organisedFolders?.folders?.map(folder => folder.name).filter(Boolean) || [],
-          remoteFolderCount: remoteFolders?.folders?.length || 0,
-          remoteFolderNames: remoteFolders?.folders?.map(folder => folder.name).filter(Boolean) || [],
-          outgoingFolderCount: outgoingFolders?.folders?.length || 0,
-          outgoingFolderNames: outgoingFolders?.folders?.map(folder => folder.name).filter(Boolean) || []
-        });
+      const local = await loadCanonicalLocalState();
+      const remote = hostedRemoteState(payload);
+      const reconciled = MagnetarSelfHostedSync.reconcileReplica({ local, remote, checkpoint, now: timestamp, inferRemoteDeletes: false });
+      const mergedHistory = mergeHostedHistory(checkpoint?.history, local.history, remote.history);
+      if (Number.isFinite(options.expectedRevision) && Number(vault.revision || 0) !== Number(options.expectedRevision)) {
+        throw Object.assign(new Error('Mobile sync changed during the coordinated sync. Canonical extension state was preserved; run Sync again.'), { code: 'HOSTED_CHANGED_DURING_COORDINATED_SYNC' });
       }
-      const envelope = await MagnetarSyncCrypto.encryptJson(payloadWithFolders, settings.encryptionKey);
-      const result = await MagnetarSyncApi.putVault({
-        serverUrl: settings.serverUrl,
-        syncId: settings.syncId,
-        syncToken: settings.syncToken,
-        baseRevision: vault.revision,
-        envelope
-      });
-      await saveOrigins(next.origins);
-      const savedSettings = await MagnetarSyncStorage.saveSettings({
-        ...settings,
-        lastRevision: result.revision,
-        lastSyncAt: timestamp
+      const canonicalTarget = isRecord(options.canonical) ? cloneJson(options.canonical) : reconciled.canonical;
+      const target = options.canonical ? MagnetarSelfHostedSync.projectCanonical(canonicalTarget, mergedHistory.items) : { ...reconciled.local, history: mergedHistory.items };
+      const remoteCanonical = canonicaliseHostedRemote(remote, checkpoint?.canonical || {}, timestamp);
+      const semanticChanges = canonicalDifferenceCount(canonicalTarget, remoteCanonical)
+        + (stableStringify(mergedHistory.map) === stableStringify(historyMap(remote.history)) ? 0 : 1);
+      const transportRepairChanges = Number(target.folders?.updatedAt || 0) > Number(remote.folders?.updatedAt || 0) ? 1 : 0;
+      const localCanonical = MagnetarSelfHostedSync.canonicaliseReplica(local, checkpoint?.canonical || {}, timestamp);
+      const localChanges = canonicalDifferenceCount(canonicalTarget, localCanonical)
+        + (stableStringify(mergedHistory.map) === stableStringify(historyMap(local.history)) ? 0 : 1);
+      const mobileAcknowledgement = extractMobileAcknowledgement(payload);
+      const storageUpdate = {
+        [SAVED_KEY]: target.saved,
+        [HISTORY_KEY]: target.history,
+        [ORGANISED_FOLDERS_KEY]: target.folders
+      };
+      if (mobileAcknowledgement) storageUpdate[MOBILE_ACK_KEY] = mobileAcknowledgement;
+      if (localChanges > 0) {
+        const writer = globalThis.MagnetarSyncDiagnostics?.write;
+        if (writer) await writer(MAGNETAR_API.storage.local, storageUpdate, {
+          syncRunId, caller: 'executeHostedCanonicalSync', trigger: options.reason || (options.manual ? 'manual-mobile-sync' : 'automatic-mobile-sync'),
+          adapter: 'hosted-mobile', checkpoint: checkpoint?.revision ?? null, cursor: Number(vault.revision || 0), operation: 'record-merge',
+          acceptedBecause: 'hosted-three-way-reconciliation'
+        }); else await MAGNETAR_API.storage.local.set(storageUpdate);
+      } else if (mobileAcknowledgement) await MAGNETAR_API.storage.local.set({ [MOBILE_ACK_KEY]: mobileAcknowledgement });
+      if (!mobileAcknowledgement) await MAGNETAR_API.storage.local.remove([MOBILE_ACK_KEY]);
+
+      let revision = Number(vault.revision || 0);
+      if (semanticChanges > 0 || transportRepairChanges > 0 || !vault.envelope) {
+        const outgoingPayload = withCanonicalHostedState(payload, target, settings, timestamp, canonicalTarget);
+        const envelope = await MagnetarSyncCrypto.encryptJson(outgoingPayload, settings.encryptionKey);
+        try {
+          const result = await MagnetarSyncApi.putVault({
+            serverUrl: settings.serverUrl,
+            syncId: settings.syncId,
+            syncToken: settings.syncToken,
+            baseRevision: vault.revision,
+            envelope
+          });
+          revision = Number(result.revision || revision);
+        } catch (error) {
+          if (error?.conflict && attempt < 2) continue;
+          throw error;
+        }
+      }
+
+      const persisted = await loadCanonicalLocalState();
+      const persistedCanonical = MagnetarSelfHostedSync.canonicaliseReplica(persisted, canonicalTarget, timestamp);
+      if (canonicalDifferenceCount(canonicalTarget, persistedCanonical) > 0) {
+        throw new Error('Canonical extension state changed before hosted sync could be verified.');
+      }
+      const nextCheckpoint = { schemaVersion: 1, revision, canonical: canonicalTarget, history: mergedHistory.map, savedAt: timestamp };
+      const fingerprint = computeSavedHistoryFingerprint({ ...persisted, organisedFolders: persisted.folders });
+      await MAGNETAR_API.storage.local.set({ [HOSTED_CHECKPOINT_KEY]: nextCheckpoint });
+      const savedSettings = await MagnetarSyncStorage.saveSettings({ ...settings, lastRevision: revision, lastSyncAt: timestamp });
+      await saveAutoStatus({
+        lastResult: 'success', lastError: '', lastPushedSavedHistoryFingerprint: fingerprint,
+        lastSeenSavedHistoryFingerprint: fingerprint, lastSuccessAt: timestamp,
+        lastRevision: revision, lastSyncAt: timestamp,
+        savedCount: persisted.saved.length, historyCount: persisted.history.length,
+        organisedFolderCount: persisted.folders.folders.length
       });
       return {
         ok: true,
         mode: options.manual ? 'manual' : 'auto',
         revision: savedSettings.lastRevision,
         lastSyncAt: savedSettings.lastSyncAt,
-        savedCount: local.saved.length,
-        historyCount: local.history.length,
-        organisedFolderCount: local.organisedFolders?.folders?.length || 0,
+        savedCount: persisted.saved.length,
+        historyCount: persisted.history.length,
+        organisedFolderCount: persisted.folders.folders.length,
+        mutationCount: semanticChanges,
+        changed: semanticChanges > 0 || transportRepairChanges > 0,
         fingerprint
       };
     }
+    throw new Error('Hosted Magnetar Sync kept changing during synchronisation. Try again.');
+  }
 
-    try {
-      const result = await attempt();
-      await saveAutoStatus({
-        lastResult: 'success',
-        lastError: '',
-        lastPushedSavedHistoryFingerprint: fingerprint,
-        lastSuccessfulAutoPushAt: options.manual ? undefined : result.lastSyncAt,
-        lastAutoPushAt: options.manual ? undefined : result.lastSyncAt,
-        lastAutoPushError: '',
-        lastSuccessAt: result.lastSyncAt,
-        lastRevision: result.revision,
-        lastSyncAt: result.lastSyncAt,
-        savedCount: result.savedCount,
-        historyCount: result.historyCount
-      });
-      return result;
-    } catch (error) {
-      if (!error?.conflict) throw error;
-      const result = await attempt();
-      await saveAutoStatus({
-        lastResult: 'success',
-        lastError: '',
-        lastPushedSavedHistoryFingerprint: fingerprint,
-        lastSuccessfulAutoPushAt: options.manual ? undefined : result.lastSyncAt,
-        lastAutoPushAt: options.manual ? undefined : result.lastSyncAt,
-        lastAutoPushError: '',
-        lastSuccessAt: result.lastSyncAt,
-        lastRevision: result.revision,
-        lastSyncAt: result.lastSyncAt,
-        savedCount: result.savedCount,
-        historyCount: result.historyCount
-      });
-      return result;
-    }
+  async function synchroniseHostedCanonical(options = {}) {
+    if (hostedSyncInFlight) return hostedSyncInFlight;
+    hostedSyncInFlight = executeHostedCanonicalSync(options).finally(() => { hostedSyncInFlight = null; });
+    return hostedSyncInFlight;
+  }
+
+  async function pushSavedAndHistory(options = {}) {
+    return synchroniseHostedCanonical(options);
   }
 
   async function pullSavedAndHistory(options = {}) {
-    const settings = await MagnetarSyncStorage.loadSettings();
-    if (!isPaired(settings)) {
-      throw new Error('Magnetar Sync is not paired.');
-    }
-    const vault = await MagnetarSyncApi.getVault(settings);
-    if (!vault.envelope) {
-      const savedSettings = await MagnetarSyncStorage.saveSettings({
-        ...settings,
-        lastRevision: vault.revision,
-        lastSyncAt: Date.now()
-      });
-      return { ok: true, empty: true, revision: savedSettings.lastRevision, lastSyncAt: savedSettings.lastSyncAt, savedCount: 0, historyCount: 0 };
-    }
-
-    const payload = await MagnetarSyncCrypto.decryptJson(vault.envelope, settings.encryptionKey);
-    const local = await loadLocalSavedAndHistory();
-    const origins = await loadOrigins();
-    const timestamp = Date.now();
-    const merged = mergeRemoteSavedHistoryIntoLocal(payload, local, origins, vault.revision, timestamp);
-    if ((local.saved.length > 0 && merged.saved.length === 0) || (local.history.length > 0 && merged.history.length === 0)) {
-      console.warn('Magnetar Sync: blocked empty local Saved/History write', {
-        operation: 'chrome-pull',
-        previousSavedCount: local.saved.length,
-        nextSavedCount: merged.saved.length,
-        previousHistoryCount: local.history.length,
-        nextHistoryCount: merged.history.length
-      });
-      throw new Error('Sync refused to replace local Saved/History with an empty result.');
-    }
-    const mobileAcknowledgement = extractMobileAcknowledgement(payload);
-    const organisedFolders = normalizeOrganisedFoldersSection(payload?.sections?.organisedFolders);
-    const storageUpdate = {
-      [SAVED_KEY]: merged.saved,
-      [HISTORY_KEY]: merged.history
-    };
-    const removeKeys = [];
-    if (mobileAcknowledgement) storageUpdate[MOBILE_ACK_KEY] = mobileAcknowledgement;
-    else removeKeys.push(MOBILE_ACK_KEY);
-    if (organisedFolders) storageUpdate[ORGANISED_FOLDERS_KEY] = organisedFolders;
-    else removeKeys.push(ORGANISED_FOLDERS_KEY);
-    await MAGNETAR_API.storage.local.set(storageUpdate);
-    if (removeKeys.length) await MAGNETAR_API.storage.local.remove(removeKeys);
-    await saveOrigins(merged.origins);
-    const fingerprint = computeSavedHistoryFingerprint({ saved: merged.saved, history: merged.history });
-    await saveAutoStatus({
-      lastResult: 'success',
-      lastError: '',
-      lastPushedSavedHistoryFingerprint: fingerprint,
-      lastSeenSavedHistoryFingerprint: fingerprint,
-      lastSuccessAt: timestamp,
-      lastRevision: vault.revision,
-      lastSyncAt: timestamp,
-      savedCount: merged.saved.length,
-      historyCount: merged.history.length
-    });
-    const savedSettings = await MagnetarSyncStorage.saveSettings({
-      ...settings,
-      lastRevision: vault.revision,
-      lastSyncAt: timestamp
-    });
-    return {
-      ok: true,
-      mode: options.manual ? 'manual-pull' : 'pull',
-      revision: savedSettings.lastRevision,
-      lastSyncAt: savedSettings.lastSyncAt,
-      savedCount: merged.saved.length,
-      historyCount: merged.history.length,
-      remoteSavedCount: merged.remoteSavedCount,
-      remoteHistoryCount: merged.remoteHistoryCount,
-      organisedFolderCount: organisedFolders?.folders?.length || 0
-    };
+    return synchroniseHostedCanonical({ ...options, pull: true });
   }
+
   async function maybePullLatest(reason = 'interaction', options = {}) {
+    globalThis.MagnetarSyncDiagnostics?.lifecycle?.('auto-pull-fired', { adapter: 'hosted-mobile', trigger: reason, force: options.force === true });
     if (autoPullInFlight) return { ok: false, skipped: true, reason: 'pull-in-flight' };
     const settings = await MagnetarSyncStorage.loadSettings();
     if (!isPaired(settings)) {
@@ -848,13 +960,13 @@ var MagnetarSyncData;
     }
   }
   async function maybeAutoPush(reason = 'dirty-check', options = {}) {
+    globalThis.MagnetarSyncDiagnostics?.lifecycle?.('dirty-check-fired', { adapter: 'hosted-mobile', trigger: reason, force: options.force === true });
     if (autoPushInFlight) return { ok: false, skipped: true, reason: 'in-flight' };
     const settings = await MagnetarSyncStorage.loadSettings();
     if (!isPaired(settings)) return { ok: false, skipped: true, reason: 'not-paired' };
 
     const local = await loadLocalSavedAndHistory();
-    const mobileAcknowledgement = await loadMobileAcknowledgement();
-    local.organisedFolders = mobileAcknowledgement?.paired ? await loadLocalOrganisedFolders() : null;
+    local.organisedFolders = await loadLocalOrganisedFolders();
     const fingerprint = computeSavedHistoryFingerprint(local);
     const status = await loadAutoStatus();
     const now = Date.now();
@@ -917,7 +1029,8 @@ var MagnetarSyncData;
     if (autoPushTimer) clearTimeout(autoPushTimer);
     autoPushTimer = setTimeout(() => {
       autoPushTimer = null;
-      maybeAutoPush(reason).catch(() => {});
+      globalThis.MagnetarSyncDiagnostics?.lifecycle?.('auto-push-fired', { adapter: 'hosted-mobile', trigger: reason });
+      canonicalRunner(() => maybeAutoPush(reason)).catch(() => {});
     }, AUTO_DEBOUNCE_MS);
     saveAutoStatus({ lastResult: 'pending', lastReason: reason }).catch(() => {});
   }
@@ -929,10 +1042,16 @@ var MagnetarSyncData;
     loadAutoStatus,
     pushSavedAndHistory,
     pullSavedAndHistory,
+    synchroniseHostedCanonical,
+    inspectHostedReplica,
     pushMobileReviewItem,
     pushMobileReviewItems,
+    maybePullLatest,
     maybeAutoPush,
-    scheduleAutoPush
+    scheduleAutoPush,
+    setCanonicalRunner(runner) {
+      canonicalRunner = typeof runner === 'function' ? runner : operation => operation();
+    }
   };
 
   globalThis.MagnetarSyncData = MagnetarSyncData;

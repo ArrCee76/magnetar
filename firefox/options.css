@@ -992,6 +992,11 @@ a:hover {
   .shield-add {
     flex-direction: column;
   }
+
+  .section-heading-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 
@@ -2350,3 +2355,6 @@ body .toggle input:checked + .toggle-track::after {
   left: calc(100% - 19px) !important;
   transform: translateY(-50%) !important;
 }
+.selfhost-settings { border-color: var(--mg-signal-line); background: color-mix(in srgb, var(--mg-surface) 90%, var(--mg-signal-bg) 10%); }
+.selfhost-settings .field-label { margin-top: 14px; }.selfhost-code { max-width: 180px; font-family: var(--mg-mono); font-size: 16px; letter-spacing: .12em; }.selfhost-actions { display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px; }.selfhost-actions .btn-test,.selfhost-actions .btn-text{margin:0}.selfhost-settings .credential-result{margin-top:10px;min-height:20px}
+@media (max-width: 640px) { .advanced-actions { flex-wrap: wrap; } }

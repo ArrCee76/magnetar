@@ -890,7 +890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
       if (data.history && Array.isArray(data.history)) {
-        await MAGNETAR_API.storage.local.set({ 'magnetar-history': data.history });
+        await MagnetarSyncDiagnostics.write(MAGNETAR_API.storage.local, { 'magnetar-history': data.history }, { caller: 'options-import-all', trigger: 'configuration-import', adapter: 'extension', operation: 'replacement', acceptedBecause: 'explicit-user-import' });
       }
 
       window.location.reload();
@@ -906,7 +906,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await MAGNETAR_API.storage.sync.remove(['magnetar']);
     await MAGNETAR_API.storage.local.remove(['shield']);
-    await MAGNETAR_API.storage.local.set({ 'magnetar-history': [] });
+    await MagnetarSyncDiagnostics.write(MAGNETAR_API.storage.local, { 'magnetar-history': [] }, { caller: 'options-reset-all', trigger: 'explicit-reset', adapter: 'extension', operation: 'replacement', acceptedBecause: 'explicit-user-confirmation' });
 
     await MAGNETAR_API.runtime.sendMessage({ type: 'shield-toggle', enabled: true });
     window.location.reload();
@@ -988,6 +988,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+
+  // My Magnetar pairing is intentionally stored in storage.local, never browser sync.
+  const selfHostUrl = document.getElementById('selfhost-url');
+  const selfHostCode = document.getElementById('selfhost-code');
+  const selfHostResult = document.getElementById('selfhost-result');
+  if (selfHostUrl && selfHostCode && selfHostResult) {
+  const renderSelfHost = async () => { const connection = await MAGNETAR_API.runtime.sendMessage({ type: 'selfhost-get' }); if (connection?.serverUrl) selfHostUrl.value = connection.serverUrl; selfHostResult.textContent = connection?.paired ? `Connected · API ${connection.apiVersion || 1}${connection.lastSyncAt ? ` · synced ${new Date(connection.lastSyncAt).toLocaleString()}` : ''}` : 'Not paired.'; };
+  await renderSelfHost();
+  selfHostCode.addEventListener('input', () => { const digits = selfHostCode.value.replace(/\D/g, '').slice(0, 8); selfHostCode.value = digits.replace(/(\d{4})(?=\d)/, '$1 '); });
+  document.getElementById('selfhost-pair')?.addEventListener('click', async () => { selfHostResult.textContent = 'Pairing…'; try { const result = await MAGNETAR_API.runtime.sendMessage({ type: 'selfhost-pair', serverUrl: selfHostUrl.value, pairingCode: selfHostCode.value }); if (!result?.ok) throw new Error(result?.error || 'Pairing failed.'); selfHostCode.value = ''; await renderSelfHost(); } catch (error) { selfHostResult.textContent = error.message || 'Pairing failed.'; } });
+  document.getElementById('selfhost-test')?.addEventListener('click', async () => { selfHostResult.textContent = 'Testing…'; try { const result = await MAGNETAR_API.runtime.sendMessage({ type: 'selfhost-test' }); selfHostResult.textContent = result?.ok ? `Connected · server ${result.version}` : result?.error || 'Connection failed.'; } catch (error) { selfHostResult.textContent = error.message || 'Connection failed.'; } });
+  document.getElementById('selfhost-sync')?.addEventListener('click', async () => { selfHostResult.textContent = 'Syncing all connected systems…'; try { const result = await MAGNETAR_API.runtime.sendMessage({ type: 'hard-sync-all', cycleId: globalThis.crypto?.randomUUID?.() }); if (!result?.ok) throw new Error(result?.error || 'Sync failed.'); await renderSelfHost(); } catch (error) { selfHostResult.textContent = error.message || 'Sync failed.'; } });
+  document.getElementById('selfhost-open')?.addEventListener('click', () => MAGNETAR_API.runtime.sendMessage({ type: 'selfhost-open' }));
+  document.getElementById('selfhost-disconnect')?.addEventListener('click', async () => { await MAGNETAR_API.runtime.sendMessage({ type: 'selfhost-disconnect' }); selfHostResult.textContent = 'Disconnected locally. Revoke this browser in My Magnetar Settings if needed.'; });
+  }
 
   // ═══════════════════════════════════════════════════════════════════════
   // Footer

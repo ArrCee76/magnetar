@@ -889,6 +889,58 @@
     "message": "Maybe later",
     "description": "Magnetar 2.2 What's New panel"
   },
+  "whatsNewOpenMyMagnetar": {
+    "message": "Open My Magnetar",
+    "description": "Opens the My Magnetar connection and sync panel"
+  },
+  "whatsNewEcosystemIntro": {
+    "message": "Magnetar, Magnetar Mobile and My Magnetar now work together.",
+    "description": "Magnetar ecosystem introduction"
+  },
+  "whatsNewEcosystemTitle": {
+    "message": "Sync your ecosystem",
+    "description": "Magnetar ecosystem sync story title"
+  },
+  "whatsNewEcosystemTeaser": {
+    "message": "Use Mobile, My Magnetar or both with the extension.",
+    "description": "Magnetar ecosystem sync story summary"
+  },
+  "whatsNewStepSyncConnection": {
+    "message": "Your chosen sync connection",
+    "description": "Magnetar ecosystem sync story step"
+  },
+  "whatsNewStepMobileOrMyMagnetar": {
+    "message": "Mobile, My Magnetar or both",
+    "description": "Magnetar ecosystem sync story step"
+  },
+  "whatsNewDataSent": {
+    "message": "Sent",
+    "description": "Magnetar ecosystem synced data label"
+  },
+  "whatsNewEcosystemSyncNote": {
+    "message": "Keep Saved, Sent and Organised folder information in step. Use any two together, or connect all three through the extension.",
+    "description": "Magnetar ecosystem sync explanation"
+  },
+  "whatsNewMyMagnetarTitle": {
+    "message": "My Magnetar",
+    "description": "My Magnetar feature story title"
+  },
+  "whatsNewMyMagnetarTeaser": {
+    "message": "Run Magnetar on your own server.",
+    "description": "My Magnetar feature story summary"
+  },
+  "whatsNewStepMyMagnetar": {
+    "message": "My Magnetar",
+    "description": "My Magnetar feature story step"
+  },
+  "whatsNewMyMagnetarNote": {
+    "message": "Review, save, organise and send from your self-hosted My Magnetar installation.",
+    "description": "My Magnetar feature explanation"
+  },
+  "whatsNewMyMagnetarPrivacy": {
+    "message": "Your server and your data. Provider credentials stay local to the relevant device or installation.",
+    "description": "My Magnetar privacy explanation"
+  },
   "whatsNewSyncTitle": {
     "message": "Sync with mobile",
     "description": "Magnetar 2.2 What's New panel"

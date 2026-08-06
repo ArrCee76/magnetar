@@ -1,10 +1,10 @@
-/**
- * Magnetar � Content Script
+﻿/**
+ * Magnetar ï¿½ Content Script
  * 
  * Runs on every page. Two banner modes + batch panel:
- * 1. Full banner � name, cache, Send, Share, Copy Magnet, Copy Hash, ?
- * 2. Compact banner � Send + ? only
- * 3. Batch mode � checkbox table for multi-hash pages
+ * 1. Full banner ï¿½ name, cache, Send, Share, Copy Magnet, Copy Hash, ?
+ * 2. Compact banner ï¿½ Send + ? only
+ * 3. Batch mode ï¿½ checkbox table for multi-hash pages
  */
 
 (async () => {
@@ -160,6 +160,68 @@
     return value === 'advanced' ? 'advanced' : 'standard';
   }
 
+  const HARD_SYNC_WEB_REQUEST_EVENT = 'magnetar:hard-sync-all-request';
+  const HARD_SYNC_WEB_RESULT_EVENT = 'magnetar:hard-sync-all-result';
+  const HARD_SYNC_WEB_PROGRESS_EVENT = 'magnetar:hard-sync-all-progress';
+  let hardSyncWebInFlight = null;
+
+  function updateHardSyncUi(stage, message) {
+    const button = document.getElementById('magnetar-my-sync');
+    if (!button) return;
+    const running = !['complete', 'failed'].includes(stage);
+    button.disabled = running;
+    button.setAttribute('aria-busy', String(running));
+    button.classList.toggle('magnetar-hard-sync-running', running);
+    const label = button.querySelector('span');
+    if (label) label.textContent = running ? message : 'Sync now';
+    else button.textContent = running ? message : 'Sync now';
+  }
+
+  function publishHardSyncWebResult(requestId, result) {
+    window.dispatchEvent(new CustomEvent(HARD_SYNC_WEB_RESULT_EVENT, { detail: JSON.stringify({ requestId, ...result }) }));
+  }
+
+  async function runHardSyncAllFromExtension(button) {
+    if (button?.getAttribute('aria-busy') === 'true') return;
+    const cycleId = globalThis.crypto?.randomUUID?.() || `hard-sync-${Date.now().toString(36)}`;
+    updateHardSyncUi('starting', 'Starting sync');
+    const response = await safeRuntimeMessage({ type: 'hard-sync-all', cycleId }, null);
+    if (!response?.ok) {
+      updateHardSyncUi('failed', response?.error || 'Sync failed');
+      const succeeded = [response.adapters?.hosted?.ok ? 'Mobile synced' : '', response.adapters?.selfHosted?.ok ? 'My Magnetar synced' : ''].filter(Boolean);
+      showToast(`${succeeded.length ? `${succeeded.join(' / ')} / ` : ''}${response?.error || 'Magnetar hard sync failed.'}`, true);
+      return response;
+    }
+    updateHardSyncUi('complete', 'Sync complete.');
+    const synced = [response.adapters?.hosted?.ok ? 'Mobile synced' : '', response.adapters?.selfHosted?.ok ? 'My Magnetar synced' : ''].filter(Boolean);
+    showToast(`${synced.join(' / ') || 'Sync complete'}${response.mergedChanges ? ` / ${response.mergedChanges} changes merged` : ''}`);
+    await refreshVisibleExtensionState();
+    return response;
+  }
+
+  window.addEventListener(HARD_SYNC_WEB_REQUEST_EVENT, async (event) => {
+    let request;
+    try { request = JSON.parse(typeof event.detail === 'string' ? event.detail : '{}'); } catch { return; }
+    if (!request?.requestId || request.protocol !== 3 || request.command !== 'MAGNETAR_HARD_SYNC_ALL') return;
+    const bridgeStartedAt = Date.now();
+    console.info('Magnetar: hard sync all', { cycleId: request.requestId, stage: 'webapp-click-received' });
+    try {
+      const connection = await safeRuntimeMessage({ type: 'selfhost-get' }, null);
+      if (!connection?.paired || !connection.serverUrl) throw new Error('Connect the Magnetar extension to this My Magnetar server first.');
+      if (new URL(connection.serverUrl).origin !== window.location.origin) throw new Error('The Magnetar extension is connected to a different My Magnetar server.');
+      if (!hardSyncWebInFlight) hardSyncWebInFlight = safeRuntimeMessage({ type: 'hard-sync-all', cycleId: request.requestId, bridgeMs: Date.now() - bridgeStartedAt }, null).finally(() => { hardSyncWebInFlight = null; });
+      const response = await hardSyncWebInFlight;
+      if (!response?.ok) throw Object.assign(new Error(response?.error || 'Magnetar hard sync failed.'), { response });
+      await refreshVisibleExtensionState();
+      publishHardSyncWebResult(request.requestId, response);
+      console.info('Magnetar: hard sync all', { cycleId: request.requestId, stage: 'result-returned-to-page', ok: true, timings: response.timings });
+    } catch (error) {
+      const response = error?.response || {};
+      publishHardSyncWebResult(request.requestId, { ok: false, code: response.code || error?.code || 'HARD_SYNC_FAILED', error: error?.message || 'Magnetar hard sync failed.', adapters: response.adapters, timings: response.timings });
+      console.error('Magnetar: hard sync all', { cycleId: request.requestId, stage: 'result-returned-to-page', ok: false, error: error?.message || 'Magnetar hard sync failed.' });
+    }
+  });
+
   function normaliseInterfaceStyle(value) {
     return value === 'glass' ? 'glass' : 'classic';
   }
@@ -198,6 +260,7 @@
   const COFFEE_URL = 'https://buymeacoffee.com/arrcee76';
   const HELP_URL = 'https://arrcee.com/magnetarhelp';
   const MOBILE_URL = 'https://arrcee.com/magnetar-mobile';
+  const MY_MAGNETAR_PRODUCT_URL = 'https://arrcee.com/my-magnetar/';
   const MAGNETAR_LOGO_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAC4jAAAuIwF4pT92AAAFJUlEQVRogd2aW0wUVxjHf2d2WZZdLgJRBBRMjGms1qKUmGKDFq2XKoLFl7baVm2taVRqWn1u4qO1FmmsNaVttG36UC26CkhvNtY2MVJprNfEFhBBFOXmsrCXOc0MO2SX6BOLzPpPJjPnzJzJ77/nmzPfnjNCSsnDJIRIA4qAQuAJICl46uGNRiYR3HcDV4FfAJeUsv2hLTQDwzcgAdgVvJEc4607yJLwQNYHwM8HGk0ALodtGtP84bwiNISEECu0LgvtoZkznmTr5k3MmDGdxEStYwZNj0r8iMEI6unp5eLFy+z9ZD//XLw0/LIiKeXxoTYGjBDiWeAP40RKSjKf7SvnxWWLGUtV19Tx9jtl3LvXGVqdL6X8c8iAEMIOtACpWmV21mR+OnmMjIx0zKDW1jYWLVlJU/MNo+ouMElK2a8EK3Ya8PHx8VQfP2waeE0ai8aksQWVGmRGEUKMA7YYZw7sL2dKdhZm05TsLJ0tRFs0dq0HSoBYrSZ3Tg7FRcsxq4qLluuMQWnMJZqBpUbNhnWvYXZtCGdcqhmYbpRyc4fcmVa54YzTNQNOo+RwODC7HOGMTmMUilopoYnZaL1hIykZzigfix4YNRm5TVQakGqAuIREHE6HfhxVBqSUOBJSuHC+gX+v/4fdMZjFRo2BGKsFYbGztex9Dh76FostASnV6DAgVRWbM5WbTVc5dfoMNbV1+kBntzuiw4DFatFvu3vPXr189tx5fq5zYYlNQqp+cxuQagB7/ATqz55hT/k+UpKTsCiCrWXbQfpwjstEDQTMZ0BKlZgYK85xGdxouk7JqlIUAfFOB+kT07h05RqlpS/p18YnZ+hTD5F6JpSRkavExdlxJqUTE5fK0arD5OfPo6W1nUmZ6fj9AX1ESk8bz5EfjrO4sIBrVy4Ql5imt7FaLfozMyYGtHeUYo2ls8tN7YljlK4qpmTVatra2skKwusepURRFDLT0/jx19Pk5c1l+3vb+LvhHF4/WGOsY2Mgxh5Pd4+bzZvfZdmKYo5UHWN8ajKZmRn4h8W5MQUyJWsSA14/H370MTmz8/h0/+fYYuOw2WyP3oDP48bpsLFz5wcc/KqS+QXPceduJ7dv39FDY3hKYVEUGptb8Hp9rHn1FWqqXaxd8zL9/f34fL5Hb0CiogjJ1GnZrH19Pad+O80XlQeItdtobmnDag0JDSm50XqLvNxZnPn9FIe+/oaly1YwPiURNeAbURY8ggAcTNT6eu+jqt04HE7WrX+LvNzZLCh8gbZb7UxMmzAEv6iwgNqTJ7FY7Qy47+D3+xFC0bcxH0YVxYLH46Gvp42ZTz/Dke+/w+cP4PH0c+t2B1lZk3G5XDr8/a5WAgF1xOARf5ENps4KA+4OCp5fwsY336DjXic+v5+K8l3YHYm4u27qZk2dSviDD+SOHdv0fW7OU6wsWU3A24NQRjZkPkgRv6NQFLx9HUydNou8OTksXLhAy5Do97gjFjahivxPog2xPh826aVi7259Rlv1jQ78qBnQYN09Hcydlw8BH+7ebkSEYz/UgBiN/7BCWPD09gweRxBehDOKUemBRzlNowBuo9DX14fZ1RfO6NYMXDZK9fUNmF314YyXNQO1Rqnyy4OYXZXhjLWagSpgQCvV/9XAUdcJzKqjrhM6Y1Aac5UipewCKozajZvKaGxqxmxqbGrW2UJUobE/Hot8Usr+4CcFurQL584r1Jc4x1rVNXU6Swi8sVasMUf/QjfR/qkB0f6xh4j2z23+B0ZTCG8RPV3dAAAAAElFTkSuQmCC';
 
   // -- Get settings --
@@ -227,6 +290,13 @@
   let currentQuickSendTarget = mode;
   let quickSendProviders = [];
   let quickSendTargets = [];
+  let currentReviewTarget = ['my-magnetar', 'selfhost'].includes(settings?.preferences?.reviewDestination)
+    ? 'my-magnetar'
+    : 'mobile';
+  const reviewTargets = [
+    { id: 'mobile', label: 'Mobile' },
+    { id: 'my-magnetar', label: 'My Magnetar' }
+  ];
   await reloadQuickSendTargets();
   let lastSentProvider = null;
   let bannerAutoHideTimer = null;
@@ -249,7 +319,12 @@
 
   MAGNETAR_API.runtime.onMessage.addListener((msg) => {
     if (msg?.type === 'open-toolbar') return Promise.resolve(openToolbarFromPopup());
-    if (msg?.type === 'open-sync-panel') return Promise.resolve(openSyncPanelWithNotice(''));
+    if (['MAGNETAR_OPEN_MOBILE_SYNC_PANEL', 'open-sync-panel'].includes(msg?.type)) return Promise.resolve(openMobileSyncPanelWithNotice(''));
+    if (msg?.type === 'hard-sync-all-progress') {
+      updateHardSyncUi(msg.stage, msg.message || 'Syncing');
+      window.dispatchEvent(new CustomEvent(HARD_SYNC_WEB_PROGRESS_EVENT, { detail: JSON.stringify(msg) }));
+      return Promise.resolve({ ok: true });
+    }
     return undefined;
   });
 
@@ -319,23 +394,26 @@
 
     if (!isManualShell) {
       banner.querySelector('#magnetar-send')?.addEventListener('click', (e) => {
-        const retryProvider = e.currentTarget.dataset.retryProvider || mode;
+        const retryProvider = e.currentTarget.dataset.retryProvider || currentQuickSendTarget;
         handleSend(detection, category, retryProvider);
       });
     }
-    banner.querySelector('#magnetar-quick-send-toggle')?.addEventListener('click', (e) => {
+    banner.querySelector('#magnetar-send-target-toggle')?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (isManualShell) {
-        showProviderTargetMenu(e.currentTarget, getQuickSendTargetOptions(), providerMode => {
-          currentQuickSendTarget = providerMode;
-          updateQuickSendTargetButtons();
-        });
-        return;
-      }
-      handleQuickSendMenu(detection, category, e.currentTarget);
+      showProviderTargetMenu(e.currentTarget, quickSendTargets, selectQuickSendTarget, currentQuickSendTarget);
     });
-    banner.querySelector('#magnetar-share')?.addEventListener('click', () => handleShare(detection));
+    banner.querySelector('#magnetar-review-send')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleReviewSend(detection, currentReviewTarget);
+    });
+    banner.querySelector('#magnetar-review-target-toggle')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showProviderTargetMenu(e.currentTarget, reviewTargets, reviewTarget => {
+        selectReviewTarget(reviewTarget);
+      }, currentReviewTarget);
+    });
     banner.querySelector('#magnetar-open-downloads')?.addEventListener('click', handleOpenDownloadsFolder);
     banner.querySelector('#magnetar-ignore-site')?.addEventListener('click', handleIgnoreCurrentSite);
     banner.querySelector('#magnetar-manual-send-toggle')?.addEventListener('click', (e) => {
@@ -350,14 +428,13 @@
     banner.querySelector('#magnetar-banner-client-mode')?.addEventListener('change', (e) => {
       toggleClientPanel(detection, e.target.checked);
     });
-    banner.querySelector('#magnetar-banner-sync-mode')?.addEventListener('click', (e) => {
+    banner.querySelector('#magnetar-mobile-sync-open')?.addEventListener('click', (e) => {
       e.preventDefault();
-      syncPanelNotice = '';
-      toggleSyncPanel();
+      void openMobileSyncPanel();
     });
-    banner.querySelector('#magnetar-app-review')?.addEventListener('click', (e) => {
+    banner.querySelector('#magnetar-banner-my-magnetar')?.addEventListener('click', (e) => {
       e.preventDefault();
-      handleAppReview(detection);
+      void openMyMagnetarPanel();
     });
     banner.querySelector('#magnetar-dismiss')?.addEventListener('click', () => dismissBanner());
     banner.querySelector('#magnetar-banner-settings')?.addEventListener('click', (e) => {
@@ -374,7 +451,7 @@
     });
     banner.querySelector('#magnetar-sync-pull-latest')?.addEventListener('click', (e) => {
       e.preventDefault();
-      handlePullSyncSavedHistory(e);
+      void runHardSyncAllFromExtension(e.currentTarget);
     });
     if (!isManualShell && (detection?.hash || detection?.magnetUri)) {
       const detectionKey = "detection:" + window.location.href + ":" + (detection.hash || detection.magnetUri);
@@ -390,6 +467,7 @@
       if (banner.classList.contains('magnetar-success')) bannerInteractedAfterSuccess = true;
     });
     showOpenProviderAction(currentQuickSendTarget, banner);
+    updateReviewTargetButtons();
     bindWhatsNewOpeners(banner);
     maybeShowWhatsNewTour('auto').catch(() => {});
     updateExpandedToggleState();
@@ -726,12 +804,11 @@
   }
 
   async function reloadQuickSendTargets() {
-    quickSendProviders = [];
-    if (isAdvancedMode) {
-      const providers = await safeRuntimeMessage({ type: 'get-quick-send-providers' }, []);
-      quickSendProviders = Array.isArray(providers) ? providers : [];
-    }
-    quickSendTargets = [{ id: mode, label: getProviderName(mode), isDefault: true }, ...quickSendProviders];
+    const providers = await safeRuntimeMessage({ type: 'get-quick-send-providers' }, []);
+    quickSendProviders = Array.isArray(providers) ? providers : [];
+    const seen = new Set();
+    quickSendTargets = [{ id: mode, label: getProviderName(mode), isDefault: true }, ...quickSendProviders]
+      .filter(provider => provider?.id && !seen.has(provider.id) && seen.add(provider.id));
     if (!quickSendTargets.some(provider => provider.id === currentQuickSendTarget)) {
       currentQuickSendTarget = mode;
     }
@@ -752,6 +829,11 @@
     });
     const batchLabel = document.querySelector('#magnetar-batch-send .magnetar-btn-label');
     if (batchLabel) batchLabel.textContent = label;
+    const sendLabel = document.querySelector('#magnetar-send .magnetar-btn-label');
+    if (sendLabel) {
+      sendLabel.textContent = label;
+      sendLabel.style.display = 'inline';
+    }
     document.querySelectorAll('[data-detection-detail="target"]').forEach(el => {
       const target = getCurrentQuickSendLabel();
       el.textContent = target;
@@ -890,12 +972,15 @@
   let activeExpandedPanel = '';
   let toolbarExpanded = false;
   let clientPanelOpen = false;
-  let syncPanelOpen = false;
+  let mobileSyncPanelOpen = false;
+  let myMagnetarPanelOpen = false;
+  let myMagnetarPanelEditing = false;
+  let myMagnetarPanelNotice = '';
   let syncQrVisible = false;
-  let syncPanelTransition = 'neutral';
+  let mobileSyncPanelTransition = 'neutral';
   let syncMobileWasAcknowledged = false;
   let whatsNewPreviousPanel = '';
-  let syncPanelNotice = "";
+  let mobileSyncPanelNotice = "";
   const AUTO_PULL_MIN_INTERVAL_MS = 30000;
   const AUTO_PULL_FAILURE_BACKOFF_MS = 30000;
   const autoPullDetectionKeys = new Map();
@@ -924,7 +1009,8 @@
     activeExpandedPanel = panel || '';
     toolbarExpanded = activeExpandedPanel === 'details';
     clientPanelOpen = activeExpandedPanel === 'client';
-    syncPanelOpen = activeExpandedPanel === 'sync';
+    mobileSyncPanelOpen = activeExpandedPanel === 'sync';
+    myMagnetarPanelOpen = activeExpandedPanel === 'my-magnetar';
   }
 
   async function restoreAfterWhatsNew() {
@@ -934,8 +1020,12 @@
     whatsNewPreviousPanel = '';
     if (!banner || !wrap) return;
     if (previousPanel === 'sync') {
-      await populateSyncPanel();
+      await populateMobileSyncPanel();
       setExpandedPanel('sync');
+      banner.classList.add('magnetar-expanded');
+    } else if (previousPanel === 'my-magnetar') {
+      await populateMyMagnetarPanel();
+      setExpandedPanel('my-magnetar');
       banner.classList.add('magnetar-expanded');
     } else if (previousPanel === 'client') {
       banner.classList.add('magnetar-expanded');
@@ -990,6 +1080,8 @@
     const expandBtn = document.getElementById('magnetar-expand');
     const clientInput = document.getElementById('magnetar-banner-client-mode');
     const clientToggle = document.querySelector('#magnetar-banner .magnetar-client-mode-toggle');
+    const mobileSyncButton = document.getElementById('magnetar-mobile-sync-open');
+    const myMagnetarButton = document.getElementById('magnetar-banner-my-magnetar');
     expandBtn?.setAttribute('aria-expanded', String(detailsOpen));
     expandBtn?.classList.toggle('magnetar-btn-active', detailsOpen);
     if (clientInput) {
@@ -997,6 +1089,12 @@
       clientInput.setAttribute('aria-expanded', String(clientOpen));
     }
     clientToggle?.classList.toggle('magnetar-client-mode-toggle-active', clientOpen);
+    const mobileSyncOpen = isOpen && mobileSyncPanelOpen;
+    const myMagnetarOpen = isOpen && myMagnetarPanelOpen;
+    mobileSyncButton?.setAttribute('aria-expanded', String(mobileSyncOpen));
+    mobileSyncButton?.classList.toggle('magnetar-btn-sync-active', mobileSyncOpen);
+    myMagnetarButton?.setAttribute('aria-expanded', String(myMagnetarOpen));
+    myMagnetarButton?.classList.toggle('magnetar-btn-my-magnetar-active', myMagnetarOpen);
   }
 
   function isUsableSyncSettings(settings) {
@@ -1009,12 +1107,32 @@
     } catch (e) {}
   }
 
-  async function refreshAfterPull(pullResult) {
-    if (!pullResult?.ok || pullResult.skipped) return;
-    if (syncPanelOpen) await populateSyncPanel();
+  async function refreshVisibleExtensionState() {
+    if (mobileSyncPanelOpen) await populateMobileSyncPanel();
+    else if (myMagnetarPanelOpen) await populateMyMagnetarPanel();
     else if (clientPanelOpen) await populateClientPanel(result, currentQuickSendTarget, 1);
     else if (activeExpandedPanel === 'details') await populateExpanded(result, mode);
   }
+
+  async function refreshAfterPull(pullResult) {
+    if (!pullResult?.ok || pullResult.skipped) return;
+    await refreshVisibleExtensionState();
+  }
+
+  let canonicalRefreshTimer = null;
+  MAGNETAR_API.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+    const canonicalChanged = ['magnetar-saved', 'magnetar-history', 'magnetar-organised-folders']
+      .some((key) => Object.prototype.hasOwnProperty.call(changes, key));
+    if (!canonicalChanged) return;
+    if (canonicalRefreshTimer) clearTimeout(canonicalRefreshTimer);
+    canonicalRefreshTimer = setTimeout(() => {
+      canonicalRefreshTimer = null;
+      void refreshVisibleExtensionState().catch((error) => {
+        console.warn('Magnetar: could not refresh the visible extension view after canonical storage changed.', error);
+      });
+    }, 100);
+  });
 
   async function forcePullLatest(reason = 'toolbar-button') {
     const pullResult = await safeRuntimeMessage({ type: 'sync-pull-saved-history', reason }, null);
@@ -1110,22 +1228,27 @@
     };
   }
 
-  async function openSyncPanelWithNotice(message) {
-    syncPanelNotice = message;
+  async function openMobileSyncPanel() {
+    mobileSyncPanelNotice = '';
+    await toggleMobileSyncPanel();
+  }
+
+  async function openMobileSyncPanelWithNotice(message) {
+    mobileSyncPanelNotice = message;
     document.getElementById('magnetar-batch')?.remove();
     if (!document.getElementById('magnetar-banner')) {
       injectBanner(hasValidSingleDetection() ? result : createManualShellDetection(), mode, category);
     }
-    if (!syncPanelOpen || !document.getElementById('magnetar-banner')?.classList.contains('magnetar-expanded')) {
-      await toggleSyncPanel();
+    if (!mobileSyncPanelOpen || !document.getElementById('magnetar-banner')?.classList.contains('magnetar-expanded')) {
+      await toggleMobileSyncPanel();
     } else {
-      await populateSyncPanel();
+      await populateMobileSyncPanel();
     }
   }
   async function handleAppReview(detection) {
     const settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
     if (!isUsableSyncSettings(settings)) {
-      await openSyncPanelWithNotice(t('syncNoticePairForReview'));
+      await openMobileSyncPanelWithNotice(t('syncNoticePairForReview'));
       return;
     }
     const result = await safeRuntimeMessage({ type: 'sync-send-app-review', item: buildAppReviewItem(detection) }, null);
@@ -1137,12 +1260,12 @@
     showToast(result?.error || 'Could not send to mobile', true);
   }
 
-  async function toggleSyncPanel() {
+  async function toggleMobileSyncPanel() {
     const banner = document.getElementById('magnetar-banner');
     const wrap = document.getElementById('magnetar-expanded-section');
     if (!banner || !wrap) return;
     const isOpen = banner.classList.contains('magnetar-expanded');
-    if (isOpen && syncPanelOpen) {
+    if (isOpen && mobileSyncPanelOpen) {
       banner.classList.remove('magnetar-expanded');
       setExpandedPanel('');
       syncQrVisible = false;
@@ -1151,7 +1274,7 @@
     }
     closeClientPanel();
     syncQrVisible = false;
-    await populateSyncPanel();
+    await populateMobileSyncPanel();
     setExpandedPanel('sync');
     banner.classList.add('magnetar-expanded');
     updateExpandedToggleState();
@@ -1168,6 +1291,238 @@
       syncToken: settings.syncToken,
       encryptionKey: settings.encryptionKey
     };
+  }
+
+  async function handleSelfHostedReview(detection) {
+    const connection = await safeRuntimeMessage({ type: 'selfhost-get' }, null);
+    if (!connection?.paired) {
+      showToast('My Magnetar is not connected.', true);
+      await openMyMagnetarPanelWithNotice('Connect My Magnetar to send this item to Review.');
+      return;
+    }
+    const response = await safeRuntimeMessage({ type: 'selfhost-send', item: buildAppReviewItem(detection) }, null);
+    if (response?.ok) showToast(response.duplicate || response.status === 'duplicate' ? 'The item is already in My Magnetar Review.' : 'Sent to My Magnetar Review');
+    else showToast(response?.error || 'My Magnetar could not be reached.', true);
+  }
+
+  function myMagnetarIconSvg(name) {
+    const icons = {
+      home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><rect x="9" y="13" width="6" height="4" rx="1"/><path d="M11 15h.01"/></svg>',
+      sync: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-5V2"/><path d="M4 17h5v5"/><path d="M5.1 9a8 8 0 0 1 13.3-3L20 7"/><path d="m4 17 1.6 1A8 8 0 0 0 18.9 15"/></svg>',
+      open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>',
+      settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.5 1a8 8 0 0 0-1.7-1L14.3 3h-4.1L9.8 6a8 8 0 0 0-1.7 1L5.6 6 3.5 9.5l2 1.5a7 7 0 0 0 0 2l-2 1.5L5.6 18l2.5-1a8 8 0 0 0 1.7 1l.4 3h4.1l.4-3a8 8 0 0 0 1.7-1l2.5 1 2-3.5-2-1.5a7 7 0 0 0 .1-1Z"/></svg>',
+      lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+      disconnect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>'
+    };
+    return icons[name] || icons.home;
+  }
+
+  function buildMyMagnetarPrivacyNote() {
+    return `<div class="magnetar-my-privacy">${myMagnetarIconSvg('lock')}<span>Magnetar metadata only. Provider API keys and passwords remain local to the device where they are configured.</span></div>`;
+  }
+
+  function formatMyMagnetarDate(value) {
+    return value ? new Date(value).toLocaleString() : 'Not yet';
+  }
+
+  async function openMyMagnetarPanel() {
+    myMagnetarPanelNotice = '';
+    await toggleMyMagnetarPanel();
+  }
+
+  async function openMyMagnetarPanelWithNotice(message) {
+    myMagnetarPanelNotice = message || '';
+    document.getElementById('magnetar-batch')?.remove();
+    if (!document.getElementById('magnetar-banner')) {
+      injectBanner(hasValidSingleDetection() ? result : createManualShellDetection(), mode, category);
+    }
+    if (!myMagnetarPanelOpen || !document.getElementById('magnetar-banner')?.classList.contains('magnetar-expanded')) {
+      await toggleMyMagnetarPanel();
+    } else {
+      await populateMyMagnetarPanel();
+    }
+  }
+
+  async function toggleMyMagnetarPanel() {
+    const banner = document.getElementById('magnetar-banner');
+    const wrap = document.getElementById('magnetar-expanded-section');
+    if (!banner || !wrap) return;
+    const isOpen = banner.classList.contains('magnetar-expanded');
+    if (isOpen && myMagnetarPanelOpen) {
+      banner.classList.remove('magnetar-expanded');
+      setExpandedPanel('');
+      myMagnetarPanelEditing = false;
+      updateExpandedToggleState();
+      return;
+    }
+    closeClientPanel();
+    myMagnetarPanelEditing = false;
+    await populateMyMagnetarPanel();
+    setExpandedPanel('my-magnetar');
+    banner.classList.add('magnetar-expanded');
+    updateExpandedToggleState();
+  }
+
+  function buildMyMagnetarDisconnected() {
+    return `
+      <section class="magnetar-my-state magnetar-my-state-disconnected" aria-labelledby="magnetar-my-title">
+        <div class="magnetar-my-hero">
+          <span class="magnetar-my-hero-icon" aria-hidden="true">${myMagnetarIconSvg('home')}</span>
+          <div class="magnetar-my-heading-copy">
+            <span class="magnetar-my-status magnetar-my-status-ready">Ready to connect</span>
+            <h2 id="magnetar-my-title" tabindex="-1">Connect My Magnetar</h2>
+            <p>Pair your browser with your private My Magnetar instance.</p>
+          </div>
+        </div>
+        <form class="magnetar-my-form" id="magnetar-my-connect-form" novalidate>
+          <label><span>Server URL</span><input id="magnetar-my-server-url" name="serverUrl" type="url" inputmode="url" autocomplete="url" required placeholder="https://magnetar.example.com"></label>
+          <label><span>Pairing code</span><input id="magnetar-my-pairing-code" name="pairingCode" type="text" inputmode="text" autocomplete="one-time-code" minlength="6" maxlength="16" required placeholder="One-time code"></label>
+          <button type="submit" class="magnetar-btn magnetar-my-action magnetar-my-action-primary" id="magnetar-my-pair">${myMagnetarIconSvg('sync')}<span>Pair &amp; test</span></button>
+        </form>
+        <button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-secondary" id="magnetar-my-get">${myMagnetarIconSvg('home')}<span>Get My Magnetar</span></button>
+        <div class="magnetar-my-feedback" role="status" aria-live="polite"></div>
+        ${buildMyMagnetarPrivacyNote()}
+      </section>`;
+  }
+
+  function buildMyMagnetarConnected(connection, editing = false) {
+    const instanceName = connection.instanceName || (() => {
+      try { return new URL(connection.serverUrl).hostname; } catch (error) { return 'My Magnetar'; }
+    })();
+    const serverName = (() => {
+      try { return new URL(connection.serverUrl).host; } catch (error) { return connection.serverUrl || 'Unknown'; }
+    })();
+    const title = editing ? 'My Magnetar settings' : 'Connected to My Magnetar';
+    const subtitle = editing
+      ? 'Review the active browser connection or test it without creating another pairing.'
+      : 'Your browser is paired with your private Magnetar instance.';
+    return `
+      <section class="magnetar-my-state magnetar-my-state-connected${editing ? ' magnetar-my-state-settings' : ''}" aria-labelledby="magnetar-my-title">
+        <div class="magnetar-my-hero magnetar-my-connected-hero">
+          <span class="magnetar-my-hero-icon" aria-hidden="true">${myMagnetarIconSvg(editing ? 'settings' : 'home')}</span>
+          <div class="magnetar-my-heading-copy">
+            <span class="magnetar-my-status magnetar-my-status-connected"><i aria-hidden="true"></i>Connected</span>
+            <h2 id="magnetar-my-title" tabindex="-1">${title}</h2>
+            <p>${subtitle}</p>
+          </div>
+        </div>
+        <dl class="magnetar-my-facts">
+          <div><dt>Instance name</dt><dd>${escapeHtml(instanceName)}</dd></div>
+          <div><dt>Server</dt><dd title="${escapeAttr(connection.serverUrl || '')}">${escapeHtml(serverName)}</dd></div>
+          <div><dt>Version</dt><dd>${escapeHtml(connection.version || 'Not reported')}</dd></div>
+          <div><dt>Last synced</dt><dd>${escapeHtml(formatMyMagnetarDate(connection.lastSyncAt))}</dd></div>
+        </dl>
+        <div class="magnetar-my-actions">
+          ${editing
+            ? `<button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-primary" id="magnetar-my-test">${myMagnetarIconSvg('sync')}<span>Test connection</span></button>
+               <button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-secondary" id="magnetar-my-settings-back"><span>Back</span></button>`
+            : `<button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-primary" id="magnetar-my-sync">${myMagnetarIconSvg('sync')}<span>Sync now</span></button>
+               <button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-secondary" id="magnetar-my-open">${myMagnetarIconSvg('open')}<span>Open My Magnetar</span></button>
+               <button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-secondary" id="magnetar-my-settings">${myMagnetarIconSvg('settings')}<span>Settings</span></button>
+               <button type="button" class="magnetar-btn magnetar-my-action magnetar-my-action-danger" id="magnetar-my-disconnect">${myMagnetarIconSvg('disconnect')}<span>Disconnect</span></button>`}
+        </div>
+        <div class="magnetar-my-feedback" role="status" aria-live="polite"></div>
+        ${buildMyMagnetarPrivacyNote()}
+      </section>`;
+  }
+
+  async function populateMyMagnetarPanel() {
+    const wrap = document.getElementById('magnetar-expanded-section');
+    if (!wrap) return;
+    const connection = await safeRuntimeMessage({ type: 'selfhost-get' }, null);
+    wrap.innerHTML = `
+      <div class="magnetar-expanded-inner magnetar-my-panel" id="magnetar-my-panel" role="region" aria-live="polite">
+        ${myMagnetarPanelNotice ? `<div class="magnetar-my-notice" role="status">${escapeHtml(myMagnetarPanelNotice)}</div>` : ''}
+        ${connection?.paired ? buildMyMagnetarConnected(connection, myMagnetarPanelEditing) : buildMyMagnetarDisconnected()}
+      </div>`;
+    const feedback = wrap.querySelector('.magnetar-my-feedback');
+    const setFeedback = (message, error = false) => {
+      if (!feedback) return;
+      feedback.textContent = message || '';
+      feedback.classList.toggle('magnetar-my-feedback-error', error);
+    };
+    wrap.querySelector('#magnetar-my-get')?.addEventListener('click', () => {
+      safeRuntimeMessage({ type: 'open-external-url', url: MY_MAGNETAR_PRODUCT_URL }, null);
+    });
+    wrap.querySelector('#magnetar-my-connect-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = wrap.querySelector('#magnetar-my-pair');
+      const serverUrl = String(wrap.querySelector('#magnetar-my-server-url')?.value || '').trim();
+      const pairingCode = String(wrap.querySelector('#magnetar-my-pairing-code')?.value || '').replace(/\s/g, '');
+      try {
+        const url = new URL(serverUrl.replace(/\/+$/, ''));
+        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error();
+      } catch (error) {
+        setFeedback('Enter a valid http:// or https:// server URL without credentials.', true);
+        return;
+      }
+      if (pairingCode.length < 6 || pairingCode.length > 16) {
+        setFeedback('Enter the 6 to 16 character pairing code shown in My Magnetar.', true);
+        return;
+      }
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      setFeedback('Pairing and testing connection...');
+      const response = await safeRuntimeMessage({ type: 'selfhost-pair', serverUrl, pairingCode }, null);
+      if (!response?.ok) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        setFeedback(response?.error || 'My Magnetar could not be reached.', true);
+        return;
+      }
+      myMagnetarPanelNotice = 'Connected successfully.';
+      showToast('Connected to My Magnetar');
+      await populateMyMagnetarPanel();
+      wrap.querySelector('#magnetar-my-title')?.focus();
+    });
+    wrap.querySelector('#magnetar-my-sync')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      setFeedback('Syncing Magnetar metadata...');
+      const response = await runHardSyncAllFromExtension(button);
+      if (!response?.ok) {
+        setFeedback(response?.error || 'My Magnetar could not be reached.', true);
+        const label = button.querySelector('span');
+        if (label) label.textContent = 'Retry sync';
+        return;
+      }
+      myMagnetarPanelNotice = 'Sync complete.';
+      showToast('My Magnetar sync complete');
+      await populateMyMagnetarPanel();
+    });
+    wrap.querySelector('#magnetar-my-open')?.addEventListener('click', () => safeRuntimeMessage({ type: 'selfhost-open' }, null));
+    wrap.querySelector('#magnetar-my-settings')?.addEventListener('click', async () => {
+      myMagnetarPanelEditing = true;
+      await populateMyMagnetarPanel();
+      wrap.querySelector('#magnetar-my-title')?.focus();
+    });
+    wrap.querySelector('#magnetar-my-settings-back')?.addEventListener('click', async () => {
+      myMagnetarPanelEditing = false;
+      await populateMyMagnetarPanel();
+      wrap.querySelector('#magnetar-my-settings')?.focus();
+    });
+    wrap.querySelector('#magnetar-my-test')?.addEventListener('click', async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      setFeedback('Testing connection...');
+      const response = await safeRuntimeMessage({ type: 'selfhost-test' }, null);
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      setFeedback(response?.ok ? 'Connection successful.' : (response?.error || 'My Magnetar could not be reached.'), !response?.ok);
+    });
+    wrap.querySelector('#magnetar-my-disconnect')?.addEventListener('click', async () => {
+      const confirmed = await showMagnetarConfirmDialog({
+        title: 'Disconnect My Magnetar?',
+        message: 'This removes the My Magnetar connection from this browser. Magnetar Mobile pairing is not affected.',
+        confirmLabel: 'Disconnect',
+        destructive: true
+      });
+      if (!confirmed) return;
+      await safeRuntimeMessage({ type: 'selfhost-disconnect' }, null);
+      myMagnetarPanelEditing = false;
+      myMagnetarPanelNotice = 'My Magnetar disconnected.';
+      await populateMyMagnetarPanel();
+    });
   }
 
   function syncPanelIconSvg(name) {
@@ -1310,7 +1665,7 @@
       </section>`;
   }
 
-  async function populateSyncPanel() {
+  async function populateMobileSyncPanel() {
     const wrap = document.getElementById('magnetar-expanded-section');
     if (!wrap) return;
     const settings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
@@ -1321,7 +1676,7 @@
     const becameConnected = mobileAcknowledged && !syncMobileWasAcknowledged;
     if (mobileAcknowledged) {
       syncQrVisible = false;
-      if (becameConnected) syncPanelTransition = 'success';
+      if (becameConnected) mobileSyncPanelTransition = 'success';
     }
     syncMobileWasAcknowledged = mobileAcknowledged;
     const pairingPayload = buildSyncPairingPayloadFromSettings(settings);
@@ -1337,15 +1692,15 @@
     const stateContent = mobileAcknowledged
       ? buildSyncConnectedDashboard({ lastSyncAt, mobileAck })
       : (syncQrVisible && paired ? buildSyncQrView({ pairingQr }) : buildSyncPairingOverview({ paired }));
-    const transitionClass = ` magnetar-sync-transition-${syncPanelTransition}`;
+    const transitionClass = ` magnetar-sync-transition-${mobileSyncPanelTransition}`;
 
     wrap.innerHTML = `
       <div class="magnetar-expanded-inner magnetar-sync-panel${transitionClass}" id="magnetar-sync-state-root" role="region" aria-live="polite">
-        ${syncPanelNotice ? `<div class="magnetar-sync-app-review-note" role="status">${escapeHtml(syncPanelNotice)}</div>` : ''}
+        ${mobileSyncPanelNotice ? `<div class="magnetar-sync-app-review-note" role="status">${escapeHtml(mobileSyncPanelNotice)}</div>` : ''}
         ${stateContent}
       </div>
     `;
-    syncPanelTransition = 'neutral';
+    mobileSyncPanelTransition = 'neutral';
     wrap.querySelector('#magnetar-sync-mobile-link')?.addEventListener('click', (e) => {
       e.preventDefault();
       safeRuntimeMessage({ type: 'open-external-url', url: MOBILE_URL });
@@ -1354,15 +1709,15 @@
     wrap.querySelector('#magnetar-sync-push-saved-history')?.addEventListener('click', handlePushSyncSavedHistory);
     wrap.querySelector('#magnetar-sync-create-pairing')?.addEventListener('click', handleCreateSyncPairing);
     wrap.querySelector('#magnetar-sync-show-qr')?.addEventListener('click', async () => {
-      syncPanelTransition = 'forward';
+      mobileSyncPanelTransition = 'forward';
       syncQrVisible = true;
-      await populateSyncPanel();
+      await populateMobileSyncPanel();
       wrap.querySelector('#magnetar-sync-qr-title')?.focus();
     });
     const returnToOverview = async () => {
-      syncPanelTransition = 'back';
+      mobileSyncPanelTransition = 'back';
       syncQrVisible = false;
-      await populateSyncPanel();
+      await populateMobileSyncPanel();
       wrap.querySelector('#magnetar-sync-show-qr')?.focus();
     };
     wrap.querySelector('#magnetar-sync-back-from-qr')?.addEventListener('click', returnToOverview);
@@ -1378,11 +1733,11 @@
     if (label) label.textContent = t('syncCreatingQr');
     const result = await safeRuntimeMessage({ type: 'create-sync-pairing' }, null);
     if (result?.ok) {
-      syncPanelNotice = '';
+      mobileSyncPanelNotice = '';
       showToast(t('syncPairingReadyNotice'));
-      syncPanelTransition = 'forward';
+      mobileSyncPanelTransition = 'forward';
       syncQrVisible = true;
-      await populateSyncPanel();
+      await populateMobileSyncPanel();
       document.getElementById('magnetar-expanded-section')?.querySelector('#magnetar-sync-qr-title')?.focus();
       return;
     }
@@ -1418,6 +1773,56 @@
     }
   }
 
+  function selectQuickSendTarget(providerMode) {
+    if (!quickSendTargets.some(provider => provider.id === providerMode)) return;
+    currentQuickSendTarget = providerMode;
+    const banner = document.getElementById('magnetar-banner');
+    const sendButton = banner?.querySelector('#magnetar-send');
+    banner?.classList.remove('magnetar-success');
+    if (sendButton) {
+      sendButton.disabled = false;
+      sendButton.classList.remove('magnetar-btn-sent', 'magnetar-btn-error');
+      delete sendButton.dataset.retryProvider;
+      const spinner = sendButton.querySelector('.magnetar-btn-spinner');
+      if (spinner) spinner.style.display = 'none';
+    }
+    updateQuickSendTargetButtons();
+  }
+
+  function updateReviewTargetButtons() {
+    const target = reviewTargets.find(reviewTarget => reviewTarget.id === currentReviewTarget) || reviewTargets[0];
+    document.querySelectorAll('#magnetar-review-send, #magnetar-batch-send-review').forEach(button => {
+      button.dataset.reviewTarget = target.id;
+      button.title = `Send to ${target.label} Review`;
+      button.setAttribute('aria-label', `Send current selection to ${target.label} Review`);
+      const label = button.querySelector('.magnetar-review-label');
+      if (label && !button.getAttribute('aria-busy')) label.textContent = `Review: ${target.label}`;
+    });
+    document.querySelectorAll('#magnetar-review-target-toggle, #magnetar-batch-review-target').forEach(button => {
+      button.title = `Choose review destination. Current: ${target.label}`;
+      button.setAttribute('aria-label', `Choose review destination. Current: ${target.label}`);
+    });
+  }
+
+  async function selectReviewTarget(reviewTarget) {
+    currentReviewTarget = reviewTarget === 'my-magnetar' || reviewTarget === 'selfhost'
+      ? 'my-magnetar'
+      : 'mobile';
+    updateReviewTargetButtons();
+    const current = (await safeRuntimeMessage({ type: 'get-settings' }, null)) || {};
+    current.preferences = { ...(current.preferences || {}), reviewDestination: currentReviewTarget };
+    settings = current;
+    await safeRuntimeMessage({ type: 'save-settings', data: current }, null);
+  }
+
+  async function handleReviewSend(detection, reviewTarget) {
+    if (reviewTarget === 'my-magnetar' || reviewTarget === 'selfhost') {
+      await handleSelfHostedReview(detection);
+      return;
+    }
+    await handleAppReview(detection);
+  }
+
   async function handleResetSyncPairing(e) {
     const connected = e?.currentTarget?.dataset?.connected === 'true';
     if (!(await showMagnetarConfirmDialog({
@@ -1427,8 +1832,8 @@
       destructive: true
     }))) return;
     await safeRuntimeMessage({ type: 'clear-sync-settings' }, null);
-    syncPanelNotice = t(connected ? 'syncDisconnectedNotice' : 'syncPairingDiscardedNotice');
-    await populateSyncPanel();
+    mobileSyncPanelNotice = t(connected ? 'syncDisconnectedNotice' : 'syncPairingDiscardedNotice');
+    await populateMobileSyncPanel();
   }
   async function handlePullSyncSavedHistory(e) {
     const button = e?.currentTarget;
@@ -1460,7 +1865,7 @@
       const message = pullResult.empty ? t('syncNothingYet') : t('syncResultCounts', String(pullResult.savedCount || 0), String(pullResult.historyCount || 0));
       showToast(message);
       restoreButton();
-      if (syncPanelOpen) await populateSyncPanel();
+      if (mobileSyncPanelOpen) await populateMobileSyncPanel();
       else if (activeExpandedPanel === 'details') await populateExpanded(result, mode);
       return;
     }
@@ -1479,7 +1884,7 @@
     const result = await safeRuntimeMessage({ type: 'sync-push-saved-history' }, null);
     if (result?.ok) {
       showToast(t('syncResultCounts', String(result.savedCount || 0), String(result.historyCount || 0)));
-      if (syncPanelOpen) await populateSyncPanel();
+      if (mobileSyncPanelOpen) await populateMobileSyncPanel();
       return;
     }
     if (button) button.disabled = false;
@@ -1511,16 +1916,16 @@
         safeRuntimeMessage({ type: 'get-saved' }, [])
       ]);
       sendCount = sc?.count || 0;
-      history = Array.isArray(hi) ? hi : (hi?.history || []);
+      history = sortHistoryBySentAt(Array.isArray(hi) ? hi : (hi?.history || []));
       shieldData = sh || shieldData;
-      saved = Array.isArray(sv) ? sv : [];
+      saved = sortSavedBySavedAt(Array.isArray(sv) ? sv : []);
     } catch (e) {}
 
     const cachedCount = history.slice(0, 30).filter(h => h.cacheAtSend === 'cached').length;
     const cacheRate = history.length > 0 ? Math.round((cachedCount / Math.min(30, history.length)) * 100) : null;
 
     const activityRows = history.slice(0, 20).map(h => {
-      const ago = formatRelative(h.lastSentAt || h.timestamp);
+      const ago = formatRelative(historySentTimestamp(h));
       const status = h.cacheAtSend === 'cached' ? 'cached' : 'sent';
       const sourceUrl = safeSourceUrl(h);
       return `
@@ -1543,21 +1948,22 @@
       ? activityRows
       : '<div class="magnetar-activity-empty">No history yet</div>';
 
-    const savedRows = saved.map(s => {
-      const ago = formatRelative(s.savedAt);
-      const hash = escapeAttr(s.hash || '');
+    const savedRows = saved.map((s, savedIndex) => {
+      const ago = formatRelative(savedItemTimestamp(s));
+      const hash = escapeAttr(s.hash || s.infoHash || '');
+      const savedIndexAttr = escapeAttr(String(savedIndex));
       return `
-        <div class="magnetar-saved-row" data-hash="${hash}">
-          <span class="magnetar-saved-name" title="${escapeHtml(s.name || '�')}">${escapeHtml(s.name || '�')}</span>
+        <div class="magnetar-saved-row" data-hash="${hash}" data-saved-index="${savedIndexAttr}">
+          <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}">${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}</span>
           <span class="magnetar-saved-meta">${ago}</span>
-          <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" title="Share">
+          <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Share">
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
           </button>
-          <button class="magnetar-saved-action magnetar-saved-copy" data-hash="${hash}" title="Copy magnet">
+          <button class="magnetar-saved-action magnetar-saved-copy" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Copy magnet">
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
-          <button class="magnetar-saved-send" data-hash="${hash}" title="Send now">Send</button>
-          <button class="magnetar-saved-delete" data-hash="${hash}" title="Remove" aria-label="Remove">${removeIconSvg()}</button>
+          <button class="magnetar-saved-send" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Send now">Send</button>
+          <button class="magnetar-saved-delete" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Remove" aria-label="Remove">${removeIconSvg()}</button>
         </div>
       `;
     }).join('');
@@ -1583,7 +1989,7 @@
           </div>
           <div class="magnetar-stat">
             <div class="magnetar-stat-label">cache hit rate</div>
-            <div class="magnetar-stat-value">${cacheRate === null ? '�' : cacheRate + '%'}</div>
+            <div class="magnetar-stat-value">${cacheRate === null ? 'ï¿½' : cacheRate + '%'}</div>
             <div class="magnetar-stat-delta">last 30 sends</div>
           </div>
           <div class="magnetar-stat">
@@ -1603,7 +2009,7 @@
         </div>
         <div class="magnetar-activity">${activityHTML}</div>
         <div class="magnetar-bfoot">
-          <span>v${MAGNETAR_API.runtime.getManifest().version} � ${modeUpper}</span>
+          <span>v${MAGNETAR_API.runtime.getManifest().version} ï¿½ ${modeUpper}</span>
           <span class="magnetar-bfoot-tagline">Grab torrents, send them anywhere</span>
         </div>
       </div>
@@ -1641,38 +2047,32 @@
     // Saved-for-later: Send pill
     wrap.querySelectorAll('.magnetar-saved-send').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hash = btn.dataset.hash;
-        const item = saved.find(s => s.hash === hash);
+        const item = saved[Number(btn.dataset.savedIndex)];
         if (!item) return;
         btn.disabled = true;
-        btn.textContent = '�';
+        btn.textContent = 'â€¦';
         try {
           const result = await MAGNETAR_API.runtime.sendMessage({
             type: 'send-magnet',
-            hash: item.hash,
-            name: item.name,
-            magnetUri: item.magnetUri,
+            item,
             category: item.category || '',
-            pageUrl: item.sourceUrl || '',
+            pageUrl: item.sourceUrl || item.url || '',
             mode: currentQuickSendTarget
           });
           if (result?.success || result?.action === 'open-magnet') {
-            if (result?.action === 'open-magnet' && result.magnetUri) {
-              window.open(result.magnetUri, '_self');
-              // Remove from saved queue for local mode (no auto-removal since recordHistory doesn't fire)
-              await safeRuntimeMessage({ type: 'delete-saved-item', hash: item.hash });
-            }
+            if (result?.action === 'open-magnet' && result.magnetUri) window.open(result.magnetUri, '_self');
             showToast(`Sent to ${getCurrentQuickSendLabel()}`);
             await showOpenProviderAction(result.provider || currentQuickSendTarget);
             await populateExpanded(detection, mode);
           } else {
             btn.disabled = false;
             btn.textContent = 'Send';
-            showToast(result?.error ? `Send failed: ${result.error}` : 'Send failed');
+            showToast(`Send failed: ${result?.error || t('sendFailed')}`, true);
           }
         } catch (e) {
           btn.disabled = false;
           btn.textContent = 'Send';
+          showToast(`Send failed: ${e?.message || t('sendFailed')}`, true);
         }
       });
     });
@@ -1681,12 +2081,11 @@
     wrap.querySelectorAll('.magnetar-saved-share').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const hash = btn.dataset.hash;
-        const item = saved.find(s => s.hash === hash);
+        const item = saved[Number(btn.dataset.savedIndex)];
         if (!item) return;
         handleShare({
-          name: item.name,
-          magnetUri: item.magnetUri,
+          name: item.name || item.displayName || item.title,
+              magnetUri: item.magnetUri || item.magnet,
           hash: item.hash
         }, btn);
       });
@@ -1695,10 +2094,10 @@
     // Saved-for-later: Copy magnet (does NOT move to history)
     wrap.querySelectorAll('.magnetar-saved-copy').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hash = btn.dataset.hash;
-        const item = saved.find(s => s.hash === hash);
-        if (!item?.magnetUri) return;
-        await handleCopy(item.magnetUri, t('magnetCopied'));
+        const item = saved[Number(btn.dataset.savedIndex)];
+            const magnet = item?.magnetUri || item?.magnet || (item?.hash ? `magnet:?xt=urn:btih:${item.hash}` : '');
+            if (!magnet) return;
+            await handleCopy(magnet, t('magnetCopied'));
         // brief visual confirmation
         btn.classList.add('magnetar-saved-action-done');
         setTimeout(() => btn.classList.remove('magnetar-saved-action-done'), 900);
@@ -1708,8 +2107,10 @@
     // Saved-for-later: remove
     wrap.querySelectorAll('.magnetar-saved-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
-        const hash = btn.dataset.hash;
-        await safeRuntimeMessage({ type: 'delete-saved-item', hash });
+        const item = saved[Number(btn.dataset.savedIndex)];
+        if (!item) return;
+        const hash = item.hash || item.infoHash || '';
+        await safeRuntimeMessage({ type: 'delete-saved-item', item });
         await populateExpanded(detection, mode);
         // If the removed hash is the one currently on the banner, also flip Save button back
         if (hash === detection.hash) {
@@ -1918,20 +2319,24 @@
   }
 
   async function loadOrganisedFoldersState() {
-    const [settings, mobileAck, folders, savedData, historyData] = await Promise.all([
+    const [settings, mobileAck, selfHosted, folders, savedData, historyData] = await Promise.all([
       safeRuntimeMessage({ type: 'get-sync-settings' }, null),
       safeRuntimeMessage({ type: 'get-sync-mobile-ack' }, null),
+      safeRuntimeMessage({ type: 'selfhost-get' }, null),
       safeRuntimeMessage({ type: 'get-organised-folders' }, null),
       safeRuntimeMessage({ type: 'get-saved' }, []),
       safeRuntimeMessage({ type: 'get-history' }, [])
     ]);
-    const paired = isUsableSyncSettings(settings);
-    const mobileAcknowledged = paired && !!mobileAck?.paired;
+    const mobilePaired = isUsableSyncSettings(settings);
+    const selfHostedPaired = selfHosted?.paired === true && Number(selfHosted.apiVersion || 0) >= 2;
+    const paired = mobilePaired || selfHostedPaired;
+    const mobileAcknowledged = (mobilePaired && !!mobileAck?.paired) || selfHostedPaired;
     const section = mobileAcknowledged && folders && Array.isArray(folders.folders) ? folders : null;
     const saved = Array.isArray(savedData) ? savedData : [];
     const history = Array.isArray(historyData) ? historyData : (historyData?.history || []);
     return {
       paired,
+      selfHostedPaired,
       mobileAcknowledged,
       section,
       folders: section ? section.folders : [],
@@ -2507,7 +2912,7 @@
           <div class="magnetar-organised-folder-icon" aria-hidden="true">${folderIconSvg()}</div>
           <div class="magnetar-organised-folder-main">
             <div class="magnetar-organised-folder-name" title="${escapeAttr(folder.name || 'Folder')}">${escapeHtml(folder.name || 'Folder')}</div>
-            <div class="magnetar-organised-folder-meta">${rawItems.length} ${rawItems.length === 1 ? 'item' : 'items'} · provider files are never changed</div>
+            <div class="magnetar-organised-folder-meta">${rawItems.length} ${rawItems.length === 1 ? 'item' : 'items'} Â· provider files are never changed</div>
           </div>
         </div>
         ${renderOrganisedOpenControls(filteredItems.length)}
@@ -3207,7 +3612,7 @@
     });
 
     wrap.querySelector('#magnetar-organised-sync-open')?.addEventListener('click', async () => {
-      await openSyncPanelWithNotice(t('syncNoticePairForFolders'));
+      await openMobileSyncPanelWithNotice(t('syncNoticePairForFolders'));
     });
 
     wrap.querySelectorAll('.magnetar-organised-mobile-link').forEach(button => {
@@ -3801,6 +4206,45 @@
     }
   }
 
+  function chronologicalTimestamp(value) {
+    if (value === null || value === undefined || value === '') return 0;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric < 1e12 ? numeric * 1000 : numeric;
+    const parsed = Date.parse(String(value));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
+  function savedItemTimestamp(item) {
+    for (const value of [item?.savedAt, item?.createdAt, item?.addedAt, item?.updatedAt, item?.timestamp]) {
+      const timestamp = chronologicalTimestamp(value);
+      if (timestamp) return timestamp;
+    }
+    return 0;
+  }
+
+  function historySentTimestamp(item) {
+    for (const value of [item?.lastSentAt, item?.sentAt, item?.timestamp, item?.attemptedAt, item?.createdAt, item?.addedAt]) {
+      const timestamp = chronologicalTimestamp(value);
+      if (timestamp) return timestamp;
+    }
+    return 0;
+  }
+
+  function sortByNewestTimestamp(items, timestampFor) {
+    return (Array.isArray(items) ? items : [])
+      .map((item, index) => ({ item, index, timestamp: timestampFor(item) }))
+      .sort((left, right) => right.timestamp - left.timestamp || left.index - right.index)
+      .map(entry => entry.item);
+  }
+
+  function sortSavedBySavedAt(items) {
+    return sortByNewestTimestamp(items, savedItemTimestamp);
+  }
+
+  function sortHistoryBySentAt(items) {
+    return sortByNewestTimestamp(items, historySentTimestamp);
+  }
+
   function formatRelative(ts) {
     if (!ts) return '';
     const d = Date.now() - ts;
@@ -3855,7 +4299,7 @@
         event.preventDefault();
         resendBtn.disabled = true;
         const original = resendBtn.textContent;
-        resendBtn.textContent = 'Sending�';
+        resendBtn.textContent = 'Sendingï¿½';
         const res = await safeRuntimeMessage({ type: 'resend-history-item', hash: resendBtn.dataset.hash }, null);
         if (res?.action === 'open-magnet' && res.magnetUri) window.open(res.magnetUri, '_self');
         resendBtn.textContent = res?.success ? 'Sent' : 'Unavailable';
@@ -3945,7 +4389,7 @@
   }
 
   function interfaceStyleIconSvg() {
-    return '<svg viewBox=0,0,24,24 fill=none stroke=currentColor stroke-width=1.8 stroke-linecap=round stroke-linejoin=round aria-hidden=true><path d=M12,2a10,10,0,0,0,0,20c1.1,0,2-.9,2-2,0-.5-.2-1-.6-1.4-.4-.4-.6-.9-.6-1.4,0-1.1.9-2,2-2H17a5,5,0,0,0,5-5C22,5.7,17.5,2,12,2Z/><circle cx=8 cy=8 r=1 fill=currentColor stroke=none/><circle cx=13 cy=6 r=1 fill=currentColor stroke=none/><circle cx=17 cy=9 r=1 fill=currentColor stroke=none/><circle cx=7 cy=13 r=1 fill=currentColor stroke=none/></svg>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.6-1.4-.4-.4-.6-.9-.6-1.4 0-1.1.9-2 2-2H17a5 5 0 0 0 5-5C22 5.7 17.5 2 12 2Z"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="7" cy="13" r="1" fill="currentColor" stroke="none"/></svg>';
   }
 
   function chevronDownIconSvg() {
@@ -4008,6 +4452,7 @@
       phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M10 18h4"/><path d="M13 7l3 3-3 3"/><path d="M8 10h8"/></svg>',
       lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="M12 15v2"/></svg>',
       green: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4"/><path d="M16 12h4"/><path d="M9 7h6v10H9z"/><path d="M12 3v4"/><path d="M12 17v4"/></svg>',
+      server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01M8 17.5h.01"/><path d="M12 6.5h4M12 17.5h4"/></svg>',
       qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h2v2h-2z"/><path d="M19 15h2"/><path d="M15 19h6"/><path d="M11 5h1"/><path d="M11 17h1"/><path d="M17 11h1"/></svg>',
       extension: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 8h18"/><path d="M7 6h.01"/><path d="M10 6h.01"/></svg>',
       item: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h4"/></svg>',
@@ -4018,11 +4463,11 @@
   }
 
   const WHATS_NEW_FEATURES = [
-    { id: 'sync', icon: 'sync', titleKey: 'whatsNewSyncTitle', teaserKey: 'whatsNewSyncTeaser' },
+    { id: 'sync', icon: 'sync', titleKey: 'whatsNewEcosystemTitle', teaserKey: 'whatsNewEcosystemTeaser' },
     { id: 'folder', icon: 'folder', titleKey: 'whatsNewFoldersTitle', teaserKey: 'whatsNewFoldersTeaser' },
     { id: 'phone', icon: 'phone', titleKey: 'whatsNewSendTitle', teaserKey: 'whatsNewSendTeaser' },
     { id: 'lock', icon: 'lock', titleKey: 'whatsNewAirlockTitle', teaserKey: 'whatsNewAirlockTeaser' },
-    { id: 'green', icon: 'green', titleKey: 'whatsNewGreenTitle', teaserKey: 'whatsNewGreenTeaser' },
+    { id: 'my-magnetar', icon: 'server', titleKey: 'whatsNewMyMagnetarTitle', teaserKey: 'whatsNewMyMagnetarTeaser' },
     { id: 'qr', icon: 'qr', titleKey: 'whatsNewQrTitle', teaserKey: 'whatsNewQrTeaser' }
   ];
 
@@ -4050,13 +4495,13 @@
       content = `
         ${buildWhatsNewStoryFlow([
           { icon: 'extension', label: t('whatsNewStepExtension') },
-          { icon: 'lock', label: t('whatsNewStepEncryptedSync') },
-          { icon: 'phone', label: t('whatsNewStepMobile') }
+          { icon: 'sync', label: t('whatsNewStepSyncConnection') },
+          { icon: 'phone', label: t('whatsNewStepMobileOrMyMagnetar') }
         ])}
         <div class="magnetar-whats-new-story-tags" role="list" aria-label="${escapeAttr(t('whatsNewSyncDataLabel'))}">
-          ${['whatsNewDataSaved', 'whatsNewDataHistory', 'whatsNewDataFolders', 'whatsNewDataReview'].map(key => `<span role="listitem">${escapeHtml(t(key))}</span>`).join('')}
+          ${['whatsNewDataSaved', 'whatsNewDataSent', 'whatsNewDataFolders'].map(key => `<span role="listitem">${escapeHtml(t(key))}</span>`).join('')}
         </div>
-        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewSyncPrivacy'))}</p>
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewEcosystemSyncNote'))}</p>
       `;
     } else if (feature.id === 'folder') {
       content = `
@@ -4086,17 +4531,15 @@
         <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewAirlockNote'))}</p>
         <p class="magnetar-whats-new-story-subnote">${escapeHtml(t('whatsNewAirlockCopy'))}</p>
       `;
-    } else if (feature.id === 'green') {
+    } else if (feature.id === 'my-magnetar') {
       content = `
-        <div class="magnetar-whats-new-green-controls" role="list">
-          ${[
-            ['sync', 'whatsNewGreenSyncMobile'],
-            ['phone', 'whatsNewGreenSendMobile'],
-            ['check', 'whatsNewGreenConnected'],
-            ['folder', 'whatsNewGreenFolderSync']
-          ].map(([icon, key]) => `<span role="listitem">${whatsNewIconSvg(icon)}${escapeHtml(t(key))}</span>`).join('')}
-        </div>
-        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewGreenNote'))}</p>
+        ${buildWhatsNewStoryFlow([
+          { icon: 'extension', label: t('whatsNewStepExtension') },
+          { icon: 'server', label: t('whatsNewStepMyMagnetar') },
+          { icon: 'phone', label: t('whatsNewStepMobile') }
+        ])}
+        <p class="magnetar-whats-new-story-note">${escapeHtml(t('whatsNewMyMagnetarNote'))}</p>
+        <p class="magnetar-whats-new-story-subnote">${escapeHtml(t('whatsNewMyMagnetarPrivacy'))}</p>
       `;
     } else {
       content = `
@@ -4178,7 +4621,7 @@
           <div class="magnetar-whats-new-header">
             <span class="magnetar-whats-new-kicker">${escapeHtml(t('whatsNewKicker'))}</span>
             <h2 id="magnetar-whats-new-title">${escapeHtml(t('whatsNewTitle'))}</h2>
-            <p>${escapeHtml(t('whatsNewIntro'))}</p>
+            <p>${escapeHtml(t('whatsNewEcosystemIntro'))}</p>
           </div>
           <button type="button" class="magnetar-whats-new-close" data-whats-new-close aria-label="${escapeAttr(t('whatsNewClose'))}">${closeIconSvg()}</button>
         </div>
@@ -4193,7 +4636,7 @@
         <div class="magnetar-whats-new-actions">
           <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-primary" data-whats-new-sync>${escapeHtml(t('whatsNewOpenSync'))}</button>
           <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-secondary" data-whats-new-start>${escapeHtml(t('whatsNewStart'))}</button>
-          <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-tertiary" data-whats-new-later>${escapeHtml(t('whatsNewLater'))}</button>
+          <button type="button" class="magnetar-btn magnetar-whats-new-action magnetar-whats-new-tertiary" data-whats-new-my-magnetar>${escapeHtml(t('whatsNewOpenMyMagnetar'))}</button>
         </div>
       </div>
     `;
@@ -4220,7 +4663,11 @@
     const closeTour = () => closeWhatsNewTour({ dismiss: true });
     root.querySelector('[data-whats-new-close]')?.addEventListener('click', closeTour);
     root.querySelector('[data-whats-new-start]')?.addEventListener('click', closeTour);
-    root.querySelector('[data-whats-new-later]')?.addEventListener('click', closeTour);
+    root.querySelector('[data-whats-new-my-magnetar]')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await closeWhatsNewTour({ dismiss: true, restore: true });
+      document.getElementById('magnetar-banner-my-magnetar')?.click();
+    });
     const cards = [...root.querySelectorAll('[data-whats-new-card]')];
     const viewer = root.querySelector('[data-whats-new-viewer]');
     const viewerClip = viewer?.querySelector('.magnetar-whats-new-viewer-clip');
@@ -4313,7 +4760,7 @@
     root.querySelector('[data-whats-new-sync]')?.addEventListener('click', async (e) => {
       e.preventDefault();
       closeWhatsNewTour({ dismiss: true, restore: false });
-      await openSyncPanelWithNotice('');
+      await openMobileSyncPanelWithNotice('');
     });
   }
 
@@ -4340,7 +4787,7 @@
     const isManualShell = detection?.manualOnly === true;
     const name = escapeHtml(detection.name || t('unknownTorrent'));
 
-    const sendLabel = getSendLabel(mode);
+    const sendLabel = getCurrentToolbarSendLabel();
     const showCache = !isManualShell && mode !== 'local';
     const isFull = isManualShell || bannerStyle === 'full';
     const glassEnabled = interfaceStyle === 'glass';
@@ -4351,12 +4798,14 @@
       </button>
     `;
     const syncPullButton = `
-      <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-sync-pull" id="magnetar-sync-pull-latest" title="Pull latest sync" aria-label="Pull latest sync">${syncPullIconSvg()}</button>
+      <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-sync-pull" id="magnetar-sync-pull-latest" title="Sync all connected Magnetar systems" aria-label="Sync all connected Magnetar systems">${syncPullIconSvg()}</button>
     `;
-    const quickSendToggle = quickSendProviders.length ? `
-      <div class="magnetar-quick-send">
-        <button class="magnetar-btn magnetar-btn-secondary magnetar-quick-send-toggle" id="magnetar-quick-send-toggle" title="Send with another provider" aria-label="Send with another provider" aria-haspopup="menu" aria-expanded="false">
-          <span>Target</span>
+    const reviewSendControl = !isManualShell ? `
+      <div class="magnetar-quick-send magnetar-split-control magnetar-review-split">
+        <button class="magnetar-btn magnetar-btn-secondary magnetar-review-send" id="magnetar-review-send" title="Send to Mobile Review" aria-label="Send current item to Mobile Review">
+          <span class="magnetar-review-label">Review: Mobile</span>
+        </button>
+        <button class="magnetar-btn magnetar-btn-secondary magnetar-split-toggle magnetar-review-target-toggle" id="magnetar-review-target-toggle" title="Choose review destination. Current: Mobile" aria-label="Choose review destination. Current: Mobile" aria-haspopup="menu" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
       </div>
@@ -4402,19 +4851,24 @@
                   </button>
         `
         : `
-                  <button class="magnetar-btn magnetar-btn-primary" id="magnetar-send">
-                    <span class="magnetar-btn-label">${sendLabel}</span>
-                    <span class="magnetar-btn-spinner" style="display:none"></span>
-                  </button>
+                  <div class="magnetar-split-control magnetar-provider-split">
+                    <button class="magnetar-btn magnetar-btn-primary" id="magnetar-send">
+                      <span class="magnetar-btn-label">${sendLabel}</span>
+                      <span class="magnetar-btn-spinner" style="display:none"></span>
+                    </button>
+                    <button class="magnetar-btn magnetar-btn-primary magnetar-split-toggle" id="magnetar-send-target-toggle" title="Choose send destination" aria-label="Choose send destination" aria-haspopup="menu" aria-expanded="false" ${quickSendTargets.length > 0 ? '' : 'disabled'}>
+                      ${chevronDownIconSvg()}
+                    </button>
+                  </div>
         `;
       const detectionActions = isManualShell ? '' : `
-                <button class="magnetar-btn magnetar-btn-secondary" id="magnetar-share" title="${t('shareButton')}">${t('shareButton')}</button>
                 <button class="magnetar-btn magnetar-btn-secondary magnetar-btn-save" id="magnetar-save" title="Save for later">
-                  <svg class="magnetar-save-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
                   <span class="magnetar-save-label">Save</span>
                 </button>
-                <button class="magnetar-btn magnetar-btn-secondary magnetar-btn-sync" id="magnetar-banner-sync-mode" title="Sync Magnetar Mobile">Sync mobile</button>
-                <button class="magnetar-btn magnetar-btn-secondary magnetar-btn-app-review" id="magnetar-app-review" title="Send to Magnetar Mobile Review">Send to mobile</button>
+                <button class="magnetar-btn magnetar-btn-secondary magnetar-btn-sync" id="magnetar-mobile-sync-open" data-action="mobile-sync-open" title="Open Magnetar Mobile sync" aria-label="Sync Mobile" aria-controls="magnetar-expanded-section" aria-expanded="false">${myMagnetarIconSvg('sync')}<span>Sync Mobile</span></button>
+                <button class="magnetar-btn magnetar-btn-secondary magnetar-btn-my-magnetar" id="magnetar-banner-my-magnetar" title="Connect or sync My Magnetar" aria-label="My Magnetar">
+                  <span>My Magnetar</span>
+                </button>
       `;
       const utilityTools = isManualShell
         ? `${downloadsButton}${manualButton}`
@@ -4450,7 +4904,7 @@
                 <div class="magnetar-send-stack">
                   ${sendControl}
                 </div>
-                ${quickSendToggle}
+                ${reviewSendControl}
               </div>
               <div class="magnetar-utility-region">
                 ${detectionActions}
@@ -4477,7 +4931,7 @@
         <div class="magnetar-expanded-section" id="magnetar-expanded-section"></div>
       `;
     } else {
-      // Compact mode � Send + settings cog + ?
+      // Compact mode ï¿½ Send + settings cog + ?
       return `
         <div class="magnetar-inner magnetar-inner-compact">
           <span class="magnetar-brand">
@@ -4485,12 +4939,15 @@
             <span class="magnetar-wordmark">MAGNETAR</span>
           </span>
           <div class="magnetar-send-stack">
-            <button class="magnetar-btn magnetar-btn-primary" id="magnetar-send">
-              <span class="magnetar-btn-label">${sendLabel}</span>
-              <span class="magnetar-btn-spinner" style="display:none"></span>
-            </button>
+            <div class="magnetar-split-control magnetar-provider-split">
+              <button class="magnetar-btn magnetar-btn-primary" id="magnetar-send">
+                <span class="magnetar-btn-label">${sendLabel}</span>
+                <span class="magnetar-btn-spinner" style="display:none"></span>
+              </button>
+              <button class="magnetar-btn magnetar-btn-primary magnetar-split-toggle" id="magnetar-send-target-toggle" title="Choose send destination" aria-label="Choose send destination" aria-haspopup="menu" aria-expanded="false" ${quickSendTargets.length > 0 ? '' : 'disabled'}>${chevronDownIconSvg()}</button>
+            </div>
           </div>
-          ${quickSendToggle}
+          ${reviewSendControl}
           ${batchToggle}
           ${ignoreButton}
           ${downloadsButton}
@@ -4598,10 +5055,10 @@
         const origIdx = magnets.indexOf(m);
         const inHistory = historyMap[m.hash] === true;
         const name = escapeHtml(m.name || t('cacheUnknown'));
-        const truncName = name.length > 60 ? name.substring(0, 57) + '�' : name;
+        const truncName = name.length > 60 ? name.substring(0, 57) + 'ï¿½' : name;
         const sizeStr = m.size ? formatSize(m.size) : '';
         const seedStr = m.seeders != null ? `?${m.seeders}` : '';
-        const metaStr = [seedStr, sizeStr].filter(Boolean).join(' � ');
+        const metaStr = [seedStr, sizeStr].filter(Boolean).join(' ï¿½ ');
         return `
           <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
             <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${selectedHashes.has(m.hash) ? 'checked' : ''}>
@@ -4630,17 +5087,17 @@
             <div class="magnetar-stats">
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">sent all-time</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-sent">�</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-sent">ï¿½</div>
                 <div class="magnetar-stat-delta">total</div>
               </div>
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">cache hit rate</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-cache">�</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-cache">ï¿½</div>
                 <div class="magnetar-stat-delta">last 30 sends</div>
               </div>
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">sites blocked</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-shield">�</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-shield">ï¿½</div>
                 <div class="magnetar-stat-delta">shield</div>
               </div>
             </div>
@@ -4675,7 +5132,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
               ${batchMobileButton}
-              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-sync-pull" id="magnetar-sync-pull-latest" title="Pull latest sync" aria-label="Pull latest sync">${syncPullIconSvg()}</button>
+              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-sync-pull" id="magnetar-sync-pull-latest" title="Sync all connected Magnetar systems" aria-label="Sync all connected Magnetar systems">${syncPullIconSvg()}</button>
               <a class="magnetar-btn magnetar-btn-icon magnetar-btn-help" href="${HELP_URL}" target="_blank" rel="noopener" title="Help" aria-label="Help">${helpIconSvg()}</a>
               <button class="magnetar-btn magnetar-btn-icon magnetar-btn-theme" id="magnetar-batch-theme" title="Toggle theme" aria-label="Toggle theme">
                 <svg class="magnetar-theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -4690,8 +5147,8 @@
           <div class="magnetar-batch-toolbar">
             <select class="magnetar-batch-sort" id="magnetar-batch-sort">
               <option value="default">Order: Default</option>
-              <option value="name">Name A�Z</option>
-              <option value="name-desc">Name Z�A</option>
+              <option value="name">Name Aï¿½Z</option>
+              <option value="name-desc">Name Zï¿½A</option>
               <option value="seeders">Seeders ?</option>
               <option value="size">Size ?</option>
               <option value="size-asc">Size ?</option>
@@ -4720,16 +5177,19 @@
             <span class="magnetar-batch-progress-text" id="magnetar-batch-progress-text">0/0</span>
           </div>
           <div class="magnetar-batch-footer">
-            <button class="magnetar-btn magnetar-btn-primary magnetar-batch-send" id="magnetar-batch-send" disabled>
-              <span class="magnetar-btn-label">${escapeHtml(getCurrentToolbarSendLabel())}</span>
-              <span class="magnetar-btn-spinner" style="display:none"></span>
-            </button>
-            ${isAdvancedMode && getQuickSendTargetOptions().length ? `
+            <div class="magnetar-split-control magnetar-provider-split magnetar-batch-provider-split">
+              <button class="magnetar-btn magnetar-btn-primary magnetar-batch-send" id="magnetar-batch-send" disabled>
+                <span class="magnetar-btn-label">${escapeHtml(getCurrentToolbarSendLabel())}</span>
+                <span class="magnetar-btn-spinner" style="display:none"></span>
+              </button>
               <button class="magnetar-btn magnetar-btn-icon magnetar-panel-send-target-toggle" id="magnetar-batch-send-target" title="Choose send target" aria-label="Choose send target" aria-haspopup="menu" aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-            ` : ''}
-            <button class="magnetar-btn magnetar-btn-secondary magnetar-batch-send-mobile" id="magnetar-batch-send-mobile" disabled>Send to mobile</button>
+            </div>
+            <div class="magnetar-split-control magnetar-review-split magnetar-batch-review-split">
+              <button class="magnetar-btn magnetar-btn-secondary magnetar-batch-send-review" id="magnetar-batch-send-review" title="Send to Mobile Review" disabled><span class="magnetar-review-label">Review: Mobile</span></button>
+              <button class="magnetar-btn magnetar-btn-secondary magnetar-split-toggle magnetar-review-target-toggle" id="magnetar-batch-review-target" title="Choose review destination. Current: Mobile" aria-label="Choose review destination. Current: Mobile" aria-haspopup="menu" aria-expanded="false">${chevronDownIconSvg()}</button>
+            </div>
             <span class="magnetar-batch-send-status" id="magnetar-batch-send-status"></span>
             <button class="magnetar-btn magnetar-btn-cancel" id="magnetar-batch-dismiss">${t('batchDismiss')}</button>
           </div>
@@ -4755,7 +5215,7 @@
     const selectAll = panel.querySelector('#magnetar-batch-all');
     const countEl = panel.querySelector('#magnetar-batch-count');
     const sendBtn = panel.querySelector('#magnetar-batch-send');
-    const sendMobileBtn = panel.querySelector('#magnetar-batch-send-mobile');
+    const sendReviewBtn = panel.querySelector('#magnetar-batch-send-review');
     const listEl = panel.querySelector('#magnetar-batch-list-inner');
 
     if (showCache) {
@@ -4818,7 +5278,7 @@
       const checked = panel.querySelectorAll('.magnetar-batch-cb:checked:not(:disabled)');
       countEl.textContent = t('batchSelected', String(checked.length));
       sendBtn.disabled = checked.length === 0;
-      if (sendMobileBtn) sendMobileBtn.disabled = checked.length === 0;
+      if (sendReviewBtn) sendReviewBtn.disabled = checked.length === 0;
     }
 
     function syncSavedRowMarkers(saved) {
@@ -4844,13 +5304,16 @@
 
     bindCheckboxes();
     updateCount();
+    updateReviewTargetButtons();
     persistBatchSession();
 
     panel.querySelector('#magnetar-batch-send-target')?.addEventListener('click', (e) => {
-      showProviderTargetMenu(e.currentTarget, getQuickSendTargetOptions(), providerMode => {
-        currentQuickSendTarget = providerMode;
-        updateQuickSendTargetButtons();
-      });
+      showProviderTargetMenu(e.currentTarget, quickSendTargets, selectQuickSendTarget, currentQuickSendTarget);
+    });
+    panel.querySelector('#magnetar-batch-review-target')?.addEventListener('click', (e) => {
+      showProviderTargetMenu(e.currentTarget, reviewTargets, reviewTarget => {
+        selectReviewTarget(reviewTarget);
+      }, currentReviewTarget);
     });
 
     selectAll.addEventListener('change', () => {
@@ -4861,7 +5324,7 @@
       persistBatchSession();
     });
 
-    sendMobileBtn?.addEventListener('click', async () => {
+    sendReviewBtn?.addEventListener('click', async () => {
       const selected = [...panel.querySelectorAll('.magnetar-batch-cb:checked:not(:disabled)')]
         .map(cb => magnets[parseInt(cb.dataset.index, 10)])
         .filter(Boolean);
@@ -4869,28 +5332,60 @@
         showToast('Select items first.', true);
         return;
       }
-      const syncSettings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
-      if (!isUsableSyncSettings(syncSettings)) {
-        await openSyncPanelWithNotice(t('syncNoticePairForBatchReview'));
+      if (currentReviewTarget === 'my-magnetar') {
+        const connection = await safeRuntimeMessage({ type: 'selfhost-get' }, null);
+        if (!connection?.paired) {
+          showToast('My Magnetar is not connected.', true);
+          await openMyMagnetarPanelWithNotice('Connect My Magnetar to send these items to Review.');
+          return;
+        }
+        const label = sendReviewBtn.querySelector('.magnetar-review-label');
+        sendReviewBtn.disabled = true;
+        sendReviewBtn.setAttribute('aria-busy', 'true');
+        if (label) label.textContent = 'Sending...';
+        try {
+          const response = await safeRuntimeMessage({ type: 'selfhost-send-batch', items: selected.map(buildBatchAppReviewItem) }, null);
+          if (response?.ok) {
+            const sent = Number(response.created || 0);
+            const duplicates = Number(response.duplicates || 0);
+            const failed = Array.isArray(response.results)
+              ? response.results.filter(item => item?.status === 'rejected' || item?.error).length
+              : 0;
+            showToast(`My Magnetar Review: ${sent} sent, ${duplicates} duplicate${duplicates === 1 ? '' : 's'}, ${failed} failed`);
+          }
+          else showToast(response?.error || 'My Magnetar could not be reached.', true);
+        } finally {
+          sendReviewBtn.removeAttribute('aria-busy');
+          updateReviewTargetButtons();
+          updateCount();
+        }
         return;
       }
-      const original = sendMobileBtn.textContent || 'Send to mobile';
-      sendMobileBtn.disabled = true;
-      sendMobileBtn.textContent = 'Sending...';
+      const syncSettings = await safeRuntimeMessage({ type: 'get-sync-settings' }, null);
+      if (!isUsableSyncSettings(syncSettings)) {
+        await openMobileSyncPanelWithNotice(t('syncNoticePairForBatchReview'));
+        return;
+      }
+      const label = sendReviewBtn.querySelector('.magnetar-review-label');
+      sendReviewBtn.disabled = true;
+      sendReviewBtn.setAttribute('aria-busy', 'true');
+      if (label) label.textContent = 'Sending...';
       try {
         const response = await safeRuntimeMessage({
           type: 'sync-send-app-review-batch',
           items: selected.map(buildBatchAppReviewItem)
         }, null);
         if (response?.ok) {
-          showToast(`Sent ${response.count || selected.length} items to mobile`);
+          const sent = Number(response.count || selected.length);
+          showToast(`Mobile Review: ${sent} sent, 0 duplicates, 0 failed`);
         } else {
-          showToast(response?.error || 'Could not send items to mobile', true);
+          showToast(response?.error || 'Could not send items to Mobile Review.', true);
         }
       } catch (e) {
-        showToast('Could not send items to mobile', true);
+        showToast('Could not send items to Mobile Review.', true);
       } finally {
-        sendMobileBtn.textContent = original;
+        sendReviewBtn.removeAttribute('aria-busy');
+        updateReviewTargetButtons();
         updateCount();
       }
     });
@@ -5032,7 +5527,7 @@
     });
     panel.querySelector('#magnetar-sync-pull-latest')?.addEventListener('click', (e) => {
       e.preventDefault();
-      handlePullSyncSavedHistory(e);
+      void runHardSyncAllFromExtension(e.currentTarget);
     });
 
     // -- Drawer: slide-out saved + history --
@@ -5062,8 +5557,8 @@
         safeRuntimeMessage({ type: 'get-send-count' }, {}),
         safeRuntimeMessage({ type: 'shield-get' }, {})
       ]);
-      const savedList = Array.isArray(saved) ? saved : [];
-      const histList = Array.isArray(history) ? history : (history?.history || []);
+      const savedList = sortSavedBySavedAt(Array.isArray(saved) ? saved : []);
+      const histList = sortHistoryBySentAt(Array.isArray(history) ? history : (history?.history || []));
       const sendCount = sendCountRes?.count || 0;
       const shieldData = shieldRes || {};
       syncSavedRowMarkers(savedList);
@@ -5079,7 +5574,7 @@
         const cached = recent.filter(h => h.cacheAtSend === 'cached').length;
         statCache.textContent = recent.length > 0
           ? Math.round((cached / recent.length) * 100) + '%'
-          : '�';
+          : 'ï¿½';
       }
 
       const savedCountEl = panel.querySelector('#magnetar-batch-drawer-count');
@@ -5088,46 +5583,48 @@
       const savedHost = panel.querySelector('#magnetar-batch-drawer-saved');
       if (savedHost) {
         savedHost.innerHTML = savedList.length
-          ? savedList.map(s => {
-              const ago = formatRelative(s.savedAt);
-              const hash = escapeAttr(s.hash || '');
+          ? savedList.map((s, savedIndex) => {
+              const ago = formatRelative(savedItemTimestamp(s));
+              const hash = escapeAttr(s.hash || s.infoHash || '');
+              const savedIndexAttr = escapeAttr(String(savedIndex));
               return `
-                <div class="magnetar-saved-row" data-hash="${hash}">
-                  <span class="magnetar-saved-name" title="${escapeHtml(s.name || '�')}">${escapeHtml(s.name || '�')}</span>
+                <div class="magnetar-saved-row" data-hash="${hash}" data-saved-index="${savedIndexAttr}">
+                  <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}">${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}</span>
                   <span class="magnetar-saved-meta">${ago}</span>
-                  <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" title="Share">
+                  <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Share">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                   </button>
-                  <button class="magnetar-saved-action magnetar-saved-copy" data-hash="${hash}" title="Copy magnet">
+                  <button class="magnetar-saved-action magnetar-saved-copy" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Copy magnet">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   </button>
-                  <button class="magnetar-saved-send" data-hash="${hash}" title="Send now">Send</button>
-                  <button class="magnetar-saved-delete" data-hash="${hash}" title="Remove" aria-label="Remove">${removeIconSvg()}</button>
+                  <button class="magnetar-saved-send" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Send now">Send</button>
+                  <button class="magnetar-saved-delete" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Remove" aria-label="Remove">${removeIconSvg()}</button>
                 </div>
               `;
             }).join('')
           : '<div class="magnetar-activity-empty">Nothing saved yet</div>';
 
-        // Share � does NOT remove from saved queue
+        // Share ï¿½ does NOT remove from saved queue
         savedHost.querySelectorAll('.magnetar-saved-share').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const item = savedList.find(s => s.hash === btn.dataset.hash);
+            const item = savedList[Number(btn.dataset.savedIndex)];
             if (!item) return;
             handleShare({
-              name: item.name,
-              magnetUri: item.magnetUri,
+              name: item.name || item.displayName || item.title,
+              magnetUri: item.magnetUri || item.magnet,
               hash: item.hash
             }, btn);
           });
         });
 
-        // Copy magnet � does NOT remove from saved queue
+        // Copy magnet ï¿½ does NOT remove from saved queue
         savedHost.querySelectorAll('.magnetar-saved-copy').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const item = savedList.find(s => s.hash === btn.dataset.hash);
-            if (!item?.magnetUri) return;
-            await handleCopy(item.magnetUri, t('magnetCopied'));
+            const item = savedList[Number(btn.dataset.savedIndex)];
+            const magnet = item?.magnetUri || item?.magnet || (item?.hash ? `magnet:?xt=urn:btih:${item.hash}` : '');
+            if (!magnet) return;
+            await handleCopy(magnet, t('magnetCopied'));
             btn.classList.add('magnetar-saved-action-done');
             setTimeout(() => btn.classList.remove('magnetar-saved-action-done'), 900);
           });
@@ -5135,21 +5632,20 @@
 
         savedHost.querySelectorAll('.magnetar-saved-send').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const item = savedList.find(s => s.hash === btn.dataset.hash);
+            const item = savedList[Number(btn.dataset.savedIndex)];
             if (!item) return;
             btn.disabled = true;
-            btn.textContent = '�';
+            btn.textContent = 'ï¿½';
             try {
               const result = await MAGNETAR_API.runtime.sendMessage({
                 type: 'send-magnet',
-                hash: item.hash, name: item.name, magnetUri: item.magnetUri,
-                category: item.category || '', pageUrl: item.sourceUrl || '',
+                item,
+                category: item.category || '', pageUrl: item.sourceUrl || item.url || '',
                 mode: currentQuickSendTarget
               });
               if (result?.success || result?.action === 'open-magnet') {
                 if (result?.action === 'open-magnet' && result.magnetUri) {
                   window.open(result.magnetUri, '_self');
-                  await safeRuntimeMessage({ type: 'delete-saved-item', hash: item.hash });
                 }
                 showToast(`Sent to ${getCurrentQuickSendLabel()}`);
                 await showOpenProviderAction(result.provider || currentQuickSendTarget, panel);
@@ -5157,6 +5653,7 @@
               } else {
                 btn.disabled = false;
                 btn.textContent = 'Send';
+                showToast(`Send failed: ${result?.error || t('sendFailed')}`, true);
               }
             } catch (e) {
               btn.disabled = false;
@@ -5167,7 +5664,8 @@
 
         savedHost.querySelectorAll('.magnetar-saved-delete').forEach(btn => {
           btn.addEventListener('click', async () => {
-            await safeRuntimeMessage({ type: 'delete-saved-item', hash: btn.dataset.hash });
+            const item = savedList[Number(btn.dataset.savedIndex)];
+            if (item) await safeRuntimeMessage({ type: 'delete-saved-item', item });
             await refreshDrawer();
           });
         });
@@ -5178,7 +5676,7 @@
         const top = histList.slice(0, 30);
         histHost.innerHTML = top.length
           ? top.map(h => {
-              const ago = formatRelative(h.lastSentAt || h.timestamp);
+              const ago = formatRelative(historySentTimestamp(h));
               const status = h.cacheAtSend === 'cached' ? 'cached' : 'sent';
               const sourceUrl = safeSourceUrl(h);
                       return `
@@ -5214,7 +5712,7 @@
           current.preferences.batchMax = n;
           await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: current });
         } catch (e) {}
-        // Redraw panel � simplest path: remove it and re-detect.
+        // Redraw panel ï¿½ simplest path: remove it and re-detect.
         // `allMagnets` is captured in the outer closure; we re-slice here.
         panel.remove();
         const batchItems = getBatchMagnets();
@@ -5545,7 +6043,7 @@
     }
   }
 
-  function showProviderTargetMenu(anchorBtn, providers, onSelect) {
+  function showProviderTargetMenu(anchorBtn, providers, onSelect, currentId = '') {
     if (!anchorBtn || !providers.length) return;
 
     const anchorId = anchorBtn.id || '';
@@ -5574,9 +6072,10 @@
     if (theme === 'dark') menu.classList.add('magnetar-theme-dark');
     menu.setAttribute('role', 'menu');
     menu.innerHTML = providers.map(provider => `
-      <button type="button" class="magnetar-quick-send-option" role="menuitem" data-mode="${provider.id}">
-        <span class="magnetar-provider-menu-icon" data-provider="${provider.id}" aria-hidden="true"></span>
+      <button type="button" class="magnetar-quick-send-option ${provider.id === currentId ? 'magnetar-quick-send-option-active' : ''}" role="menuitemradio" aria-checked="${String(provider.id === currentId)}" data-mode="${provider.id}">
+        <span class="magnetar-provider-menu-icon" data-provider="${provider.id}" aria-hidden="true">${provider.id === 'mobile' ? whatsNewIconSvg('phone') : (provider.id === 'my-magnetar' ? myMagnetarIconSvg('home') : '')}</span>
         <span class="magnetar-provider-menu-label">${escapeHtml(provider.label)}</span>
+        <span class="magnetar-provider-menu-check" aria-hidden="true">${provider.id === currentId ? '&#10003;' : ''}</span>
       </button>
     `).join('');
 
@@ -5605,11 +6104,12 @@
     anchorBtn.setAttribute('aria-expanded', 'true');
     requestAnimationFrame(() => menu.classList.add('magnetar-quick-send-menu-visible'));
 
-    menu.addEventListener('click', (e) => {
+    menu.addEventListener('click', async (e) => {
       const item = e.target.closest('.magnetar-quick-send-option');
       if (!item) return;
+      item.disabled = true;
+      await onSelect(item.dataset.mode);
       closeQuickSendMenu();
-      onSelect(item.dataset.mode);
     });
 
     const closeHandler = (e) => {
@@ -5638,6 +6138,17 @@
     }
   }
 
+  function shareMenuIconSvg(action) {
+    const icons = {
+      email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+      x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M5 4 19 20"/><path d="M19 4 5 20"/></svg>',
+      reddit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.5 12.5a6.5 5.5 0 0 0 13 0 6.5 5.5 0 0 0-13 0Z"/><path d="M9 15c1.6 1.1 4.4 1.1 6 0"/><circle cx="9.5" cy="12" r=".8" fill="currentColor" stroke="none"/><circle cx="14.5" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="m13 7 1-3 3.2.7"/><circle cx="19" cy="5" r="1.5"/><path d="M5.8 10.5a2 2 0 1 0-.5 3.7M18.2 10.5a2 2 0 1 1 .5 3.7"/></svg>',
+      telegram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
+      copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 13a5 5 0 0 0 7.1.1l2-2A5 5 0 0 0 12 4l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"/></svg>'
+    };
+    return icons[action] || '';
+  }
+
   async function handleShare(detection, anchorBtn) {
     // Remove any existing share menu
     document.getElementById('magnetar-share-menu')?.remove();
@@ -5648,7 +6159,7 @@
       manualMenu?.remove();
     }
 
-    const btn = anchorBtn || document.getElementById('magnetar-share');
+    const btn = anchorBtn;
     if (!btn) return;
 
     const magnetUri = detection.magnetUri || '';
@@ -5664,20 +6175,20 @@
     menu.id = 'magnetar-share-menu';
     if (theme === 'dark') menu.classList.add('magnetar-theme-dark');
     menu.innerHTML = `
-      <button class="magnetar-share-item" data-action="email" title="${t('shareEmail')}">
-        <span class="magnetar-share-icon">?</span><span>${t('shareEmail')}</span>
+      <button type="button" class="magnetar-share-item" data-action="email" title="${t('shareEmail')}" aria-label="${t('shareEmail')}">
+        <span class="magnetar-share-icon" aria-hidden="true">${shareMenuIconSvg('email')}</span><span>${t('shareEmail')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="x" title="${t('shareX')}">
-        <span class="magnetar-share-icon">??</span><span>${t('shareX')}</span>
+      <button type="button" class="magnetar-share-item" data-action="x" title="${t('shareX')}" aria-label="${t('shareX')}">
+        <span class="magnetar-share-icon" aria-hidden="true">${shareMenuIconSvg('x')}</span><span>${t('shareX')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="reddit" title="${t('shareReddit')}">
-        <span class="magnetar-share-icon">?</span><span>${t('shareReddit')}</span>
+      <button type="button" class="magnetar-share-item" data-action="reddit" title="${t('shareReddit')}" aria-label="${t('shareReddit')}">
+        <span class="magnetar-share-icon" aria-hidden="true">${shareMenuIconSvg('reddit')}</span><span>${t('shareReddit')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="telegram" title="${t('shareTelegram')}">
-        <span class="magnetar-share-icon">?</span><span>${t('shareTelegram')}</span>
+      <button type="button" class="magnetar-share-item" data-action="telegram" title="${t('shareTelegram')}" aria-label="${t('shareTelegram')}">
+        <span class="magnetar-share-icon" aria-hidden="true">${shareMenuIconSvg('telegram')}</span><span>${t('shareTelegram')}</span>
       </button>
-      <button class="magnetar-share-item" data-action="copy" title="${t('shareCopyLink')}">
-        <span class="magnetar-share-icon">?</span><span>${t('shareCopyLink')}</span>
+      <button type="button" class="magnetar-share-item" data-action="copy" title="${t('shareCopyLink')}" aria-label="${t('shareCopyLink')}">
+        <span class="magnetar-share-icon" aria-hidden="true">${shareMenuIconSvg('copy')}</span><span>${t('shareCopyLink')}</span>
       </button>
     `;
 
@@ -5843,12 +6354,11 @@
       btn.classList.add('magnetar-btn-sent');
     }
     lastSentProvider = providerMode;
-    const quickSendToggle = banner.querySelector('#magnetar-quick-send-toggle');
-    if (quickSendToggle) {
-      const hasOtherTargets = getPostSendQuickSendProviders().length > 0;
-      quickSendToggle.disabled = !hasOtherTargets;
-      quickSendToggle.hidden = !hasOtherTargets;
-      quickSendToggle.setAttribute('aria-expanded', 'false');
+    const sendTargetToggle = banner.querySelector('#magnetar-send-target-toggle');
+    if (sendTargetToggle) {
+      sendTargetToggle.disabled = quickSendTargets.length <= 1;
+      sendTargetToggle.hidden = false;
+      sendTargetToggle.setAttribute('aria-expanded', 'false');
     }
     document.getElementById('magnetar-quick-send-menu')?.remove();
     ensureSentStatus(banner);
@@ -6023,7 +6533,7 @@
     document.body.appendChild(prompt);
     requestAnimationFrame(() => prompt.classList.add('magnetar-visible'));
 
-    // Any of the three actions permanently dismisses � the user shouldn't
+    // Any of the three actions permanently dismisses ï¿½ the user shouldn't
     // see this prompt again whether they rated, donated, or declined.
     const dismiss = () => {
       safeRuntimeMessage({ type: 'dismiss-review-prompt' });
@@ -6036,5 +6546,4 @@
   }
 
 })();
-
 
