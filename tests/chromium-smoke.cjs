@@ -175,7 +175,7 @@ async function main() {
     const popup = new Cdp(popupTarget.webSocketDebuggerUrl);
     await popup.connect();
     await popup.send('Runtime.enable');
-    assert.equal(await popup.evaluate('chrome.runtime.getManifest().version'), '2.2.11', 'Chrome loaded the wrong extension version');
+    assert.equal(await popup.evaluate('chrome.runtime.getManifest().version'), '2.2.12', 'Chrome loaded the wrong extension version');
     popup.close();
 
     const pageCreator = new Cdp(browserVersion.webSocketDebuggerUrl);
