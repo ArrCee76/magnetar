@@ -1,10 +1,10 @@
 ﻿/**
- * Magnetar ï¿½ Content Script
+ * Magnetar — Content Script
  * 
  * Runs on every page. Two banner modes + batch panel:
- * 1. Full banner ï¿½ name, cache, Send, Share, Copy Magnet, Copy Hash, ?
- * 2. Compact banner ï¿½ Send + ? only
- * 3. Batch mode ï¿½ checkbox table for multi-hash pages
+ * 1. Full banner — name, cache, Send, Share, Copy Magnet, Copy Hash, ?
+ * 2. Compact banner — Send + ? only
+ * 3. Batch mode — checkbox table for multi-hash pages
  */
 
 (async () => {
@@ -1954,7 +1954,7 @@
       const savedIndexAttr = escapeAttr(String(savedIndex));
       return `
         <div class="magnetar-saved-row" data-hash="${hash}" data-saved-index="${savedIndexAttr}">
-          <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}">${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}</span>
+          <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || '—')}">${escapeHtml(s.name || s.displayName || s.title || '—')}</span>
           <span class="magnetar-saved-meta">${ago}</span>
           <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Share">
             <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -1968,7 +1968,6 @@
       `;
     }).join('');
 
-    const modeUpper = String(mode || 'local').toUpperCase();
     const targetOptions = getQuickSendTargetOptions();
     const expandedTargetControl = isAdvancedMode ? `
       <button class="magnetar-panel-send-target" id="magnetar-expanded-send-target" type="button" ${targetOptions.length ? '' : 'disabled'}>
@@ -1989,7 +1988,7 @@
           </div>
           <div class="magnetar-stat">
             <div class="magnetar-stat-label">cache hit rate</div>
-            <div class="magnetar-stat-value">${cacheRate === null ? 'ï¿½' : cacheRate + '%'}</div>
+            <div class="magnetar-stat-value">${cacheRate === null ? '—' : cacheRate + '%'}</div>
             <div class="magnetar-stat-delta">last 30 sends</div>
           </div>
           <div class="magnetar-stat">
@@ -2009,7 +2008,7 @@
         </div>
         <div class="magnetar-activity">${activityHTML}</div>
         <div class="magnetar-bfoot">
-          <span>v${MAGNETAR_API.runtime.getManifest().version} ï¿½ ${modeUpper}</span>
+          <span>Version ${MAGNETAR_API.runtime.getManifest().version} · MAGNETAR</span>
           <span class="magnetar-bfoot-tagline">Grab torrents, send them anywhere</span>
         </div>
       </div>
@@ -2050,7 +2049,7 @@
         const item = saved[Number(btn.dataset.savedIndex)];
         if (!item) return;
         btn.disabled = true;
-        btn.textContent = 'â€¦';
+        btn.textContent = '…';
         try {
           const result = await MAGNETAR_API.runtime.sendMessage({
             type: 'send-magnet',
@@ -2912,7 +2911,7 @@
           <div class="magnetar-organised-folder-icon" aria-hidden="true">${folderIconSvg()}</div>
           <div class="magnetar-organised-folder-main">
             <div class="magnetar-organised-folder-name" title="${escapeAttr(folder.name || 'Folder')}">${escapeHtml(folder.name || 'Folder')}</div>
-            <div class="magnetar-organised-folder-meta">${rawItems.length} ${rawItems.length === 1 ? 'item' : 'items'} Â· provider files are never changed</div>
+            <div class="magnetar-organised-folder-meta">${rawItems.length} ${rawItems.length === 1 ? 'item' : 'items'} · provider files are never changed</div>
           </div>
         </div>
         ${renderOrganisedOpenControls(filteredItems.length)}
@@ -3583,7 +3582,7 @@
         <div class="magnetar-provider-files ${clientPanelView === 'organised' ? 'magnetar-organised-files' : ''}">${body}</div>
         ${pagination}
         <div class="magnetar-bfoot">
-          <span>v${MAGNETAR_API.runtime.getManifest().version} - ${escapeHtml(clientPanelView === 'organised' ? 'ORGANISED' : String(providerMode).toUpperCase())}</span>
+          <span>Version ${MAGNETAR_API.runtime.getManifest().version} · MAGNETAR</span>
           <span class="magnetar-bfoot-tagline">Client stays in the toolbar</span>
         </div>
       </div>
@@ -4299,7 +4298,7 @@
         event.preventDefault();
         resendBtn.disabled = true;
         const original = resendBtn.textContent;
-        resendBtn.textContent = 'Sendingï¿½';
+        resendBtn.textContent = 'Sending…';
         const res = await safeRuntimeMessage({ type: 'resend-history-item', hash: resendBtn.dataset.hash }, null);
         if (res?.action === 'open-magnet' && res.magnetUri) window.open(res.magnetUri, '_self');
         resendBtn.textContent = res?.success ? 'Sent' : 'Unavailable';
@@ -4931,7 +4930,7 @@
         <div class="magnetar-expanded-section" id="magnetar-expanded-section"></div>
       `;
     } else {
-      // Compact mode ï¿½ Send + settings cog + ?
+      // Compact mode — Send + settings cog + ?
       return `
         <div class="magnetar-inner magnetar-inner-compact">
           <span class="magnetar-brand">
@@ -5054,11 +5053,15 @@
       return list.map((m, i) => {
         const origIdx = magnets.indexOf(m);
         const inHistory = historyMap[m.hash] === true;
-        const name = escapeHtml(m.name || t('cacheUnknown'));
-        const truncName = name.length > 60 ? name.substring(0, 57) + 'ï¿½' : name;
+        const rawName = m.name || t('cacheUnknown');
+        const name = escapeHtml(rawName);
+        // Truncate Unicode code points before escaping so neither surrogate pairs
+        // nor HTML entities can be split into broken display text.
+        const nameChars = Array.from(rawName);
+        const truncName = escapeHtml(nameChars.length > 60 ? nameChars.slice(0, 57).join('') + '…' : rawName);
         const sizeStr = m.size ? formatSize(m.size) : '';
-        const seedStr = m.seeders != null ? `?${m.seeders}` : '';
-        const metaStr = [seedStr, sizeStr].filter(Boolean).join(' ï¿½ ');
+        const seedStr = m.seeders != null ? `↑${m.seeders}` : '';
+        const metaStr = [seedStr, sizeStr].filter(Boolean).join(' · ');
         return `
           <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
             <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${selectedHashes.has(m.hash) ? 'checked' : ''}>
@@ -5087,17 +5090,17 @@
             <div class="magnetar-stats">
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">sent all-time</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-sent">ï¿½</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-sent">—</div>
                 <div class="magnetar-stat-delta">total</div>
               </div>
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">cache hit rate</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-cache">ï¿½</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-cache">—</div>
                 <div class="magnetar-stat-delta">last 30 sends</div>
               </div>
               <div class="magnetar-stat">
                 <div class="magnetar-stat-label">sites blocked</div>
-                <div class="magnetar-stat-value" id="magnetar-batch-stat-shield">ï¿½</div>
+                <div class="magnetar-stat-value" id="magnetar-batch-stat-shield">—</div>
                 <div class="magnetar-stat-delta">shield</div>
               </div>
             </div>
@@ -5147,11 +5150,11 @@
           <div class="magnetar-batch-toolbar">
             <select class="magnetar-batch-sort" id="magnetar-batch-sort">
               <option value="default">Order: Default</option>
-              <option value="name">Name Aï¿½Z</option>
-              <option value="name-desc">Name Zï¿½A</option>
-              <option value="seeders">Seeders ?</option>
-              <option value="size">Size ?</option>
-              <option value="size-asc">Size ?</option>
+              <option value="name">Name A–Z</option>
+              <option value="name-desc">Name Z–A</option>
+              <option value="seeders">Seeders ↓</option>
+              <option value="size">Size ↓</option>
+              <option value="size-asc">Size ↑</option>
             </select>
             <div class="magnetar-batch-count-toggle" role="group" aria-label="Max torrents">
               ${batchCountOptions.map(n => `
@@ -5427,7 +5430,7 @@
           const item = selected[i];
           const statusEl = panel.querySelector(`#magnetar-bs-${magnets.indexOf(item)}`);
           window.open(item.magnetUri, '_blank');
-          if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">?</span>';
+          if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
           sentHashes.add(item.hash);
           const row = panel.querySelector(`.magnetar-batch-row[data-index="${magnets.indexOf(item)}"]`);
           if (row) row.classList.add('magnetar-batch-done');
@@ -5455,11 +5458,11 @@
               if (res.success) {
                 successCount++;
                 sentHashes.add(res.hash);
-                if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">?</span>';
+                if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-ok">✓</span>';
                 const row = panel.querySelector(`.magnetar-batch-row[data-index="${idx}"]`);
                 if (row) row.classList.add('magnetar-batch-done');
               } else {
-                if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-fail">?</span>';
+                if (statusEl) statusEl.innerHTML = '<span class="magnetar-batch-badge magnetar-batch-badge-fail">×</span>';
               }
             }
             showToast(`${t('batchSentCount', String(successCount), String(selected.length))} (${sendTargetLabel})`);
@@ -5574,7 +5577,7 @@
         const cached = recent.filter(h => h.cacheAtSend === 'cached').length;
         statCache.textContent = recent.length > 0
           ? Math.round((cached / recent.length) * 100) + '%'
-          : 'ï¿½';
+          : '—';
       }
 
       const savedCountEl = panel.querySelector('#magnetar-batch-drawer-count');
@@ -5589,7 +5592,7 @@
               const savedIndexAttr = escapeAttr(String(savedIndex));
               return `
                 <div class="magnetar-saved-row" data-hash="${hash}" data-saved-index="${savedIndexAttr}">
-                  <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}">${escapeHtml(s.name || s.displayName || s.title || 'ï¿½')}</span>
+                  <span class="magnetar-saved-name" title="${escapeHtml(s.name || s.displayName || s.title || '—')}">${escapeHtml(s.name || s.displayName || s.title || '—')}</span>
                   <span class="magnetar-saved-meta">${ago}</span>
                   <button class="magnetar-saved-action magnetar-saved-share" data-hash="${hash}" data-saved-index="${savedIndexAttr}" title="Share">
                     <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -5604,7 +5607,7 @@
             }).join('')
           : '<div class="magnetar-activity-empty">Nothing saved yet</div>';
 
-        // Share ï¿½ does NOT remove from saved queue
+        // Share — does NOT remove from saved queue
         savedHost.querySelectorAll('.magnetar-saved-share').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -5618,7 +5621,7 @@
           });
         });
 
-        // Copy magnet ï¿½ does NOT remove from saved queue
+        // Copy magnet — does NOT remove from saved queue
         savedHost.querySelectorAll('.magnetar-saved-copy').forEach(btn => {
           btn.addEventListener('click', async () => {
             const item = savedList[Number(btn.dataset.savedIndex)];
@@ -5635,7 +5638,7 @@
             const item = savedList[Number(btn.dataset.savedIndex)];
             if (!item) return;
             btn.disabled = true;
-            btn.textContent = 'ï¿½';
+            btn.textContent = '…';
             try {
               const result = await MAGNETAR_API.runtime.sendMessage({
                 type: 'send-magnet',
@@ -5712,7 +5715,7 @@
           current.preferences.batchMax = n;
           await MAGNETAR_API.runtime.sendMessage({ type: 'save-settings', data: current });
         } catch (e) {}
-        // Redraw panel ï¿½ simplest path: remove it and re-detect.
+        // Redraw panel — simplest path: remove it and re-detect.
         // `allMagnets` is captured in the outer closure; we re-slice here.
         panel.remove();
         const batchItems = getBatchMagnets();
@@ -6533,7 +6536,7 @@
     document.body.appendChild(prompt);
     requestAnimationFrame(() => prompt.classList.add('magnetar-visible'));
 
-    // Any of the three actions permanently dismisses ï¿½ the user shouldn't
+    // Any of the three actions permanently dismisses — the user shouldn't
     // see this prompt again whether they rated, donated, or declined.
     const dismiss = () => {
       safeRuntimeMessage({ type: 'dismiss-review-prompt' });
