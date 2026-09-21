@@ -160,6 +160,45 @@
     return value === 'advanced' ? 'advanced' : 'standard';
   }
 
+  // Initialize shared panel state before registering sync handlers or awaiting
+  // startup work. Detection can return early while those handlers remain active.
+  let expandedBuilt = false;
+  let activeExpandedPanel = '';
+  let toolbarExpanded = false;
+  let clientPanelOpen = false;
+  let mobileSyncPanelOpen = false;
+  let myMagnetarPanelOpen = false;
+  let myMagnetarPanelEditing = false;
+  let myMagnetarPanelNotice = '';
+  let syncQrVisible = false;
+  let mobileSyncPanelTransition = 'neutral';
+  let syncMobileWasAcknowledged = false;
+  let whatsNewPreviousPanel = '';
+  let mobileSyncPanelNotice = "";
+  const AUTO_PULL_MIN_INTERVAL_MS = 30000;
+  const AUTO_PULL_FAILURE_BACKOFF_MS = 30000;
+  const autoPullDetectionKeys = new Map();
+  let autoPullInFlight = false;
+  let lastAutoPullAt = 0;
+  let autoPullBackoffUntil = 0;
+  const CLIENT_PANEL_PAGE_SIZE = 25;
+  const clientPanelCache = new Map();
+  let currentClientPanelItems = [];
+  let clientPanelView = 'provider';
+  let organisedOpenFolderId = '';
+  let organisedQuickviewFolderId = '';
+  let organisedQuickviewPopover = null;
+  let organisedQuickviewOutsideHandler = null;
+  let organisedFolderFilter = '';
+  let organisedFolderPage = 1;
+  let organisedFilterTimer = null;
+  let organisedOpenItemFilter = '';
+  let organisedOpenItemSort = 'newest';
+  let organisedOpenItemPage = 1;
+  let organisedOpenItemPageSize = 25;
+  let organisedOpenItemFilterTimer = null;
+  const ORGANISED_FOLDER_PAGE_SIZE = 9;
+
   const HARD_SYNC_WEB_REQUEST_EVENT = 'magnetar:hard-sync-all-request';
   const HARD_SYNC_WEB_RESULT_EVENT = 'magnetar:hard-sync-all-result';
   const HARD_SYNC_WEB_PROGRESS_EVENT = 'magnetar:hard-sync-all-progress';
@@ -968,43 +1007,6 @@
   });
 
   // -- Expand / collapse (lazy-loaded dashboard panel) --
-  let expandedBuilt = false;
-  let activeExpandedPanel = '';
-  let toolbarExpanded = false;
-  let clientPanelOpen = false;
-  let mobileSyncPanelOpen = false;
-  let myMagnetarPanelOpen = false;
-  let myMagnetarPanelEditing = false;
-  let myMagnetarPanelNotice = '';
-  let syncQrVisible = false;
-  let mobileSyncPanelTransition = 'neutral';
-  let syncMobileWasAcknowledged = false;
-  let whatsNewPreviousPanel = '';
-  let mobileSyncPanelNotice = "";
-  const AUTO_PULL_MIN_INTERVAL_MS = 30000;
-  const AUTO_PULL_FAILURE_BACKOFF_MS = 30000;
-  const autoPullDetectionKeys = new Map();
-  let autoPullInFlight = false;
-  let lastAutoPullAt = 0;
-  let autoPullBackoffUntil = 0;
-  const CLIENT_PANEL_PAGE_SIZE = 25;
-  const clientPanelCache = new Map();
-  let currentClientPanelItems = [];
-  let clientPanelView = 'provider';
-  let organisedOpenFolderId = '';
-  let organisedQuickviewFolderId = '';
-  let organisedQuickviewPopover = null;
-  let organisedQuickviewOutsideHandler = null;
-  let organisedFolderFilter = '';
-  let organisedFolderPage = 1;
-  let organisedFilterTimer = null;
-  let organisedOpenItemFilter = '';
-  let organisedOpenItemSort = 'newest';
-  let organisedOpenItemPage = 1;
-  let organisedOpenItemPageSize = 25;
-  let organisedOpenItemFilterTimer = null;
-  const ORGANISED_FOLDER_PAGE_SIZE = 9;
-
   function setExpandedPanel(panel) {
     activeExpandedPanel = panel || '';
     toolbarExpanded = activeExpandedPanel === 'details';
