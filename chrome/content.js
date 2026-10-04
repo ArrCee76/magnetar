@@ -411,6 +411,38 @@
   // BANNER (Full + Compact modes)
   // ------------------------------------------------------------------------
 
+  // Balance announcement: independent UI and a dedicated local dismissal key.
+  async function showBalanceAnnouncement(host) {
+    try {
+      const key = 'magnetar-ui-balance-panel-dismissed-v1';
+      const saved = await MAGNETAR_API.storage.local.get([key]);
+      if (saved[key] || !host.isConnected || host.querySelector('.magnetar-balance-card')) return;
+      const card = document.createElement('aside');
+      card.className = 'magnetar-balance-card';
+      card.setAttribute('aria-label', 'Magnetar Balance');
+      card.innerHTML = `
+        <span class="magnetar-balance-icon" aria-hidden="true">=</span>
+        <div class="magnetar-balance-copy"><strong>Meet Magnetar Balance</strong><p>Plan your income, bills and savings, on your own or together. Free to start.</p></div>
+        <a class="magnetar-balance-link" href="https://magnetarbalance.com/" target="_blank" rel="noopener noreferrer">Take a look <span aria-hidden="true">↗</span></a>
+        <button class="magnetar-balance-close" type="button" aria-label="Dismiss Magnetar Balance announcement">×</button>`;
+      const dismiss = () => {
+        document.querySelectorAll('#magnetar-banner .magnetar-balance-card, #magnetar-batch .magnetar-balance-card').forEach(node => node.remove());
+        MAGNETAR_API.storage.local.set({ [key]: true }).catch(() => {});
+      };
+      card.querySelector('.magnetar-balance-close').addEventListener('click', event => {
+        event.stopPropagation();
+        dismiss();
+      });
+      card.querySelector('.magnetar-balance-link').addEventListener('click', event => {
+        event.stopPropagation();
+        // Keep the link attached through its default navigation action.
+        MAGNETAR_API.storage.local.set({ [key]: true }).catch(() => {});
+        setTimeout(() => card.remove(), 0);
+      });
+      host.appendChild(card);
+    } catch (_) { /* Optional announcement must never interrupt detection UI. */ }
+  }
+
   function injectBanner(detection, mode, category) {
     document.getElementById('magnetar-banner')?.remove();
 
@@ -424,6 +456,7 @@
     banner.innerHTML = buildBannerHTML(detection, mode);
     document.body.appendChild(banner);
     prepareTitleReveal(banner);
+    if (!isManualShell) void showBalanceAnnouncement(banner);
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -5204,6 +5237,7 @@
 
     document.body.appendChild(panel);
     prepareTitleReveal(panel);
+    void showBalanceAnnouncement(panel);
     bindWhatsNewOpeners(panel);
 
     const batchDetectionKey = "batch-detection:" + window.location.href + ":" + magnets.map(m => m.hash || m.magnetUri || "").filter(Boolean).slice(0, 10).join("|");

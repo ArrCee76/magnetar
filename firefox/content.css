@@ -9824,3 +9824,34 @@
 /* Explicit ecosystem hard-sync progress. */
 .magnetar-hard-sync-running svg { animation: magnetar-spin .8s linear infinite; }
 .magnetar-hard-sync-running { cursor: wait !important; opacity: .82; }
+
+/* Balance announcement: scoped to Magnetar's detection surfaces only. */
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-card {
+  display: flex; align-items: center; gap: 12px; position: relative;
+  padding: 12px 42px 12px 16px; margin: 0; width: 100%; box-sizing: border-box;
+  background: var(--mg-surface-2); border-top: 1px solid var(--mg-signal-line);
+  color: var(--mg-ink); font: 12px/1.5 var(--mg-font); text-align: left;
+}
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-icon {
+  display: flex; align-items: center; justify-content: center; flex: 0 0 30px;
+  height: 30px; border: 2px solid currentColor; border-radius: 9px; font-size: 0; line-height: 1;
+}
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-copy { flex: 1; min-width: 0; }
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-copy strong { display: block; font: 700 13px/1.4 var(--mg-font); color: var(--mg-ink); }
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-copy p { margin: 3px 0 0; font: 12px/1.5 var(--mg-font); color: var(--mg-ink-2); }
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-link { display: inline-block; flex-shrink: 0; padding: 7px 10px; border-radius: 8px; background: #4a7c5c; color: #fff; text-decoration: none; font: 600 12px/1.5 var(--mg-font); }
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-close { position: absolute; right: 6px; top: 6px; display: block; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--mg-ink-2); font: 22px/1 var(--mg-font); cursor: pointer; }
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-close:hover { background: var(--mg-surface-3); }
+:is(#magnetar-banner, #magnetar-batch) :is(.magnetar-balance-close, .magnetar-balance-link):focus-visible { outline: 2px solid var(--mg-ink); outline-offset: 2px; }
+@media (max-width: 540px) {
+  :is(#magnetar-banner, #magnetar-batch) .magnetar-balance-card { flex-wrap: wrap; gap: 8px; }
+  :is(#magnetar-banner, #magnetar-batch) .magnetar-balance-copy { flex-basis: calc(100% - 40px); }
+  :is(#magnetar-banner, #magnetar-batch) .magnetar-balance-link { margin-left: 38px; }
+}
+
+/* Draw the equals mark geometrically, independent of font baseline. */
+:is(#magnetar-banner, #magnetar-batch) .magnetar-balance-icon::before {
+  content: ""; display: block; box-sizing: border-box; flex: 0 0 12px;
+  width: 12px; height: 8px; border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
