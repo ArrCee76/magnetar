@@ -1066,6 +1066,13 @@ body {
   width: 0;
 }
 
+.finish-status {
+  flex: 1;
+  color: var(--mg-ink-3);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 @media (max-width: 640px) {
   .onboarding {
     padding: 24px 16px 32px;

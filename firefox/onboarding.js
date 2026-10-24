@@ -75,13 +75,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('back-2').addEventListener('click', () => goToStep(1));
   document.getElementById('back-3').addEventListener('click', () => goToStep(2));
 
-  // Finish → close onboarding
+  // Finish setup, then show the bundled toolbar preview page.
   document.getElementById('finish').addEventListener('click', async () => {
-    await savePreferences();
-    // Mark onboarding complete
-    await MAGNETAR_API.storage.local.set({ 'magnetar-onboarded': true });
-    // Close this tab
-    window.close();
+    const button = document.getElementById('finish');
+    button.disabled = true;
+    try {
+      await savePreferences();
+      await MAGNETAR_API.storage.local.set({ 'magnetar-onboarded': true });
+      window.location.href = 'onboarding-complete.html';
+    } catch (error) {
+      const status = document.getElementById('finish-status');
+      if (status) status.textContent = 'Setup could not be saved. Please try again.';
+      button.disabled = false;
+    }
   });
 
 

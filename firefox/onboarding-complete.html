@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Magnetar — You’re all set!</title>
+  <link rel="stylesheet" href="onboarding.css">
+  <link rel="stylesheet" href="content.css">
+  <link rel="stylesheet" href="onboarding-complete.css">
+</head>
+<body class="completion-page">
+  <main class="completion-card">
+    <header class="completion-heading">
+      <span class="completion-mark" aria-hidden="true">✦</span>
+      <p class="completion-eyebrow">MAGNETAR</p>
+      <h1>You’re all set!</h1>
+      <p class="completion-intro">When you visit a page with a supported torrent hash or magnet link, Magnetar will detect it and show this toolbar.</p>
+    </header>
+
+    <section aria-labelledby="preview-label">
+      <h2 id="preview-label" class="preview-label">Toolbar preview</h2>
+      <div class="preview-stage">
+        <div id="magnetar-banner" class="magnetar-advanced-mode magnetar-visible" aria-label="Interactive Magnetar toolbar preview">
+          <div class="magnetar-inner">
+            <div class="magnetar-title-row">
+              <span class="magnetar-brand">
+                <span class="magnetar-logo"><img src="icons/icon48.png" alt="" aria-hidden="true"></span>
+                <span class="magnetar-wordmark">MAGNETAR</span>
+              </span>
+              <span class="magnetar-name"><span class="magnetar-name-text">The.Long.Way.Home.2025.1080p</span></span>
+              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-mobile preview-action" data-purpose="Opens the Magnetar Mobile connection options." aria-label="Get Magnetar Mobile" title="Get Magnetar Mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M10 18h4M9 6h6"/></svg></button>
+              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-sync-pull preview-action" data-purpose="Checks for updates from connected Magnetar devices." aria-label="Sync connected Magnetar systems" title="Sync connected Magnetar systems"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.2 9A7 7 0 0 1 18 6.7L20 9M4 15l2 2.3A7 7 0 0 0 18 15"/></svg></button>
+              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-theme preview-action" data-purpose="Switches the toolbar between light and dark themes." aria-label="Toggle theme" title="Toggle theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></button>
+              <button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-settings preview-action" data-purpose="Opens Magnetar settings." aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5v.2a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+              <button type="button" class="magnetar-btn magnetar-btn-cancel preview-action" data-purpose="Dismisses Magnetar’s toolbar on the current page." aria-label="Close Magnetar toolbar" title="Dismiss">×</button>
+            </div>
+            <div class="magnetar-button-row">
+              <div class="magnetar-action-row">
+                <div class="magnetar-send-region">
+                  <div class="magnetar-send-stack"><div class="magnetar-split-control magnetar-provider-split"><button type="button" class="magnetar-btn magnetar-btn-primary preview-action" data-purpose="Sends the detected torrent to your selected provider or client."><span class="magnetar-btn-label">Send to Local</span></button><button type="button" class="magnetar-btn magnetar-btn-primary magnetar-split-toggle preview-action" data-purpose="Choose a different send destination." aria-label="Choose send destination"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></div></div>
+                  <div class="magnetar-split-control magnetar-review-split"><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Sends this item to a connected Magnetar Review queue."><span class="magnetar-review-label">Review: Mobile</span></button><button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-split-toggle preview-action" data-purpose="Choose where review items are sent." aria-label="Choose review destination"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+                </div>
+                <div class="magnetar-utility-region">
+                  <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-btn-save preview-action" data-purpose="Adds the detected item to Saved." title="Save for later">Save</button>
+                  <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-btn-sync preview-action" data-purpose="Opens Magnetar Mobile sync options." title="Sync Mobile"><span>Sync Mobile</span></button>
+                  <button type="button" class="magnetar-btn magnetar-btn-secondary magnetar-btn-my-magnetar preview-action" data-purpose="Connects with My Magnetar." title="My Magnetar"><span>My Magnetar</span></button>
+                </div>
+                <span class="magnetar-status-group"><button type="button" class="magnetar-btn magnetar-btn-icon magnetar-btn-expand" id="preview-expand" aria-expanded="false" aria-controls="preview-expanded" aria-label="Expand toolbar preview" title="Expand"><svg class="magnetar-expand-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></span>
+              </div>
+              <div class="magnetar-tools-row">
+                <div class="magnetar-tools-primary"><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Opens your downloads folder." title="Downloads">Downloads</button><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Lets you paste a magnet link or hash for manual sending." title="Manual send">Manual</button><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Ignores the current website for detection." title="Ignore site">Ignore site</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="magnetar-expanded-section" id="preview-expanded" hidden>
+            <div class="magnetar-expanded-inner"><div class="magnetar-expanded-heading">Detected item</div><p class="preview-example-detail">The.Long.Way.Home.2025.1080p</p><p class="preview-example-hash">Example hash: 0123456789ABCDEF…</p><div class="preview-expanded-actions"><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Copies the detected magnet link." title="Copy magnet">Copy magnet</button><button type="button" class="magnetar-btn magnetar-btn-secondary preview-action" data-purpose="Copies the detected torrent hash." title="Copy hash">Copy hash</button></div></div>
+          </div>
+        </div>
+      </div>
+      <p class="preview-hint" id="preview-hint" role="status" aria-live="polite" hidden></p>
+      <p class="preview-instruction">Open the toolbar below to see what to expect.</p>
+    </section>
+
+    <footer class="completion-footer">
+      <p>Thanks for using Magnetar.</p>
+      <button type="button" class="btn-primary" id="complete-finish">Finish</button>
+      <p id="close-fallback" class="close-fallback" role="status" aria-live="polite" hidden>You can close this tab.</p>
+    </footer>
+  </main>
+  <script src="onboarding-complete.js"></script>
+</body>
+</html>

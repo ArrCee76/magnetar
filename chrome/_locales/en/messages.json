@@ -861,7 +861,7 @@
     "description": "Onboarding site grid description"
   },
   "obFinish": {
-    "message": "Start using Magnetar →",
+    "message": "Finish setup →",
     "description": "Onboarding finish button"
   },
   "whatsNewOpenLabel": {
