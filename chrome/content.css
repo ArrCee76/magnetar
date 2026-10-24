@@ -444,6 +444,55 @@
   background: var(--mg-ink-4);
 }
 
+#magnetar-banner .magnetar-cache-dot.magnetar-rd-downloading,
+#magnetar-batch .magnetar-batch-cache-dot.magnetar-rd-downloading { background: #c89a42; }
+#magnetar-banner .magnetar-cache-dot.magnetar-rd-queued,
+#magnetar-batch .magnetar-batch-cache-dot.magnetar-rd-queued { background: #71869a; }
+#magnetar-banner .magnetar-cache.magnetar-rd-pending { visibility: hidden; }
+#magnetar-banner .magnetar-btn.magnetar-rd-checking,
+#magnetar-banner .magnetar-btn.magnetar-rd-downloading,
+#magnetar-banner .magnetar-btn.magnetar-rd-queued,
+#magnetar-banner .magnetar-btn.magnetar-rd-sent {
+  background: var(--mg-surface-2);
+  border-color: var(--mg-border);
+  color: var(--mg-ink-2);
+}
+#magnetar-banner .magnetar-btn.magnetar-rd-ready { background: var(--mg-signal); color: #fff; }
+#magnetar-banner .magnetar-cache[hidden],
+#magnetar-batch .magnetar-batch-cache-dot[hidden] { display: none !important; }
+
+.magnetar-rd-status-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 7px;
+  background: rgba(25, 31, 29, 0.97);
+  color: #fff;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.28);
+  font: 500 12px/1.4 system-ui, sans-serif;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.magnetar-rd-status-tooltip[hidden] { display: none !important; }
+.magnetar-rd-compact-view {
+  position: fixed;
+  z-index: 2147483647;
+  min-width: var(--mg-toolbar-primary-width, 108px);
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--mg-border-mid, rgba(30, 26, 20, 0.14));
+  border-radius: 999px;
+  background: var(--mg-surface-2, #efe9dc);
+  color: var(--mg-ink, #1e1a14);
+  font: 600 var(--mg-toolbar-small-font, 10.5px)/1 var(--mg-font, system-ui, sans-serif);
+  white-space: nowrap;
+}
+
 #magnetar-banner .magnetar-cache-text { color: var(--mg-ink-3); }
 
 #magnetar-banner .magnetar-cache:has(.magnetar-cache-cached) .magnetar-cache-text {
@@ -2720,6 +2769,27 @@
   font-size: 9.5px;
   color: var(--mg-ink-3);
   white-space: nowrap;
+}
+#magnetar-batch .magnetar-batch-status.magnetar-rd-ready { color: var(--mg-signal); font-weight: 600; }
+#magnetar-batch .magnetar-batch-status.magnetar-rd-downloading { color: #c89a42; }
+#magnetar-batch .magnetar-batch-status.magnetar-rd-queued { color: #71869a; }
+#magnetar-banner:not(.magnetar-glass-mode) .magnetar-provider-split > #magnetar-send.magnetar-rd-ready {
+  background: var(--mg-signal) !important;
+  border-color: var(--mg-signal) !important;
+  color: #fff !important;
+}
+#magnetar-banner .magnetar-provider-split > #magnetar-send.magnetar-rd-checking,
+#magnetar-banner .magnetar-provider-split > #magnetar-send.magnetar-rd-downloading,
+#magnetar-banner .magnetar-provider-split > #magnetar-send.magnetar-rd-queued,
+#magnetar-banner .magnetar-provider-split > #magnetar-send.magnetar-rd-sent {
+  background: var(--mg-surface-2) !important;
+  border-color: var(--mg-border) !important;
+  color: var(--mg-ink-2) !important;
+}
+#magnetar-banner .magnetar-provider-split > #magnetar-send.magnetar-rd-ready {
+  background: var(--mg-signal) !important;
+  border-color: var(--mg-signal) !important;
+  color: #fff !important;
 }
 
 #magnetar-batch .magnetar-batch-progress {

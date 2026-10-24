@@ -56,6 +56,10 @@ const providerLabels = {
 const SUPPRESS_WHATSNEW_VERSIONS = new Set(['2.1.2']);
 
 const providerOrder = ['local', 'realdebrid', 'rdtclient', 'torbox', 'premiumize', 'alldebrid'];
+const rdSentTorrentIds = new Map();
+const RD_SENT_TORRENT_ID_TTL = 10 * 60 * 1000;
+let rdStatusRequestQueue = Promise.resolve();
+let rdStatusLastRequestAt = 0;
 
 const providerDashboardUrls = {
   realdebrid: 'https://real-debrid.com/torrents',
@@ -897,6 +901,24 @@ function getProviderOpenTarget(settings, mode) {
   };
 }
 
+function rememberSentRdTorrentId(providerMode, torrentId) {
+  if (providerMode !== 'realdebrid' || !/^\d{1,20}$/.test(String(torrentId || ''))) return;
+  const now = Date.now();
+  for (const [id, expiresAt] of rdSentTorrentIds) if (expiresAt <= now) rdSentTorrentIds.delete(id);
+  rdSentTorrentIds.set(String(torrentId), now + RD_SENT_TORRENT_ID_TTL);
+}
+
+function runRdStatusRequest(request) {
+  const run = rdStatusRequestQueue.then(async () => {
+    const waitMs = Math.max(0, 400 - (Date.now() - rdStatusLastRequestAt));
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+    rdStatusLastRequestAt = Date.now();
+    return request();
+  });
+  rdStatusRequestQueue = run.catch(() => {});
+  return run;
+}
+
 function normaliseHostname(hostname) {
   return String(hostname || '').trim().toLowerCase().replace(/^www\./, '');
 }
@@ -1159,6 +1181,7 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
         const creds = settings.credentials?.[mode] || {};
         const result = await provider.sendMagnet(info.linkUrl, creds, { category: '' });
         if (result?.success) {
+          rememberSentRdTorrentId(mode, result.id);
           // Extract hash for history
           const hashMatch = info.linkUrl.match(/btih:([a-fA-F0-9]{40}|[a-fA-F0-9]{64}|[A-Z2-7]{32})/i);
           const hash = hashMatch ? hashMatch[1].toLowerCase() : '';
@@ -1171,7 +1194,6 @@ MAGNETAR_API.contextMenus.onClicked.addListener(async (info, tab) => {
             cacheAtSend: cacheEntry?.status
           });
           await queueSavedHistoryAutoSync('context-menu-send', { flush: true, force: true });
-          if (hash) MagnetarCacheStore.set(mode, hash, 'cached');
         }
       }
       return;
@@ -2192,6 +2214,7 @@ async function handleMessage(msg, sender) {
       const providerResult = result || { success: false, error: 'Provider returned no response' };
 
       if (providerResult?.success) {
+        rememberSentRdTorrentId(mode, providerResult.id);
         const cacheEntry = request.hash ? await MagnetarCacheStore.get(mode, request.hash) : null;
         const displayName = providerResult.name || providerResult.title || providerResult.filename || request.displayName;
         await commitPostSend({
@@ -2205,7 +2228,6 @@ async function handleMessage(msg, sender) {
           cacheAtSend: cacheEntry?.status
         });
         await queueSavedHistoryAutoSync('send-magnet', { flush: true, force: true });
-        if (request.hash) MagnetarCacheStore.set(mode, request.hash, 'cached');
       } else {
         console.warn('Magnetar: provider rejected canonical send request', {
           code: 'SAVED_SEND_PROVIDER_REJECTED',
@@ -2263,6 +2285,7 @@ async function handleMessage(msg, sender) {
           results.push({ itemKey: request.itemKey, hash: request.hash, ...res, provider: mode });
 
           if (res?.success) {
+            rememberSentRdTorrentId(mode, res.id);
             const cacheEntry = request.hash ? await MagnetarCacheStore.get(mode, request.hash) : null;
             await commitPostSend({
               itemKey: request.itemKey,
@@ -2275,7 +2298,6 @@ async function handleMessage(msg, sender) {
               cacheAtSend: cacheEntry?.status
             });
             savedHistoryChanged = true;
-            if (request.hash) MagnetarCacheStore.set(mode, request.hash, 'cached');
           }
 
           if (i < items.length - 1) await new Promise(r => setTimeout(r, 300));
@@ -2312,6 +2334,21 @@ async function handleMessage(msg, sender) {
         MagnetarCacheStore.set(mode, hash, status);
       }
       return { status };
+    }
+
+    case 'realdebrid-torrent-status': {
+      const id = String(msg.torrentId || '').trim();
+      if (!/^\d{1,20}$/.test(id)) return { ok: false };
+      const expiresAt = rdSentTorrentIds.get(id) || 0;
+      if (expiresAt <= Date.now()) {
+        rdSentTorrentIds.delete(id);
+        return { ok: false };
+      }
+      const settings = (await MAGNETAR_API.storage.sync.get(['magnetar'])).magnetar || {};
+      const provider = providers.realdebrid;
+      if (typeof provider?.getTorrentStatus !== 'function') return { ok: false };
+      const creds = settings.credentials?.realdebrid || {};
+      return await runRdStatusRequest(() => provider.getTorrentStatus(id, creds, msg.timeoutMs));
     }
 
     case 'cache-stats': {

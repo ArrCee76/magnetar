@@ -89,6 +89,21 @@
     "message": "Okänd",
     "description": "Cache status when check fails"
   },
+  "cacheRealDebridUnavailable": {
+    "message": "Cachetillgänglighet kan inte kontrolleras för Real-Debrid",
+    "description": "Tooltip när cachekontroll för Real-Debrid inte är tillgänglig"
+  },
+  "rdStatusChecking": { "message": "Kontrollerar…", "description": "Real-Debrid sändningsstatus" },
+  "rdStatusCheckingA11y": { "message": "Kontrollerar Real-Debrid-status.", "description": "Tillgänglig Real-Debrid-status för kontroll" },
+  "rdStatusReady": { "message": "Klar", "description": "Real-Debrid sändningsstatus" },
+  "rdStatusReadyA11y": { "message": "Klar. Real-Debrid rapporterar att de valda filerna har laddats ned och att länkar finns.", "description": "Tillgänglig Real-Debrid-status för klar" },
+  "rdStatusDownloading": { "message": "Laddar ned", "description": "Real-Debrid sändningsstatus" },
+  "rdStatusDownloadingA11y": { "message": "Laddar ned. Real-Debrid rapporterar att torrenten laddas ned.", "description": "Tillgänglig Real-Debrid-status för nedladdning" },
+  "rdStatusQueued": { "message": "Köad", "description": "Real-Debrid sändningsstatus" },
+  "rdStatusQueuedA11y": { "message": "Köad. Real-Debrid rapporterar att torrenten står i kö.", "description": "Tillgänglig Real-Debrid-status för köad" },
+  "rdStatusSent": { "message": "Skickad", "description": "Real-Debrid-sändning när statusen inte kan bekräftas" },
+  "rdStatusSentA11y": { "message": "Skickad. Real-Debrid-statusen kunde inte bekräftas. Visa i Real-Debrid.", "description": "Tillgänglig Real-Debrid-status för skickad" },
+  "rdStatusView": { "message": "Visa i Real-Debrid", "description": "Öppna Real-Debrid" },
   "shareButton": {
     "message": "⤴ Dela",
     "description": "Share button label on banner"

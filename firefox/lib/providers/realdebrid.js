@@ -67,62 +67,42 @@ const ProviderRealDebrid = {
   },
 
   async checkCache(hash, creds) {
-    if (!creds?.apiKey) return 'unknown';
+    // The published Real-Debrid API has no read-only cache availability check.
+    // Adding a magnet creates an account torrent, so report unknown without mutation.
+    return 'unknown';
+  },
+
+  async getTorrentStatus(torrentId, creds, timeoutMs = 5000) {
+    const id = String(torrentId || '').trim();
+    if (!/^\d{1,20}$/.test(id) || !creds?.apiKey) return { ok: false };
     try {
-      const magnet = `magnet:?xt=urn:btih:${hash}`;
-      const addRes = await magnetarFetch(`${this.baseUrl}/torrents/addMagnet`, {
-        method: 'POST',
+      const res = await magnetarFetch(`${this.baseUrl}/torrents/info/${encodeURIComponent(id)}`, {
         headers: this._headers(creds.apiKey),
-        body: `magnet=${encodeURIComponent(magnet)}`
+        timeout: Math.min(5000, Math.max(1000, Number(timeoutMs) || 5000))
       });
-
-      if (!addRes.ok) return 'unknown';
-      const addData = await addRes.json();
-      const torrentId = addData.id;
-      if (!torrentId) return 'unknown';
-
-      // Wait a moment for RD to resolve the magnet
-      await new Promise(r => setTimeout(r, 1500));
-
-      // Check torrent info
-      const infoRes = await magnetarFetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
-        headers: this._headers(creds.apiKey)
-      });
-
-      let status = 'unknown';
-      if (infoRes.ok) {
-        const info = await infoRes.json();
-        if (info.status === 'waiting_files_selection') {
-          status = 'cached';
-        } else if (info.status === 'magnet_conversion') {
-          // Could still be resolving — wait a bit more and retry once
-          await new Promise(r => setTimeout(r, 2000));
-          const retryRes = await magnetarFetch(`${this.baseUrl}/torrents/info/${torrentId}`, {
-            headers: this._headers(creds.apiKey)
-          });
-          if (retryRes.ok) {
-            const retryInfo = await retryRes.json();
-            if (retryInfo.status === 'waiting_files_selection') {
-              status = 'cached';
-            } else {
-              status = 'not_cached';
-            }
-          }
-        } else if (info.status === 'queued' || info.status === 'downloading') {
-          status = 'not_cached';
-        }
+      if (res.status === 429) {
+        const retryHeader = res.headers?.get?.('Retry-After') || '';
+        const retrySeconds = Number(retryHeader);
+        const retryAt = Date.parse(retryHeader);
+        const retryAfterMs = Number.isFinite(retrySeconds) && retrySeconds > 0
+          ? retrySeconds * 1000
+          : (Number.isFinite(retryAt) ? Math.max(1000, retryAt - Date.now()) : 5000);
+        return { ok: false, retryAfterMs };
       }
-
-      // Clean up probe torrent — fire-and-forget. The user doesn't need
-      // to wait for this; it frees up ~200ms per cache check.
-      magnetarFetch(`${this.baseUrl}/torrents/delete/${torrentId}`, {
-        method: 'DELETE',
-        headers: this._headers(creds.apiKey)
-      }).catch(() => {});
-
-      return status;
+      if (!res.ok) return { ok: false };
+      const info = await res.json();
+      if (!info || typeof info.status !== 'string') return { ok: false };
+      const selectedCount = Array.isArray(info.files)
+        ? info.files.filter(file => Number(file?.selected) === 1).length
+        : 0;
+      const linkCount = Array.isArray(info.links) ? info.links.filter(link => typeof link === 'string' && link.trim()).length : 0;
+      return {
+        ok: true,
+        status: info.status,
+        ready: info.status === 'downloaded' && selectedCount > 0 && linkCount >= selectedCount
+      };
     } catch (e) {
-      return 'unknown';
+      return { ok: false };
     }
   },
 

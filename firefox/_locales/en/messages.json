@@ -89,6 +89,21 @@
     "message": "Unknown",
     "description": "Cache status when check fails"
   },
+  "cacheRealDebridUnavailable": {
+    "message": "Cache availability cannot be checked for Real-Debrid",
+    "description": "Tooltip for unavailable Real-Debrid cache checks"
+  },
+  "rdStatusChecking": { "message": "Checking…", "description": "Real-Debrid send status" },
+  "rdStatusCheckingA11y": { "message": "Checking Real-Debrid status.", "description": "Accessible Real-Debrid checking status" },
+  "rdStatusReady": { "message": "Ready", "description": "Real-Debrid send status" },
+  "rdStatusReadyA11y": { "message": "Ready. Real-Debrid reports the selected files are downloaded and links are available.", "description": "Accessible Real-Debrid ready status" },
+  "rdStatusDownloading": { "message": "Downloading", "description": "Real-Debrid send status" },
+  "rdStatusDownloadingA11y": { "message": "Downloading. Real-Debrid reports this torrent is downloading.", "description": "Accessible Real-Debrid downloading status" },
+  "rdStatusQueued": { "message": "Queued", "description": "Real-Debrid send status" },
+  "rdStatusQueuedA11y": { "message": "Queued. Real-Debrid reports this torrent is queued.", "description": "Accessible Real-Debrid queued status" },
+  "rdStatusSent": { "message": "Sent", "description": "Real-Debrid send status when status cannot be confirmed" },
+  "rdStatusSentA11y": { "message": "Sent successfully. Real-Debrid status could not be confirmed. View in Real-Debrid.", "description": "Accessible Real-Debrid sent status" },
+  "rdStatusView": { "message": "View in Real-Debrid", "description": "Open the Real-Debrid dashboard" },
   "shareButton": {
     "message": "⤴ Share",
     "description": "Share button label on banner"

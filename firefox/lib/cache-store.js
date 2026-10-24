@@ -9,7 +9,7 @@
  *   3. In-flight promise dedup (10 parallel calls for same hash → 1 API hit)
  *
  * TTL policy is status-aware:
- *   - 'cached'     → 24 hours (RD/etc. rarely evict once something's there)
+ *   - 'cached'     → 24 hours (for providers with reliable cache checks)
  *   - 'not_cached' →  5 minutes (torrents can become cached as others add them)
  *   - 'unknown'    →  0 — don't cache errors
  *
@@ -22,6 +22,8 @@ const MagnetarCacheStore = (() => {
   const TTL_CACHED = 24 * 60 * 60 * 1000;   // 24h
   const TTL_NOT_CACHED = 5 * 60 * 1000;     //  5m
   const STORAGE_KEY = 'magnetar-cache-store';
+  const STORAGE_VERSION_KEY = 'magnetar-cache-store-version';
+  const STORAGE_VERSION = 2;
 
   // In-memory LRU. Map preserves insertion order, so we delete+reinsert on hit.
   const mem = new Map();
@@ -55,15 +57,25 @@ const MagnetarCacheStore = (() => {
   async function loadPersist() {
     if (persistLoaded) return;
     try {
-      const data = await MAGNETAR_API.storage.local.get([STORAGE_KEY]);
+      const data = await MAGNETAR_API.storage.local.get([STORAGE_KEY, STORAGE_VERSION_KEY]);
       const raw = data[STORAGE_KEY] || {};
       persistMap = new Map(Object.entries(raw));
+      if (Number(data[STORAGE_VERSION_KEY] || 0) < STORAGE_VERSION) {
+        for (const cacheKey of persistMap.keys()) {
+          if (cacheKey.startsWith('realdebrid:')) persistMap.delete(cacheKey);
+        }
+        try {
+          await MAGNETAR_API.storage.local.set({ [STORAGE_KEY]: Object.fromEntries(persistMap) });
+          await MAGNETAR_API.storage.local.set({ [STORAGE_VERSION_KEY]: STORAGE_VERSION });
+        } catch (e) {
+          // Retry the migration next time if storage is temporarily unavailable.
+        }
+      }
     } catch (e) {
       persistMap = new Map();
     }
     persistLoaded = true;
   }
-
   function schedulePersistFlush() {
     persistDirty = true;
     if (persistFlushTimer) return;
@@ -143,6 +155,10 @@ const MagnetarCacheStore = (() => {
    * Promotes a fresh persist-tier hit into memory.
    */
   async function get(providerId, hash) {
+    if (providerId === 'realdebrid') {
+      await loadPersist();
+      return null;
+    }
     const k = key(providerId, hash);
 
     const memEntry = memGet(k);
@@ -161,6 +177,7 @@ const MagnetarCacheStore = (() => {
 
   /** Write a result into both tiers. `unknown` results are not stored. */
   function set(providerId, hash, status) {
+    if (providerId === 'realdebrid') return;
     if (ttlFor(status) === 0) return;
     const k = key(providerId, hash);
     const entry = { status, savedAt: Date.now() };

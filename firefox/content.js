@@ -392,12 +392,12 @@
 
   // -- Cache check --
   let cacheStatus = 'unknown';
-  if (mode !== 'local') {
+  if (mode !== 'local' && mode !== 'realdebrid') {
     safeRuntimeMessage({ type: 'check-cache', hash: result.hash })
       .then(res => {
         if (res?.status) {
           cacheStatus = res.status;
-          updateCacheBadge(cacheStatus);
+          updateCacheBadge(cacheStatus, mode);
         }
       })
       .catch(() => {});
@@ -943,6 +943,7 @@
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'magnetar-open-provider';
+    btn.dataset.providerMode = providerMode;
     if (target) {
       btn.textContent = `Open ${target.label}`;
       btn.addEventListener('click', () => window.open(target.url, '_blank', 'noopener'));
@@ -957,7 +958,13 @@
       toolsRow.prepend(btn);
       return;
     }
-    if (root.id === 'magnetar-banner') return;
+    if (root.id === 'magnetar-banner') {
+      if (providerMode !== 'realdebrid' || !root.classList.contains('magnetar-success') || !root.querySelector('.magnetar-inner-compact')) return;
+      btn.classList.add('magnetar-rd-compact-view');
+      document.documentElement.appendChild(btn);
+      positionRdCompactViewAction(root, btn);
+      return;
+    }
 
     const sendStack = root.querySelector('.magnetar-send-stack');
     if (sendStack) {
@@ -979,6 +986,20 @@
     }
 
     root.querySelector('.magnetar-inner-compact')?.appendChild(btn);
+  }
+
+  function positionRdCompactViewAction(root, button) {
+    const bannerRect = root.getBoundingClientRect();
+    const margin = 12;
+    const computed = getComputedStyle(root);
+    ['--mg-font', '--mg-border', '--mg-ink-2', '--mg-surface-2', '--mg-ink', '--mg-border-mid', '--mg-toolbar-small-font', '--mg-toolbar-primary-width']
+      .forEach(name => button.style.setProperty(name, computed.getPropertyValue(name)));
+    const buttonRect = button.getBoundingClientRect();
+    const left = Math.max(margin, Math.min(bannerRect.right - buttonRect.width, window.innerWidth - buttonRect.width - margin));
+    const above = bannerRect.top - buttonRect.height - 8;
+    const top = above >= margin ? above : Math.min(window.innerHeight - buttonRect.height - margin, bannerRect.bottom + 8);
+    button.style.left = `${left}px`;
+    button.style.top = `${Math.max(margin, top)}px`;
   }
 
   async function saveBatchModePreference(enabled, options = {}) {
@@ -2097,6 +2118,7 @@
             if (result?.action === 'open-magnet' && result.magnetUri) window.open(result.magnetUri, '_self');
             showToast(`Sent to ${getCurrentQuickSendLabel()}`);
             await showOpenProviderAction(result.provider || currentQuickSendTarget);
+            if (result.provider === 'realdebrid' && result.success) trackSuccessfulRdSend(result);
             await populateExpanded(detection, mode);
           } else {
             btn.disabled = false;
@@ -4335,6 +4357,7 @@
         const original = resendBtn.textContent;
         resendBtn.textContent = 'Sending…';
         const res = await safeRuntimeMessage({ type: 'resend-history-item', hash: resendBtn.dataset.hash }, null);
+        if (res?.success && res.provider === 'realdebrid') trackSuccessfulRdSend(res);
         if (res?.action === 'open-magnet' && res.magnetUri) window.open(res.magnetUri, '_self');
         resendBtn.textContent = res?.success ? 'Sent' : 'Unavailable';
         setTimeout(() => {
@@ -4349,6 +4372,164 @@
         event.preventDefault();
         window.open(openBtn.dataset.url, '_blank', 'noopener');
       }
+    });
+  }
+
+  function cacheStatusTooltip(status, providerMode) {
+    if (status === 'unknown' && providerMode === 'realdebrid') return t('cacheRealDebridUnavailable');
+    if (status === 'cached') return t('cacheCached');
+    if (status === 'not_cached') return t('cacheNotCached');
+    return t('cacheUnknown');
+  }
+
+  const RD_STATUS_TOOLTIP = 'Real-Debrid availability is checked after sending.';
+  const RD_STATUS_CLASSES = ['magnetar-rd-checking', 'magnetar-rd-ready', 'magnetar-rd-downloading', 'magnetar-rd-queued', 'magnetar-rd-sent'];
+  const rdTooltipTargets = new WeakSet();
+  let rdTooltipActiveTarget = null;
+  let rdTooltipViewportEventsBound = false;
+
+  function positionRdTooltip(target, tooltip) {
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const position = MagnetarRealDebridStatus.positionTooltip(rect, tooltipRect, window.innerWidth, window.innerHeight);
+    tooltip.style.left = `${position.left}px`;
+    tooltip.style.top = `${position.top}px`;
+  }
+
+  function showRdTooltip(target) {
+    let tooltip = document.getElementById('magnetar-rd-status-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'magnetar-rd-status-tooltip';
+      tooltip.className = 'magnetar-rd-status-tooltip';
+      tooltip.setAttribute('role', 'tooltip');
+      tooltip.hidden = true;
+      document.documentElement.appendChild(tooltip);
+    }
+    tooltip.textContent = RD_STATUS_TOOLTIP;
+    tooltip.hidden = false;
+    rdTooltipActiveTarget = target;
+    target.setAttribute('aria-describedby', tooltip.id);
+    positionRdTooltip(target, tooltip);
+  }
+
+  function hideRdTooltip(target) {
+    if (rdTooltipActiveTarget !== target) return;
+    const tooltip = document.getElementById('magnetar-rd-status-tooltip');
+    if (!tooltip) return;
+    if (target.matches(':focus')) return;
+    tooltip.hidden = true;
+    if (rdTooltipActiveTarget === target) rdTooltipActiveTarget = null;
+    target.removeAttribute('aria-describedby');
+  }
+
+  function attachRdTooltip(target) {
+    if (!target || rdTooltipTargets.has(target)) return;
+    rdTooltipTargets.add(target);
+    target.tabIndex = 0;
+    target.addEventListener('pointerenter', () => showRdTooltip(target));
+    target.addEventListener('pointerleave', () => hideRdTooltip(target));
+    target.addEventListener('focus', () => showRdTooltip(target));
+    target.addEventListener('blur', () => {
+      const tooltip = document.getElementById('magnetar-rd-status-tooltip');
+      if (tooltip && rdTooltipActiveTarget === target) tooltip.hidden = true;
+      if (rdTooltipActiveTarget === target) rdTooltipActiveTarget = null;
+      target.removeAttribute('aria-describedby');
+    });
+    if (!rdTooltipViewportEventsBound) {
+      rdTooltipViewportEventsBound = true;
+      const reposition = () => {
+        const active = rdTooltipActiveTarget;
+        const tooltip = document.getElementById('magnetar-rd-status-tooltip');
+        if (active && tooltip && !tooltip.hidden && active.matches(':focus, :hover')) positionRdTooltip(active, tooltip);
+      };
+      window.addEventListener('resize', reposition);
+      window.addEventListener('scroll', reposition, true);
+    }
+  }
+
+  function setRdStatusDisplay(target, status, cacheDot = null) {
+    if (!target) return;
+    const labels = {
+      checking: t('rdStatusChecking'),
+      ready: t('rdStatusReady'),
+      downloading: t('rdStatusDownloading'),
+      queued: t('rdStatusQueued'),
+      sent: t('rdStatusSent')
+    };
+    const descriptions = {
+      checking: t('rdStatusCheckingA11y'),
+      ready: t('rdStatusReadyA11y'),
+      downloading: t('rdStatusDownloadingA11y'),
+      queued: t('rdStatusQueuedA11y'),
+      sent: t('rdStatusSentA11y')
+    };
+    if (target.id === 'magnetar-cache') {
+      target.classList.remove('magnetar-rd-pending');
+      const dot = target.querySelector('.magnetar-cache-dot');
+      const text = target.querySelector('.magnetar-cache-text');
+      if (text) text.textContent = labels[status] || labels.sent;
+      if (dot) {
+        dot.classList.remove('magnetar-cache-loading', 'magnetar-cache-cached', 'magnetar-rd-downloading', 'magnetar-rd-queued');
+        if (status === 'checking') dot.classList.add('magnetar-cache-loading');
+        if (status === 'ready') dot.classList.add('magnetar-cache-cached');
+        if (status === 'downloading') dot.classList.add('magnetar-rd-downloading');
+        if (status === 'queued') dot.classList.add('magnetar-rd-queued');
+      }
+    } else {
+      const buttonLabel = target.querySelector('.magnetar-btn-label');
+      if (buttonLabel) buttonLabel.textContent = labels[status] || labels.sent;
+      else target.textContent = labels[status] || labels.sent;
+      target.classList.remove(...RD_STATUS_CLASSES);
+      target.classList.add(`magnetar-rd-${status in labels ? status : 'sent'}`);
+      if (target.id === 'magnetar-send') target.setAttribute('aria-live', 'polite');
+      if (cacheDot) {
+        cacheDot.hidden = false;
+        cacheDot.classList.remove('magnetar-cache-loading', 'magnetar-cache-cached', 'magnetar-rd-downloading', 'magnetar-rd-queued');
+        if (status === 'checking') cacheDot.classList.add('magnetar-cache-loading');
+        if (status === 'ready') cacheDot.classList.add('magnetar-cache-cached');
+        if (status === 'downloading') cacheDot.classList.add('magnetar-rd-downloading');
+        if (status === 'queued') cacheDot.classList.add('magnetar-rd-queued');
+      }
+    }
+    const fullDescription = descriptions[status] || descriptions.sent;
+    target.setAttribute('aria-label', target.id === 'magnetar-send' ? `${t('rdStatusView')}. ${fullDescription}` : fullDescription);
+    attachRdTooltip(target);
+  }
+
+  async function startRdStatusTracking(torrentId, { statusNode, cacheDot = null, root = document } = {}) {
+    setRdStatusDisplay(statusNode, 'checking', cacheDot);
+    if (root.id === 'magnetar-banner') clearBannerAutoHide();
+    await ensureRdViewAction(root);
+
+    await MagnetarRealDebridStatus.poll(
+      torrentId,
+      (id, timeoutMs) => safeRuntimeMessage({ type: 'realdebrid-torrent-status', torrentId: id, timeoutMs }, null),
+      status => setRdStatusDisplay(statusNode, status, cacheDot)
+    );
+    if (root.id === 'magnetar-banner') scheduleAutoHideForSuccessfulBanner();
+  }
+
+  function trackSuccessfulRdSend(result, root = document, statusNode = null, cacheDot = null) {
+    if (!statusNode) statusNode = root.querySelector?.('#magnetar-cache') || document.getElementById('magnetar-cache') || root.querySelector?.('#magnetar-send');
+    const start = async () => {
+      if (!result?.id) {
+        setRdStatusDisplay(statusNode, 'sent', cacheDot);
+        await ensureRdViewAction(root);
+        return;
+      }
+      await startRdStatusTracking(result.id, { statusNode, cacheDot, root });
+    };
+    start().catch(() => setRdStatusDisplay(statusNode, 'sent', cacheDot));
+  }
+
+  async function ensureRdViewAction(root) {
+    const buttons = [...root.querySelectorAll('.magnetar-open-provider'), ...document.querySelectorAll('.magnetar-open-provider.magnetar-rd-compact-view')];
+    if (!buttons.some(button => button.dataset.providerMode === 'realdebrid')) {
+      await showOpenProviderAction('realdebrid', root);
+    }
+    root.querySelectorAll('.magnetar-open-provider[data-provider-mode="realdebrid"]').forEach(button => {
+      button.textContent = t('rdStatusView');
     });
   }
 
@@ -4822,7 +5003,7 @@
     const name = escapeHtml(detection.name || t('unknownTorrent'));
 
     const sendLabel = getCurrentToolbarSendLabel();
-    const showCache = !isManualShell && mode !== 'local';
+    const showCache = !isManualShell && mode !== 'local' && mode !== 'realdebrid';
     const isFull = isManualShell || bannerStyle === 'full';
     const glassEnabled = interfaceStyle === 'glass';
     const interfaceStyleToggleLabel = escapeAttr(t(glassEnabled ? 'switchToClassicInterface' : 'switchToGlassInterface'));
@@ -4944,10 +5125,10 @@
                 ${detectionActions}
               </div>
               <span class="magnetar-status-group">
-                ${showCache ? `
-                  <span class="magnetar-cache" id="magnetar-cache">
-                    <span class="magnetar-cache-dot magnetar-cache-loading"></span>
-                    <span class="magnetar-cache-text">${t('cacheChecking')}</span>
+                ${(showCache || mode === 'realdebrid') ? `
+                  <span class="magnetar-cache ${mode === 'realdebrid' ? 'magnetar-rd-pending' : ''}" id="magnetar-cache" role="status" aria-live="polite">
+                    <span class="magnetar-cache-dot ${mode === 'realdebrid' ? '' : 'magnetar-cache-loading'}"></span>
+                    <span class="magnetar-cache-text">${mode === 'realdebrid' ? '' : t('cacheChecking')}</span>
                   </span>
                 ` : ''}
                 ${alreadySentStatus}
@@ -5057,7 +5238,7 @@
     if (bannerPosition === 'bottom') panel.classList.add('magnetar-batch-bottom');
     if (theme === 'dark') panel.classList.add('magnetar-theme-dark');
 
-    const showCache = mode !== 'local';
+    const showCache = mode !== 'local' && mode !== 'realdebrid';
     const truncatedNote = totalCount > magnets.length
       ? `<span class="magnetar-batch-truncated">${t('batchShowingOf', String(magnets.length), String(totalCount))}</span>`
       : '';
@@ -5100,14 +5281,14 @@
         return `
           <label class="magnetar-batch-row ${inHistory ? 'magnetar-batch-done' : ''}" data-index="${origIdx}" data-sort-index="${i}">
             <input type="checkbox" class="magnetar-batch-cb" data-index="${origIdx}" ${selectedHashes.has(m.hash) ? 'checked' : ''}>
-            ${showCache ? `<span class="magnetar-batch-cache-dot magnetar-cache-loading" id="magnetar-bcd-${origIdx}"></span>` : ''}
+            ${(showCache || mode === 'realdebrid') ? `<span class="magnetar-batch-cache-dot ${mode === 'realdebrid' ? '' : 'magnetar-cache-loading'}" id="magnetar-bcd-${origIdx}" ${mode === 'realdebrid' ? 'hidden' : ''}></span>` : ''}
             <span class="magnetar-batch-name" title="${name}">${truncName}</span>
             ${metaStr ? `<span class="magnetar-batch-meta">${metaStr}</span>` : ''}
             ${inHistory ? `<span class="magnetar-batch-badge magnetar-batch-badge-done">${t('batchSentBadge')}</span>` : ''}
             <button class="magnetar-batch-row-save" data-index="${origIdx}" title="Save for later" aria-label="Save for later">
               <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             </button>
-            <span class="magnetar-batch-status" id="magnetar-bs-${origIdx}"></span>
+            <span class="magnetar-batch-status" id="magnetar-bs-${origIdx}" role="status" aria-live="polite"></span>
           </label>
         `;
       }).join('');
@@ -5281,7 +5462,7 @@
             dot.title = t('cacheNotCached');
           } else {
             dot.classList.add('magnetar-cache-unknown');
-            dot.title = t('cacheUnknown');
+            dot.title = cacheStatusTooltip('unknown', mode);
           }
         } catch (e) {}
       };
@@ -5503,6 +5684,13 @@
             }
             showToast(`${t('batchSentCount', String(successCount), String(selected.length))} (${sendTargetLabel})`);
             if (successCount > 0) await showOpenProviderAction(sendTarget, panel);
+            if (sendTarget === 'realdebrid') {
+              for (const res of response.results) {
+                if (!res?.success) continue;
+                const idx = magnets.findIndex(m => m.hash === res.hash);
+                trackSuccessfulRdSend(res, panel, panel.querySelector(`#magnetar-bs-${idx}`), panel.querySelector(`#magnetar-bcd-${idx}`));
+              }
+            }
           }
         } catch (e) {
           showToast(t('batchSendFailed', e.message), true);
@@ -5688,6 +5876,7 @@
                 }
                 showToast(`Sent to ${getCurrentQuickSendLabel()}`);
                 await showOpenProviderAction(result.provider || currentQuickSendTarget, panel);
+                if (result.provider === 'realdebrid' && result.success) trackSuccessfulRdSend(result, panel);
                 await refreshDrawer();
               } else {
                 btn.disabled = false;
@@ -5839,6 +6028,7 @@
         await showSuccess(providerLabel, response.provider || providerMode);
       } else if (response?.success) {
         await showSuccess(providerLabel, response.provider || providerMode);
+        if ((response.provider || providerMode) === 'realdebrid') trackSuccessfulRdSend(response, document.getElementById('magnetar-banner'));
         // Review prompt check
         try {
           const review = await safeRuntimeMessage({ type: 'get-review-status' }, null);
@@ -6024,6 +6214,7 @@
         if (response?.success) {
           closeManualMenu();
           await showSuccess(providerLabel, response.provider || providerMode);
+          if ((response.provider || providerMode) === 'realdebrid') trackSuccessfulRdSend(response, document.getElementById('magnetar-banner'));
           return;
         }
 
@@ -6465,6 +6656,7 @@
   function dismissBanner() {
     const banner = document.getElementById('magnetar-banner');
     if (!banner) return;
+    document.querySelectorAll('.magnetar-rd-compact-view').forEach(button => button.remove());
     setExpandedPanel('');
     updateExpandedToggleState();
     const useGlassExit = banner.classList.contains('magnetar-advanced-mode')
@@ -6520,11 +6712,14 @@
     }
   }
 
-  function updateCacheBadge(status) {
+  function updateCacheBadge(status, providerMode) {
     const badge = document.getElementById('magnetar-cache');
     if (!badge) return;
     const dot = badge.querySelector('.magnetar-cache-dot');
     const text = badge.querySelector('.magnetar-cache-text');
+    const tooltip = cacheStatusTooltip(status, providerMode);
+    badge.title = tooltip;
+    dot.title = tooltip;
     dot.classList.remove('magnetar-cache-loading');
     if (status === 'cached') {
       dot.classList.add('magnetar-cache-cached');
@@ -6539,7 +6734,7 @@
     document.querySelectorAll('[data-detection-detail="cache"]').forEach(el => {
       const label = formatCacheStatus(status);
       el.textContent = label;
-      el.title = label;
+      el.title = tooltip;
     });
   }
 

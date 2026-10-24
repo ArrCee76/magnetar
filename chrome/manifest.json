@@ -1,7 +1,7 @@
 {
     "manifest_version":  3,
     "name":  "__MSG_extensionName__",
-    "version":  "2.2.16",
+    "version":  "2.2.18",
     "description":  "__MSG_extensionDescription__",
     "default_locale":  "en",
     "permissions":  [
@@ -34,6 +34,7 @@
                                            "lib/sync-qr.js",
                                            "lib/detector.js",
                                            "lib/categories.js",
+                                           "lib/realdebrid-status.js",
                                            "content.js"
                                        ],
                                 "css":  [
